@@ -6,6 +6,7 @@ import java.io.InvalidClassException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.BindException;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
@@ -28,13 +29,13 @@ public class TunnelServer implements Runnable {
     private TunnelManager tunnelManager;
     private TunnelServer parent;
     
-    public TunnelServer() {
+    public TunnelServer( int port ) {
 
         tunnelManagers = new HashMap<String, TunnelManager>();
             
         try {
-            serverSocket = new ServerSocket( 7779 );
-            logger.info( "Listening on port 7779" );
+            serverSocket = new ServerSocket( port, 99, InetAddress.getByName( "127.0.0.1" ) );
+            logger.info( "Listening on 127.0.0.1:" + port );
             
             while( true ) {
                 

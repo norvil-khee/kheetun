@@ -29,7 +29,7 @@ public class Gui {
         TrayMenu menu = new TrayMenu( tray, dialogConfig );
         
         
-        File defaultConfig = new File( System.getProperty( "user.home" ) + "/.kheetun.xml" );
+        File defaultConfig = new File( System.getProperty( "user.home" ) + "/.kheetun/kheetun.xml" );
         
         Config config = new Config();
         

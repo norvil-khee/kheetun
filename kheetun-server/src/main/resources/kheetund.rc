@@ -2,8 +2,8 @@
 #
 ### BEGIN INIT INFO
 # Provides:          kheetund
-# Required-Start:    $remote_fs $syslog $time $network
-# Required-Stop:     $remote_fs $syslog $time $network
+# Required-Start:    $network
+# Required-Stop:     $network
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
 # Short-Description: Tunnel manager daemon
@@ -24,11 +24,12 @@ DESC="kheetund tunnel manager"
 
 # Set default values
 PIDFILE=/var/run/kheetund.pid
+PORT=7779
 
 test -x $DAEMON || exit 0
 
 . /lib/lsb/init-functions
-test -r /etc/default/rcS && . /etc/default/rcS
+test -r /etc/default/kheetund && . /etc/default/kheetund
 
 PIDDIR=`dirname $PIDFILE 2>/dev/null`
 

@@ -74,7 +74,7 @@ public class ConfigFrame extends JFrame implements TunnelClientListener {
     private final ImageIcon iconConnected       = Imx.OK;
     private final ImageIcon iconDisconnected    = Imx.WARNING;
     
-    private final File      fileConfig          = new File( System.getProperty( "user.home" ) + "/.kheetun.xml" );
+    private final File      fileConfig          = new File( System.getProperty( "user.home" ) + "/.kheetun/kheetun.xml" );
     
     private JToolBar toolbarConfig;
     private JToolBar toolbarProfile;
