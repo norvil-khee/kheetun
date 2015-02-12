@@ -1,0 +1,76 @@
+#!/bin/sh
+#
+### BEGIN INIT INFO
+# Provides:          kheetund
+# Required-Start:    $remote_fs $syslog $time $network
+# Required-Stop:     $remote_fs $syslog $time $network
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Tunnel manager daemon
+# Description:       Kheetun tunnel manager is a two component tunnel manager
+#                    separated into root running daemon (to allow privileged
+#                    port forwarding and hosts file management) and user 
+#                    running client to organize tunnels
+### END INIT INFO
+#
+# DAEMON             Location of the binary
+# PIDFILE            Make sure that you or, if used, -U uid can create/write it
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+DAEMON=/usr/bin/java
+DAEMON_ARGS="-cp /opt/kheetun/bin/kheetun-server.jar:/opt/kheetun/lib/* org.khee.kheetun.server.kheetund"
+NAME=kheetund
+DESC="kheetund tunnel manager"
+
+# Set default values
+PIDFILE=/var/run/kheetund.pid
+
+test -x $DAEMON || exit 0
+
+. /lib/lsb/init-functions
+test -r /etc/default/rcS && . /etc/default/rcS
+
+PIDDIR=`dirname $PIDFILE 2>/dev/null`
+
+start() {
+	echo -n "Starting $DESC: "
+
+        start-stop-daemon --start --pidfile "$PIDFILE" --background --verbose --make-pidfile --exec "$DAEMON" -- $DAEMON_ARGS
+	if [ $? -eq 0 ]; then
+		echo "$NAME."
+	else
+		echo "failed!"
+	fi
+}
+
+stop() {
+	echo -n "Stopping $DESC: "
+        start-stop-daemon --quiet --stop --pidfile "$PIDFILE"
+	if [ $? -eq 0 ]; then
+		echo "$NAME."
+	else
+		echo "failed!"
+	fi
+}
+
+case "$1" in
+	start)
+		start
+		;;
+	stop)
+		stop
+		;;
+	restart|reload|force-reload)
+		stop
+		start
+		;;
+	status)
+	  status_of_proc -p $PIDFILE $DAEMON $NAME && exit 0 || exit $?
+	  ;;
+	*)
+		echo "Usage: $0 {start|stop|restart|reload|force-reload|status}" >&2
+		exit 2
+		;;
+esac
+
+exit 0

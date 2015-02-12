@@ -1,0 +1,6 @@
+kheetun/**
+*.deb
+*/.project
+**/log4j2.xml
+**/log/**
+*/.settings/**
