@@ -1,6 +1,5 @@
 #!/bin/bash
 #
-set -x
 mkdir kheetun 2> /dev/null
 rm -rf kheetun/*
 mkdir kheetun/lib
@@ -20,7 +19,6 @@ cd ..
 cp -r kheetun-*/target/lib/* kheetun/lib
 cp -r kheetun-*/target/*jar kheetun/bin
 
-cp kheetun-server/src/main/resources/log4j2.xml kheetun/etc
 cp kheetun-server/src/main/resources/kheetund.rc kheetun/bin/kheetund
 
 mv kheetun/bin/client*.jar kheetun/bin/kheetun-client.jar
@@ -38,11 +36,17 @@ cat << EOF > kheetun.list
 %packager Norvil Khee 
 %description Your friendly tunnel manager
 
+%postinstall << _EOF
+service kheetund restart
+_EOF
+
+%preremove << _EOF
+service kheetund stop
+_EOF
+
 %system linux
 \$prefixInitd=/etc
 \$prefixRcd=/etc
-
-%system all
 
 # add init script
 #
@@ -55,13 +59,18 @@ l 0755 root sys \$prefixRcd/rc3.d/K00kheetund \$prefixInitd/init.d/kheetund
 
 EOF
 
+
 find . -type d | sed 's/^\.//' | while read d ; do
     echo d 755 root sys /opt/kheetun$d >> kheetun.list
 done
 
-find . -type f | sed 's/^\..//' | while read f ; do
+find . -type f | sed 's/^\..//' | grep -v kheetun.list | while read f ; do
     echo f 644 root sys /opt/kheetun/$f ./$f >> kheetun.list
 done
+
+
+cp ../kheetun-client/src/main/resources/kheetun.sh bin/kheetun
+echo "f 755 root root /opt/kheetun/bin/kheetun ./bin/kheetun" >> kheetun.list
 
 epm -f deb kheetun
 

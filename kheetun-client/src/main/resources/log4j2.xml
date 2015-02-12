@@ -1,33 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration>
   <Appenders>
-    <RollingFile name="FileLoggerClient" fileName="${sys:user.dir}/log/kheetun.log" filePattern="${sys:user.dir}/log/kheetun.log.%i.gz">
+    <RollingFile name="FileLoggerClient" fileName="${sys:user.home}/.kheetun/kheetun.log" filePattern="${sys:user.home}/.kheetun/kheetun.log.%i.gz">
       <PatternLayout pattern="%d %t %-5p %c{1} - %m%n"/>
       <Policies>
-          <SizeBasedTriggeringPolicy size="100 MB"/>
+          <SizeBasedTriggeringPolicy size="10 MB"/>
       </Policies>
       <DefaultRolloverStrategy max="10"/>
     </RollingFile>
-    <RollingFile name="FileLoggerServer" fileName="${sys:user.dir}/log/kheetund.log" filePattern="${sys:user.dir}/log/kheetund.log.%i.gz">
-      <PatternLayout pattern="%d %t %-5p %c{1} - %m%n"/>
-      <Policies>
-          <SizeBasedTriggeringPolicy size="100 MB"/>
-      </Policies>
-      <DefaultRolloverStrategy max="10"/>
-    </RollingFile>
-    <Console name="STDOUT" target="SYSTEM_OUT">
-      <PatternLayout pattern="%d %-5p [%t] %C{1} - %m%n"/>
-    </Console>
   </Appenders>
   <Loggers>
-    <Logger name="kheetun" level="denug">
+    <Logger name="kheetun" level="info">
       <AppenderRef ref="FileLoggerClient"/>
     </Logger>
-    <Logger name="kheetund" level="debug">
-      <AppenderRef ref="FileLoggerServer"/>
-    </Logger>
-    <Root level="debug">
-      <AppenderRef ref="STDOUT"/>
-    </Root>
   </Loggers>
 </Configuration>
