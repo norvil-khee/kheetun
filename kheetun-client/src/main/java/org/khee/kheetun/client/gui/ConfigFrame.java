@@ -15,13 +15,14 @@ import java.awt.event.WindowEvent;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.EventObject;
+import java.util.HashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.swing.AbstractCellEditor;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
-import javax.swing.ComboBoxModel;
 import javax.swing.DefaultCellEditor;
-import javax.swing.DefaultComboBoxModel;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -34,7 +35,6 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
-import javax.swing.JToggleButton;
 import javax.swing.JToolBar;
 import javax.swing.ListCellRenderer;
 import javax.swing.ListSelectionModel;
@@ -83,9 +83,7 @@ public class ConfigFrame extends JFrame implements TunnelClientListener {
     private JToolBar toolbarNone;
     private JButton buttonSaveConfig;
     private JButton buttonNewConfig;
-    private JButton buttonLoadConfig;
     private JButton buttonRevertConfig;
-    private JToggleButton buttonMiscShowTrayForwards;
     private JButton buttonAddProfile;
     private JButton buttonDeleteProfile;
     private JButton buttonRenameProfile;
@@ -99,16 +97,17 @@ public class ConfigFrame extends JFrame implements TunnelClientListener {
     private JScrollPane scrollForwards;
     private JTable tableForwards;
     private JButton buttonConnect;
+    private JButton buttonAssignIps;
+    private JTextField fieldStartIp;
+    private JTextField fieldPort;
     
     private boolean connected = false;
     
     private Config configCurrent;
     private Config configOriginal;
-    private File currentFile;
     
     private ObjectTableModel<Tunnel> storeTunnels;
     private ObjectTableModel<Forward> storeForwards;
-    private ComboBoxModel<String> storeProfiles = new DefaultComboBoxModel<String>();
     
     private Profile selectedProfile;
     private Tunnel selectedTunnel;
@@ -135,7 +134,6 @@ public class ConfigFrame extends JFrame implements TunnelClientListener {
         
         storeTunnels  = new ObjectTableModel<Tunnel>( Tunnel.class );
         storeForwards = new ObjectTableModel<Forward>( Forward.class );  
-        storeProfiles = new DefaultComboBoxModel<String>();
         
         initComponents();
         initializeEvents();
@@ -170,10 +168,22 @@ public class ConfigFrame extends JFrame implements TunnelClientListener {
                     buttonAddTunnel.setEnabled( true );
                     buttonRenameProfile.setEnabled( true );
                     storeTunnels.addAll( selectedProfile.getTunnels() );
+                    fieldStartIp.setEnabled( true );
+                    buttonAssignIps.setEnabled( true );
+                    
+                    if ( selectedProfile.getBaseBindIp() != null ) {
+                        fieldStartIp.setText( selectedProfile.getBaseBindIp() );
+                    } else {
+                        fieldStartIp.setText( "" );
+                    }
+                    
                 } else {
                     buttonRenameProfile.setEnabled( false );
                     buttonAddTunnel.setEnabled( false );
                     buttonDeleteProfile.setEnabled( false );
+                    fieldStartIp.setText( "" );
+                    fieldStartIp.setEnabled( false );
+                    buttonAssignIps.setEnabled( false );
                 }
 
                 tableTunnels.getTableHeader().repaint();
@@ -278,19 +288,6 @@ public class ConfigFrame extends JFrame implements TunnelClientListener {
             }
         });
 
-        
-//        buttonLoad.addActionListener( new ActionListener() {
-//            
-//            public void actionPerformed(ActionEvent e) {
-//                
-//                if ( checkDirty() && ! confirm() ) {
-//                    return;
-//                }
-//                
-//                doLoad();
-//            }
-//        });
-        
         buttonNewConfig.addActionListener( new ActionListener() {
             
             public void actionPerformed(ActionEvent e) {
@@ -393,6 +390,50 @@ public class ConfigFrame extends JFrame implements TunnelClientListener {
         
         TunnelClient.addClientListener( this );
         
+        fieldPort.addActionListener( new ActionListener() {
+            
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                
+                try {
+                    configCurrent.setPort( new Integer( fieldPort.getText() ) );
+                } catch ( NumberFormatException eNumber ) {
+                    
+                    fieldPort.setText( configCurrent.getPort().toString() );
+                    
+                    showError( "Numbers only!" );
+                    return;
+                }
+                
+                checkDirty();
+                ((Component)e.getSource()).getParent().requestFocusInWindow();
+            }
+        });
+        
+        fieldStartIp.addActionListener( new ActionListener() {
+            
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                
+                if ( fieldStartIp.getText().matches( "127\\.\\d+\\.\\d+\\.\\d+" ) ) {
+                    
+                    selectedProfile.setBaseBindIp( fieldStartIp.getText() );
+                    assignBindIps();
+                    
+                } else if ( fieldStartIp.getText().equals( "" ) ) {
+                    
+                    selectedProfile.setBaseBindIp( null );
+                } else {
+                    
+                    fieldStartIp.setText( selectedProfile.getBaseBindIp() != null ? selectedProfile.getBaseBindIp() : "" );
+                    showError( "Please give a valid local IP, ending with 1 (127.x.x.1) - or leave blank to disable auto assignment" );
+                }
+                checkDirty();
+                ((Component)e.getSource()).getParent().requestFocusInWindow();
+            }
+        });
+
+        
         buttonConnect.addActionListener( new ActionListener() {
             
             public void actionPerformed(ActionEvent e) {
@@ -403,6 +444,56 @@ public class ConfigFrame extends JFrame implements TunnelClientListener {
             }
         });
         
+    }
+    
+    private void assignBindIps() {
+        
+        HashMap<String, String> ipByHostname = new HashMap<String, String>();
+        
+        Pattern patternIp = Pattern.compile( "127\\.(?<oct2>\\d+)\\.(?<oct3>\\d+)\\.1" );
+        Matcher matcherIp = patternIp.matcher( selectedProfile.getBaseBindIp() );
+        
+        if ( matcherIp.matches() ) {
+            
+            Integer oct2 = new Integer( matcherIp.group( "oct2" ) );
+            Integer oct3 = new Integer( matcherIp.group( "oct3" ) );
+            Integer oct4 = 1;
+        
+            for ( Tunnel tunnel : selectedProfile.getTunnels() ) {
+                
+                for ( Forward forward : tunnel.getForwards() ) {
+                    
+                    if ( forward.getType().equals( Forward.REMOTE ) ) {
+                        continue;
+                    }
+                    
+                    String bindIp = "127." + oct2.toString() + "." + oct3.toString() + "." + oct4.toString();
+                    
+                    if ( ! ipByHostname.containsKey( forward.getForwardedHost() ) ) {
+                        
+                        ipByHostname.put( forward.getForwardedHost(), bindIp );
+                        
+                        if ( oct4++ > 255 ) {
+                            oct4 = 1;
+                            if ( oct3++ > 255 ) {
+                                oct3 = 1;
+                                if ( oct2++ > 255 ) {
+                                    showError( "There are too many forwards in this profile to assign unique local IPs" );
+                                    return;
+                                }
+                            }
+                        }
+                    } else {
+                        bindIp = ipByHostname.get( forward.getForwardedHost() );
+                    }
+                    
+                    forward.setBindIp( bindIp );
+                }
+            }
+            
+            storeForwards.fireTableDataChanged();
+            checkDirty();
+        }
     }
     
     public void error( String error ) {
@@ -467,64 +558,20 @@ public class ConfigFrame extends JFrame implements TunnelClientListener {
     private void doConnect() {
         
         TunnelClient.init();
-        TunnelClient.connect();
+        TunnelClient.connect( configCurrent.getPort() );
     }
 
-//    public void doLoad() {
-//        
-//        FileNameExtensionFilter filter = new FileNameExtensionFilter( "XML files", "xml" );
-//        JFileChooser chooser = new JFileChooser( new File( System.getProperty( "user.dir" ) + "/config" ) );
-//        chooser.setFileFilter( filter );
-//        
-//        int answer = chooser.showOpenDialog( this );
-//        
-//        if ( answer == JFileChooser.APPROVE_OPTION ) {
-//            
-//            Config loaded = null;
-//            
-//            try {
-//                
-//                loaded  = Config.load( chooser.getSelectedFile() );
-//            } catch ( Exception e ) {
-//                
-//                logger.error( e.getMessage() );
-//                showError( "This is not a valid config file" );
-//                return;
-//            }
-//                
-//            currentFile = chooser.getSelectedFile();
-//            try {
-//                setTitle( "Tunnel Config: " + currentFile.getCanonicalPath().toString() );
-//            } catch ( IOException e ) {
-//                
-//                logger.warn( e.getMessage() );
-//            }
-//            
-//            setConfig( loaded );
-//            
-//            doSave();
-//        }
-//    }
-//    
-//    private void doSaveAs() {
-//        
-//        FileNameExtensionFilter filter = new FileNameExtensionFilter( "XML files",  "xml" );
-//        JFileChooser chooser = new JFileChooser( new File( System.getProperty( "user.dir" ) + "/config" ) );
-//        chooser.setFileFilter( filter );
-//        if ( currentFile != null ) {
-//            chooser.setSelectedFile( currentFile );
-//        }
-//        
-//        int answer = chooser.showSaveDialog( this );
-//        
-//        if ( answer == JFileChooser.APPROVE_OPTION ) {
-//            
-//            currentFile = chooser.getSelectedFile();
-//            doSave();
-//        }
-//    }
-    
     private void doSave() {
+        
+        // if port differs from before, reconnect
+        //
+        if ( configCurrent.getPort() != configOriginal.getPort() ) {
+            
+            if ( connected ) {  
+                TunnelClient.disconnect();
+            }
+            doConnect();
+        }
             
         configOriginal = new Config( configCurrent );
         
@@ -595,7 +642,6 @@ public class ConfigFrame extends JFrame implements TunnelClientListener {
         toolbarNone         = new JToolBar();
         buttonSaveConfig          = new JButton( Imx.SAVE );
         buttonSaveConfig.setToolTipText( "Save Configuration" );
-//        buttonLoad          = new JButton( Imx.LOAD );
         buttonNewConfig           = new JButton( Imx.NEW );
         buttonNewConfig.setToolTipText( "New Configuration" );
         buttonRevertConfig        = new JButton( Imx.REVERT );
@@ -610,12 +656,16 @@ public class ConfigFrame extends JFrame implements TunnelClientListener {
         buttonStartTunnel.setToolTipText( "Start Tunnel" );
         buttonStopTunnel    = new JButton( Imx.STOP );
         buttonStopTunnel.setToolTipText( "Stop Tunnel" );
-        buttonMiscShowTrayForwards = new JToggleButton( Imx.FORWARDS );
-        buttonMiscShowTrayForwards.setToolTipText( "Hide forwards in tray menu" );
+        buttonAssignIps     = new JButton( Imx.LION );
+        buttonAssignIps.setToolTipText( "Automatically assign bind IPs" );
         buttonConnect       = new JButton( iconDisconnected );
-        
         buttonConnect.setToolTipText( "No connection to server" );
+        
+        fieldPort           = new JTextField();
+        fieldPort.setHorizontalAlignment( JTextField.RIGHT );
+        fieldStartIp        = new JTextField();
 
+        fieldStartIp.setEnabled( false );
         buttonSaveConfig.setEnabled( false );
         buttonRevertConfig.setEnabled( false );
         buttonDeleteProfile.setEnabled( false );
@@ -623,17 +673,16 @@ public class ConfigFrame extends JFrame implements TunnelClientListener {
         buttonStartTunnel.setEnabled( false );
         buttonStopTunnel.setEnabled( false );
         buttonAddProfile.setEnabled( false );
+        buttonAssignIps.setEnabled( false );
         
         JComboBox<String> comboForwardType = new JComboBox<String>( new String[] { "local", "remote" } );
         
         
-        JButton[] buttons   = { buttonSaveConfig, buttonRevertConfig, buttonAddProfile, buttonDeleteProfile, buttonRenameProfile, buttonStartTunnel, buttonStopTunnel };
+        JButton[] buttons   = { buttonSaveConfig, buttonRevertConfig, buttonAddProfile, buttonDeleteProfile, buttonRenameProfile, buttonStartTunnel, buttonStopTunnel, buttonAssignIps };
         
         for( JButton button : buttons ) {
             button.setPreferredSize( new Dimension( 32,  32 ) );
         }
-        
-        buttonMiscShowTrayForwards.setPreferredSize( new Dimension( 32, 32 ) );
         
         panelProfiles = new JPanel();
         labelProfiles = new JLabel();
@@ -652,6 +701,7 @@ public class ConfigFrame extends JFrame implements TunnelClientListener {
         ValueRenderer rendererHost  = new ValueRenderer( String.class,  VerifierFactory.getHostnameVerifier(),  JTextField.LEFT,  new Insets( 0, 8, 0, 0 ) );
         ValueRenderer rendererUser  = new ValueRenderer( String.class,  VerifierFactory.getUserVerifier(),      JTextField.LEFT,  new Insets( 0, 8, 0, 0 ) );
         ValueRenderer rendererAlias = new ValueRenderer( String.class,  VerifierFactory.getAliasVerifier(),     JTextField.LEFT,  new Insets( 0, 8, 0, 0 ) );
+        
         
         DeleteButtonRenderer rendererDeleteTunnel = new DeleteButtonRenderer( new ActionListener() {
             
@@ -694,8 +744,6 @@ public class ConfigFrame extends JFrame implements TunnelClientListener {
         columns.getColumn( columns.getColumnIndex( "Alias" ) ).setMaxWidth( 100 );
         columns.getColumn( columns.getColumnIndex( "Alias" ) ).setCellRenderer( rendererAlias );
         columns.getColumn( columns.getColumnIndex( "Alias" ) ).setCellEditor( rendererAlias );
-//        columns.getColumn( columns.getColumnIndex( "Autostart" ) ).setMinWidth( 70 );
-//        columns.getColumn( columns.getColumnIndex( "Autostart" ) ).setMaxWidth( 70 );
         columns.getColumn( columns.getColumnIndex( "User" ) ).setMinWidth( 200 );
         columns.getColumn( columns.getColumnIndex( "User" ) ).setCellRenderer( rendererUser );
         columns.getColumn( columns.getColumnIndex( "User" ) ).setCellEditor( rendererUser );
@@ -771,7 +819,6 @@ public class ConfigFrame extends JFrame implements TunnelClientListener {
         toolbarNone.setRollover(true);
 
         toolbarConfig.add(buttonNewConfig);
-//        toolbarConfig.add(buttonLoad);
         toolbarConfig.add(buttonSaveConfig);
         toolbarConfig.add(buttonRevertConfig);
         toolbarConfig.add( Box.createHorizontalStrut( 32 ) );
@@ -785,11 +832,15 @@ public class ConfigFrame extends JFrame implements TunnelClientListener {
         toolbarTunnel.add(buttonStopTunnel);
         toolbarTunnel.add( Box.createHorizontalStrut( 32 ) );
         
-        toolbarMisc.add(buttonMiscShowTrayForwards);
-        toolbarMisc.add( Box.createHorizontalStrut( 32 ) );
-        
         toolbarNone.setMargin( new Insets( 0,  0,  0,  8 ) );
         toolbarNone.add( Box.createHorizontalGlue() );
+        fieldPort.setMaximumSize( new Dimension( 100, fieldPort.getPreferredSize().height ) );
+        fieldPort.setMinimumSize( new Dimension( 100, fieldPort.getPreferredSize().height ) );
+        fieldPort.setPreferredSize( new Dimension( 100, fieldPort.getPreferredSize().height ) );
+        toolbarNone.add( new JLabel( "Port" ) );
+        toolbarNone.add( Box.createHorizontalStrut( 8 ) );
+        toolbarNone.add( fieldPort );
+        toolbarNone.add( Box.createHorizontalStrut( 8 ) );
         toolbarNone.add( buttonConnect );
 
         scrollTunnels.setViewportView(tableTunnels);
@@ -801,6 +852,9 @@ public class ConfigFrame extends JFrame implements TunnelClientListener {
         comboProfiles.setMaximumSize( new Dimension( 200, comboProfiles.getPreferredSize().height ) );
         comboProfiles.setMinimumSize( new Dimension( 200, comboProfiles.getPreferredSize().height ) );
         comboProfiles.setPreferredSize( new Dimension( 200, comboProfiles.getPreferredSize().height ) );
+        fieldStartIp.setMaximumSize( new Dimension( 200, comboProfiles.getPreferredSize().height ) );
+        fieldStartIp.setMinimumSize( new Dimension( 200, comboProfiles.getPreferredSize().height ) );
+        fieldStartIp.setPreferredSize( new Dimension( 200, comboProfiles.getPreferredSize().height ) );
         comboProfiles.setRenderer( new ProfileRenderer() );
         labelProfiles.setText("Profile");
         labelProfiles.setHorizontalAlignment(SwingConstants.LEFT);
@@ -808,6 +862,13 @@ public class ConfigFrame extends JFrame implements TunnelClientListener {
         panelProfiles.add(labelProfiles);
         panelProfiles.add( Box.createHorizontalStrut( 10 ) );
         panelProfiles.add(comboProfiles);
+        panelProfiles.add( Box.createHorizontalStrut( 32 ) );
+        panelProfiles.add( new JLabel( "Base bind IP" ) );
+        panelProfiles.add( Box.createHorizontalStrut( 5 ) );
+        panelProfiles.add( fieldStartIp );
+//        panelProfiles.add( Box.createHorizontalStrut( 10 ) );
+//        panelProfiles.add( buttonAssignIps );
+        
         
         JPanel panelTunnels = new JPanel();
         panelTunnels.setLayout( new BoxLayout( panelTunnels, BoxLayout.X_AXIS ) );
@@ -940,6 +1001,8 @@ public class ConfigFrame extends JFrame implements TunnelClientListener {
         this.configOriginal = new Config( this.configCurrent );
         
         buttonAddProfile.setEnabled( true );
+        fieldPort.setText( config.getPort().toString() );
+
         
         comboProfiles.removeAllItems();
         for ( Profile profile : configCurrent.getProfiles() ) {

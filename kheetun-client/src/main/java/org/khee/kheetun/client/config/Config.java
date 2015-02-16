@@ -9,16 +9,19 @@ import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlType;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 @XmlRootElement
+@XmlType( propOrder={"port","profiles"} )
 public class Config {
     
     private static Logger logger = LogManager.getLogger( "kheetun" );
     
     private ArrayList<Profile> profiles;
+    private Integer port = 7779;
     
     public Config() {
         profiles = new ArrayList<Profile>();
@@ -27,6 +30,7 @@ public class Config {
     public Config( Config source ) {
         
         this.profiles = new ArrayList<Profile>();
+        this.port     = source.getPort();
         
         for ( Profile profile : source.getProfiles() ) {
             addProfile( new Profile( profile ) );
@@ -53,7 +57,7 @@ public class Config {
             }
         }
         
-        return true;
+        return this.getPort() != null;
     }
     
     public ArrayList<Tunnel> findTunnels( String signature ) {
@@ -71,6 +75,15 @@ public class Config {
         }
         
         return tunnels;
+    }
+    
+    @XmlElement( name="port" )
+    public Integer getPort() {
+        return port;
+    }
+    
+    public void setPort(Integer port) {
+        this.port = port;
     }
     
     @Override
@@ -96,7 +109,7 @@ public class Config {
             }
         }
         
-        return true;
+        return this.getPort().equals( compare.getPort() );
     }
     
     

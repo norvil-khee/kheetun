@@ -7,15 +7,17 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlType;
 
 
 @XmlAccessorType(XmlAccessType.NONE)
+@XmlType( propOrder={"name","baseBindIp","tunnels"} )
 @XmlRootElement
 public class Profile {
     
     private String                  name;
     private ArrayList<Tunnel>       tunnels;
-    
+    private String                  baseBindIp;
     
     public Profile() {
         tunnels = new ArrayList<Tunnel>();
@@ -25,6 +27,7 @@ public class Profile {
     
         this.tunnels    = new ArrayList<Tunnel>();
         this.name       = source.name;
+        this.baseBindIp = source.baseBindIp;
         
         for( Tunnel tunnel : source.getTunnels() ) { 
             
@@ -38,6 +41,14 @@ public class Profile {
     }
     public void setName(String name) {
         this.name = name;
+    }
+    
+    @XmlAttribute
+    public String getBaseBindIp() {
+        return baseBindIp;
+    }
+    public void setBaseBindIp(String baseBindIp) {
+        this.baseBindIp = baseBindIp;
     }
 
     @XmlElement( name="tunnel" )
@@ -89,8 +100,11 @@ public class Profile {
                 return false;
             }
         }
-
-        return this.getName().equals( compare.getName() );
+        
+        return ( 
+                this.getName().equals( compare.getName() )
+           && ( ( this.getBaseBindIp() == null && compare.getBaseBindIp() == null ) || this.getBaseBindIp().equals( compare.getBaseBindIp() ) ) 
+        );
     }
 
 }

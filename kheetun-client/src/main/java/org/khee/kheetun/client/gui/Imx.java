@@ -49,6 +49,10 @@ public class Imx extends ImageIcon {
     public ImageIcon s16;
     public ImageIcon s24;
     public ImageIcon s32;
+    public BufferedImage bs12;
+    public BufferedImage bs16;
+    public BufferedImage bs24;
+    public BufferedImage bs32;
     
     protected static Imx loadImx( String file ) {
         
@@ -56,25 +60,28 @@ public class Imx extends ImageIcon {
         try {
             BufferedImage tmp = ImageIO.read( kheetun.class.getResource( "/images/" + file ) );
      
-            BufferedImage img;
+            BufferedImage bimg12;
+            BufferedImage bimg16;
+            BufferedImage bimg24;
+            BufferedImage bimg32;
             
-            img = new BufferedImage( 32, 32, BufferedImage.TYPE_INT_ARGB );
-            img.createGraphics().drawImage( tmp.getScaledInstance( 32, 32, Image.SCALE_SMOOTH ), 0, 0, null );
-            ImageIcon icon32 = new ImageIcon( img );
+            bimg32 = new BufferedImage( 32, 32, BufferedImage.TYPE_INT_ARGB );
+            bimg32.createGraphics().drawImage( tmp.getScaledInstance( 32, 32, Image.SCALE_SMOOTH ), 0, 0, null );
+            ImageIcon icon32 = new ImageIcon( bimg32 );
 
-            img = new BufferedImage( 24, 24, BufferedImage.TYPE_INT_ARGB );
-            img.createGraphics().drawImage( tmp.getScaledInstance( 24, 24, Image.SCALE_SMOOTH ), 0, 0, null );
-            ImageIcon icon24 = new ImageIcon( img );
+            bimg24 = new BufferedImage( 24, 24, BufferedImage.TYPE_INT_ARGB );
+            bimg24.createGraphics().drawImage( tmp.getScaledInstance( 24, 24, Image.SCALE_SMOOTH ), 0, 0, null );
+            ImageIcon icon24 = new ImageIcon( bimg24 );
 
-            img = new BufferedImage( 16, 16, BufferedImage.TYPE_INT_ARGB );
-            img.createGraphics().drawImage( tmp.getScaledInstance( 16, 16, Image.SCALE_SMOOTH ), 0, 0, null );
-            ImageIcon icon16 = new ImageIcon( img );
+            bimg16 = new BufferedImage( 16, 16, BufferedImage.TYPE_INT_ARGB );
+            bimg16.createGraphics().drawImage( tmp.getScaledInstance( 16, 16, Image.SCALE_SMOOTH ), 0, 0, null );
+            ImageIcon icon16 = new ImageIcon( bimg16 );
 
-            img = new BufferedImage( 12, 12, BufferedImage.TYPE_INT_ARGB );
-            img.createGraphics().drawImage( tmp.getScaledInstance( 12, 12, Image.SCALE_SMOOTH ), 0, 0, null );
-            ImageIcon icon12 = new ImageIcon( img );
+            bimg12 = new BufferedImage( 12, 12, BufferedImage.TYPE_INT_ARGB );
+            bimg12.createGraphics().drawImage( tmp.getScaledInstance( 12, 12, Image.SCALE_SMOOTH ), 0, 0, null );
+            ImageIcon icon12 = new ImageIcon( bimg12 );
             
-            return new Imx( icon12, icon16, icon24, icon32 );
+            return new Imx( icon12, icon16, icon24, icon32, bimg12, bimg16, bimg24, bimg32 );
             
         } catch ( Exception e ) {
             logger.error( e.getMessage() );
@@ -84,7 +91,8 @@ public class Imx extends ImageIcon {
         return null;
     }
     
-    protected Imx( ImageIcon icon12, ImageIcon icon16, ImageIcon icon24, ImageIcon icon32 ) {
+    protected Imx( ImageIcon icon12, ImageIcon icon16, ImageIcon icon24, ImageIcon icon32,
+            BufferedImage bimg12, BufferedImage bimg16, BufferedImage bimg24, BufferedImage bimg32 ) {
         
         this.setImage( icon16.getImage() );
         
@@ -92,6 +100,11 @@ public class Imx extends ImageIcon {
         this.s16 = icon16;
         this.s24 = icon24;
         this.s32 = icon32;
+        
+        this.bs12 = bimg12;
+        this.bs16 = bimg16;
+        this.bs24 = bimg24;
+        this.bs32 = bimg32;
     }
 
 }

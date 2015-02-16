@@ -34,7 +34,7 @@ public class TunnelServer implements Runnable {
         tunnelManagers = new HashMap<String, TunnelManager>();
             
         try {
-            serverSocket = new ServerSocket( port, 99, InetAddress.getByName( "127.0.0.1" ) );
+            serverSocket = new ServerSocket( port, 99, InetAddress.getLocalHost() );
             logger.info( "Listening on 127.0.0.1:" + port );
             
             while( true ) {
@@ -98,6 +98,17 @@ public class TunnelServer implements Runnable {
             
             logger.info( "Client at " + clientSocket.getInetAddress().toString() + " disconnected" );
             
+            if ( commOut != null ) {
+                commOut.close();
+            }
+            if ( commIn != null ) {
+                commIn.close();
+            }
+            
+            if ( clientSocket != null ) {
+                clientSocket.close();
+            }
+            
         } catch ( SocketException eSocket ) {
             
             logger.error( "Client at " + clientSocket.getInetAddress().toString() + " got disconnected uncleanly: " + eSocket.getMessage() );
@@ -110,6 +121,8 @@ public class TunnelServer implements Runnable {
             e.printStackTrace();
             logger.error( e.getMessage() );
         }
+        
+        
     }
     
     private void createTunnelManager( String user ) {
@@ -165,11 +178,13 @@ public class TunnelServer implements Runnable {
             break;
         
         case Protocol.QUERYTUNNELS:
-            if ( tunnelManager == null ) {
-                break;
-            }
             
             send( new Protocol( Protocol.ACTIVETUNNELS, tunnelManager.getActiveTunnels() ) );
+            break;
+            
+        case Protocol.QUIT:
+            
+            send( new Protocol( Protocol.QUIT ) );
             break;
 
         default:

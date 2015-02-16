@@ -1,5 +1,7 @@
 package org.khee.kheetun.client;
 
+import java.io.File;
+
 import javax.swing.UIManager;
 
 import org.apache.logging.log4j.LogManager;
@@ -10,7 +12,7 @@ import org.khee.kheetun.client.gui.Gui;
 public class kheetun {
 
     private static Logger logger = LogManager.getLogger( "kheetun" );
-    private static final String VERSION = "0.1";
+    public static final String VERSION = "0.2";
     
     public static void main(String[] args) {
         
@@ -23,6 +25,7 @@ public class kheetun {
             System.exit( 1 );
         }
         
+        new File( System.getProperty( "user.home" ) + "/.kheetun" ).mkdir();
         
         TunnelClient.init();
         

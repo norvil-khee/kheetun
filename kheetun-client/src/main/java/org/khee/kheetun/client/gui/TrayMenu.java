@@ -3,15 +3,24 @@ package org.khee.kheetun.client.gui;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.GraphicsDevice;
+import java.awt.GraphicsEnvironment;
 import java.awt.Insets;
+import java.awt.Point;
 import java.awt.Rectangle;
+import java.awt.Toolkit;
 import java.awt.TrayIcon;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.awt.geom.Area;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.Vector;
 
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -28,6 +37,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.khee.kheetun.client.TunnelClient;
 import org.khee.kheetun.client.TunnelClientListener;
+import org.khee.kheetun.client.kheetun;
 import org.khee.kheetun.client.config.Config;
 import org.khee.kheetun.client.config.Forward;
 import org.khee.kheetun.client.config.Profile;
@@ -47,12 +57,12 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigFrameListe
     private ConfigFrame                 configFrame;
     private HashMap<String, JMenuItem>  itemsBySignature    = new HashMap<String, JMenuItem>();
     private HashMap<JMenuItem, Tunnel>  tunnelByItem        = new HashMap<JMenuItem, Tunnel>();
+    private HashSet<String>             activeTunnels       = new HashSet<String>();
     private JPopupMenuEx                menu;
     private JPanel                      panel;
     private boolean                     connected           = false;
     private TrayMenu                    tray                = this;
     private TrayIcon                    icon;
-    
     
     public TrayMenu( TrayIcon tray, ConfigFrame frame ) {
         
@@ -78,7 +88,7 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigFrameListe
 
         this.configFrame = frame;
         
-        labelKheetun = new JLabel( "kheetun", Imx.KHEETUN, JLabel.LEADING );
+        labelKheetun = new JLabel( "kheetun v" + kheetun.VERSION, Imx.KHEETUN, JLabel.LEADING );
         labelKheetun.setBorder( new EmptyBorder( new Insets( 4, 0, 8, 0 ) ) );
         labelKheetun.setFont( new Font( labelKheetun.getFont().getName(), Font.BOLD, labelKheetun.getFont().getSize() + 1 ) );
         
@@ -99,6 +109,11 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigFrameListe
             
             public void actionPerformed(ActionEvent e) {
                 configFrame.setVisible( ! configFrame.isVisible() );
+                
+                if ( configFrame.isVisible() ) {
+                    configFrame.revalidate();
+                    configFrame.repaint();
+                }
             }
         });
         itemConfig.addMouseListener( this );
@@ -129,7 +144,7 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigFrameListe
         itemQuery.addMouseListener( this );
 
         setAlwaysOnTop( true );
-        setType( Type.UTILITY );
+        setType( Type.POPUP );
         
         buildMenu( null );
         
@@ -145,7 +160,6 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigFrameListe
         TunnelClient.addClientListener( this );
         
         configFrame.addConfigChangedListener( this );
-        
     }
     
     public void buildMenu( Config config ) {
@@ -251,11 +265,15 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigFrameListe
     public void tunnelStarted(String signature) {
         
         if ( itemsBySignature.containsKey( signature ) ) {
+            
+            activeTunnels.add( signature );
+            
             JMenuItem item = itemsBySignature.get( signature );
             item.setIcon( Imx.ACTIVE );
 
             if ( icon.getImage() != Imx.KHEETUN_ON.s24.getImage() ) {
                 icon.setImage( Imx.KHEETUN_ON.s24.getImage() );
+                icon.getImage().getGraphics();
             }
         }
     }
@@ -263,8 +281,15 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigFrameListe
     public void tunnelStopped(String signature) {
 
         if ( itemsBySignature.containsKey( signature ) ) {
+            
+            activeTunnels.remove( signature );
+            
             JMenuItem item = itemsBySignature.get( signature );
             item.setIcon( Imx.INACTIVE );
+            
+            if ( activeTunnels.size() == 0 && icon.getImage() == Imx.KHEETUN_ON.s24.getImage() ) {
+                icon.setImage( Imx.KHEETUN_OFF.s24.getImage() );
+            }
         }
     }
 
@@ -297,20 +322,55 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigFrameListe
         
         buildMenu( config );
     }
-
-
+    
     public void mouseClicked(MouseEvent e) {
         
         if ( ! ( e.getSource() instanceof TrayIcon ) ) {
             return;
         }
+        
+        
 
         if ( isVisible() ) {
             setVisible( false );
         
         } else {
-        
-            setLocation( e.getX() - panel.getWidth() / 2, e.getY()  );
+            
+            /*
+             * taskbar detection is not really working (here: ubuntu mint 17 / cinnamon),
+             * also popup window is acting strange and would be placed below taskbar,
+             * so a really fuzzy detection method for placing our popup is used. Sorry!
+             */
+            GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+            Rectangle bounds = gd.getDefaultConfiguration().getBounds();
+            Insets insets = Toolkit.getDefaultToolkit().getScreenInsets(gd.getDefaultConfiguration());
+
+            Rectangle safeBounds = new Rectangle(bounds);
+            safeBounds.x += insets.left;
+            safeBounds.y += insets.top;
+            safeBounds.width -= (insets.left + insets.right);
+            safeBounds.height -= (insets.top + insets.bottom);
+            
+            Point position = new Point();
+                
+            // right
+            if ( e.getLocationOnScreen().x > safeBounds.x + safeBounds.width - icon.getSize().width  ) {
+                position.setLocation( safeBounds.x + safeBounds.width - panel.getWidth() - icon.getSize().width - 4, e.getLocationOnScreen().y - panel.getHeight() / 3 );
+            }
+            // left
+            else if ( e.getLocationOnScreen().x < safeBounds.x + icon.getSize().width ) { 
+                position.setLocation( safeBounds.x + icon.getSize().width + 4, e.getLocationOnScreen().y - panel.getHeight() / 3 );
+            }
+            // top
+            else if ( e.getLocationOnScreen().y < safeBounds.y + icon.getSize().height ) { 
+                position.setLocation( e.getLocationOnScreen().x - panel.getWidth() / 3, safeBounds.y + icon.getSize().height + 4 );
+            }
+            // bottom
+            else if ( e.getLocationOnScreen().y > safeBounds.y + safeBounds.height - icon.getSize().height ) { 
+                position.setLocation( e.getLocationOnScreen().x - panel.getWidth() / 3, safeBounds.y + safeBounds.height - panel.getHeight() - icon.getSize().height - 4 );
+            }
+            
+            setLocation( position );
             setVisible( true );
         }
     }

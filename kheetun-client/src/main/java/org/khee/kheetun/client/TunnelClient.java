@@ -29,6 +29,7 @@ public class TunnelClient implements Runnable {
     private static Logger logger = LogManager.getLogger( "kheetun" );
     
     private Socket                          clientSocket;
+    private Integer                         port;
     private Protocol                        receive;
     private ObjectInputStream               commIn;
     private ObjectOutputStream              commOut;
@@ -59,9 +60,14 @@ public class TunnelClient implements Runnable {
         instance.listeners = oldListeners;
     }
     
-    public static void connect() {
+    public void setPort(Integer port) {
+        this.port = port;
+    }
+    
+    
+    public static void connect( Integer port ) {
         
-        instance.startClient();
+        instance.startClient( port );
     }
     
     public static void disconnect() {
@@ -76,9 +82,11 @@ public class TunnelClient implements Runnable {
         instance.listeners.add( listener );
     }
     
-    public void startClient() {
+    public void startClient( Integer port ) {
         
         if ( ! client.isAlive() ) {
+            
+            setPort( port );
             client.start();
         }
     }
@@ -87,7 +95,6 @@ public class TunnelClient implements Runnable {
         
         if ( client.isAlive() ) {
             send( new Protocol( Protocol.QUIT ) );
-            closeSocket();
             instance.clientRunning = false;
         }
     }
@@ -125,7 +132,7 @@ public class TunnelClient implements Runnable {
         
         try {
             
-            clientSocket = new Socket( InetAddress.getLocalHost(), 7779 );
+            clientSocket = new Socket( InetAddress.getLocalHost(), port );
             commOut     = new ObjectOutputStream( clientSocket.getOutputStream() );
             commOut.flush();
 
