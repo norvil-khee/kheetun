@@ -14,13 +14,9 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.awt.geom.Area;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Set;
-import java.util.Vector;
 
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -328,14 +324,12 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigFrameListe
         if ( ! ( e.getSource() instanceof TrayIcon ) ) {
             return;
         }
-        
-        
 
         if ( isVisible() ) {
             setVisible( false );
         
         } else {
-            
+
             /*
              * taskbar detection is not really working (here: ubuntu mint 17 / cinnamon),
              * also popup window is acting strange and would be placed below taskbar,
@@ -369,6 +363,13 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigFrameListe
             else if ( e.getLocationOnScreen().y > safeBounds.y + safeBounds.height - icon.getSize().height ) { 
                 position.setLocation( e.getLocationOnScreen().x - panel.getWidth() / 3, safeBounds.y + safeBounds.height - panel.getHeight() - icon.getSize().height - 4 );
             }
+            
+            // finally adjust potential clipping
+            int diffX = ( position.x + panel.getWidth() )  - ( safeBounds.x + safeBounds.width );
+            int diffY = ( position.y + panel.getHeight() ) - ( safeBounds.y + safeBounds.height );
+            
+            position.x -= diffX > 0 ? diffX + 4 : 0;
+            position.y -= diffY > 0 ? diffY + 4 : 0;
             
             setLocation( position );
             setVisible( true );

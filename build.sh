@@ -7,6 +7,10 @@ mkdir kheetun/etc
 mkdir kheetun/log
 mkdir kheetun/bin
 
+version=`grep public.*VERSION kheetun-client/src/main/java/org/khee/kheetun/client/kheetun.java | perl -p -e 's/^.*(\d+.\d+).*$/$1/g'`
+
+echo "Building kheetun v$version" 
+
 cd kheetun-client
 mvn package
 mvn install
@@ -19,7 +23,9 @@ cd ..
 cp -r kheetun-*/target/lib/* kheetun/lib
 cp -r kheetun-*/target/*jar kheetun/bin
 
-cp kheetun-server/src/main/resources/kheetund.rc kheetun/bin/kheetund
+cp kheetun-server/src/main/resources/kheetund.rc kheetun/etc/kheetund.rc
+cp kheetun-server/src/main/resources/kheetund.default kheetun/etc/kheetund.default
+cp kheetun-server/LICENSE kheetun/etc
 
 mv kheetun/bin/client*.jar kheetun/bin/kheetun-client.jar
 mv kheetun/bin/server*.jar kheetun/bin/kheetun-server.jar
@@ -30,18 +36,20 @@ cat << EOF > kheetun.list
 %product kheetun
 %copyright (c) Norvil Khee (norvil@norvil-khee.de)
 %vendor http://www.norvil-khee.de
-%license ./COPYING
+%license ./LICENSE
 %readme ./README
-%version 0.1
+%version $version
 %packager Norvil Khee 
 %description Your friendly tunnel manager
 
 %postinstall << _EOF
+update-rc.d kheetund defaults
 service kheetund restart
 _EOF
 
 %preremove << _EOF
 service kheetund stop
+update-rc.d -f kheetund remove
 _EOF
 
 %system linux
@@ -51,11 +59,8 @@ _EOF
 # add init script
 #
 %system !aix !hpux
-f 555 root sys \$prefixInitd/init.d/kheetund ./bin/kheetund
-l 0755 root sys \$prefixRcd/rc3.d/S99kheetund \$prefixInitd/init.d/kheetund
-l 0755 root sys \$prefixRcd/rc0.d/K00kheetund \$prefixInitd/init.d/kheetund
-l 0755 root sys \$prefixRcd/rc1.d/K00kheetund \$prefixInitd/init.d/kheetund
-l 0755 root sys \$prefixRcd/rc3.d/K00kheetund \$prefixInitd/init.d/kheetund
+f 555 root sys \$prefixInitd/init.d/kheetund ./etc/kheetund.rc
+f 644 root sys \$prefixInitd/default/kheetund ./etc/kheetund.default
 
 EOF
 
@@ -64,7 +69,7 @@ find . -type d | sed 's/^\.//' | while read d ; do
     echo d 755 root sys /opt/kheetun$d >> kheetun.list
 done
 
-find . -type f | sed 's/^\..//' | grep -v kheetun.list | while read f ; do
+find . -type f | sed 's/^\..//' | grep -v kheetun.list | grep -v kheetund.rc | grep -v kheetund.default | while read f ; do
     echo f 644 root sys /opt/kheetun/$f ./$f >> kheetun.list
 done
 

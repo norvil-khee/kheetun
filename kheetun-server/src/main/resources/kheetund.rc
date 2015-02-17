@@ -16,20 +16,22 @@
 # DAEMON             Location of the binary
 # PIDFILE            Make sure that you or, if used, -U uid can create/write it
 
-PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
-DAEMON=/usr/bin/java
-DAEMON_ARGS="-cp /opt/kheetun/bin/kheetun-server.jar:/opt/kheetun/lib/* org.khee.kheetun.server.kheetund"
-NAME=kheetund
-DESC="kheetund tunnel manager"
-
 # Set default values
 PIDFILE=/var/run/kheetund.pid
 PORT=7779
 
+test -r /etc/default/kheetund && . /etc/default/kheetund
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+DAEMON=/usr/bin/java
+DAEMON_ARGS="-cp /opt/kheetun/bin/kheetun-server.jar:/opt/kheetun/lib/* org.khee.kheetun.server.kheetund -p $PORT"
+NAME=kheetund
+DESC="kheetund tunnel manager"
+
+
 test -x $DAEMON || exit 0
 
 . /lib/lsb/init-functions
-test -r /etc/default/kheetund && . /etc/default/kheetund
 
 PIDDIR=`dirname $PIDFILE 2>/dev/null`
 
@@ -45,13 +47,22 @@ start() {
 }
 
 stop() {
-	echo -n "Stopping $DESC: "
-        start-stop-daemon --quiet --stop --pidfile "$PIDFILE"
-	if [ $? -eq 0 ]; then
-		echo "$NAME."
-	else
-		echo "failed!"
-	fi
+
+    pid=`cat $PIDFILE`
+    ps -ef | grep $pid | grep -v grep
+
+    if [ "$?" -ne "1" ] ; then 
+    	echo -n "Stopping $DESC: "
+            start-stop-daemon --quiet --stop --pidfile "$PIDFILE"
+    	if [ $? -eq 0 ]; then
+    		echo "$NAME."
+    	else
+    		echo "failed!"
+    	fi
+    else
+        echo "Stale pid file: $PIDFILE, service already stopped"
+    fi
+    
 }
 
 case "$1" in
