@@ -337,13 +337,13 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigFrameListe
              */
             GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
             Rectangle bounds = gd.getDefaultConfiguration().getBounds();
-            Insets insets = Toolkit.getDefaultToolkit().getScreenInsets(gd.getDefaultConfiguration());
+//            Insets insets = Toolkit.getDefaultToolkit().getScreenInsets(gd.getDefaultConfiguration());
 
             Rectangle safeBounds = new Rectangle(bounds);
-            safeBounds.x += insets.left;
-            safeBounds.y += insets.top;
-            safeBounds.width -= (insets.left + insets.right);
-            safeBounds.height -= (insets.top + insets.bottom);
+//            safeBounds.x += insets.left;
+//            safeBounds.y += insets.top;
+//            safeBounds.width -= (insets.left + insets.right);
+//            safeBounds.height -= (insets.top + insets.bottom);
             
             Point position = new Point();
                 

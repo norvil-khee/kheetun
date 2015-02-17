@@ -1,5 +1,7 @@
 #!/bin/bash
 #
+# dirty dirty little package script
+#
 mkdir kheetun 2> /dev/null
 rm -rf kheetun/*
 mkdir kheetun/lib
@@ -25,6 +27,8 @@ cp -r kheetun-*/target/*jar kheetun/bin
 
 cp kheetun-server/src/main/resources/kheetund.rc kheetun/etc/kheetund.rc
 cp kheetun-server/src/main/resources/kheetund.default kheetun/etc/kheetund.default
+cp kheetun-client/src/main/resources/kheetun.desktop kheetun/etc/kheetun.desktop
+cp kheetun-client/src/main/resources/kheetun.png kheetun/etc/kheetun.png
 cp kheetun-server/LICENSE kheetun/etc
 
 mv kheetun/bin/client*.jar kheetun/bin/kheetun-client.jar
@@ -33,14 +37,14 @@ mv kheetun/bin/server*.jar kheetun/bin/kheetun-server.jar
 cd kheetun
 
 cat << EOF > kheetun.list
-%product kheetun
+%product kheetun, pretty friendly ssh tunnel manager
 %copyright (c) Norvil Khee (norvil@norvil-khee.de)
 %vendor http://www.norvil-khee.de
 %license ./LICENSE
 %readme ./README
 %version $version
 %packager Norvil Khee 
-%description Your friendly tunnel manager
+%description 2 component ssh tunnel manager. SSH tunnels and hosts file managed by daemon running as privileged user. Config managed by user client.
 
 %postinstall << _EOF
 update-rc.d kheetund defaults
@@ -62,6 +66,11 @@ _EOF
 f 555 root sys \$prefixInitd/init.d/kheetund ./etc/kheetund.rc
 f 644 root sys \$prefixInitd/default/kheetund ./etc/kheetund.default
 
+# common files
+#
+f 644 root sys /usr/share/icons/hicolor/32x32/apps/kheetun.png ./etc/kheetun.png
+f 644 root sys /usr/share/applications/kheetun.desktop ./etc/kheetun.desktop
+
 EOF
 
 
@@ -69,7 +78,7 @@ find . -type d | sed 's/^\.//' | while read d ; do
     echo d 755 root sys /opt/kheetun$d >> kheetun.list
 done
 
-find . -type f | sed 's/^\..//' | grep -v kheetun.list | grep -v kheetund.rc | grep -v kheetund.default | while read f ; do
+find . -type f | sed 's/^\..//' | grep -v kheetun.list | grep -v kheetund.rc | grep -v kheetund.default | grep -v kheetun.png | grep -v kheetun.desktop | while read f ; do
     echo f 644 root sys /opt/kheetun/$f ./$f >> kheetun.list
 done
 

@@ -49,18 +49,25 @@ start() {
 stop() {
 
     pid=`cat $PIDFILE`
-    ps -ef | grep $pid | grep -v grep
-
-    if [ "$?" -ne "1" ] ; then 
-    	echo -n "Stopping $DESC: "
-            start-stop-daemon --quiet --stop --pidfile "$PIDFILE"
-    	if [ $? -eq 0 ]; then
-    		echo "$NAME."
-    	else
-    		echo "failed!"
-    	fi
-    else
-        echo "Stale pid file: $PIDFILE, service already stopped"
+    
+    if [ -n "$pid" ] ; then
+    
+        ps -ef | grep $pid | grep -v grep
+    
+        if [ "$?" -ne "1" ] ; then 
+        	echo -n "Stopping $DESC: "
+                start-stop-daemon --quiet --stop --pidfile "$PIDFILE"
+        	if [ $? -eq 0 ]; then
+        		echo "$NAME."
+        	else
+        		echo "failed!"
+        	fi
+        else
+            echo "Stale pid file: $PIDFILE, service already stopped"
+        fi
+    else 
+    
+        echo "Already stopped"
     fi
     
 }

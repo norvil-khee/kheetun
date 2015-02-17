@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=kheetun
+X-GNOME-FullName=kheetun, your friendly tunnel manager
+Comment=SSH tunnel your way all around the world
+Categories=Network;
+Exec=/opt/kheetun/bin/kheetun
+Terminal=false
+Type=Application
+StartupNotify=true
+Icon=kheetun
+
