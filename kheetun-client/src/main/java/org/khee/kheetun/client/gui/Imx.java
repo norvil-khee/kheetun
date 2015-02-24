@@ -2,13 +2,15 @@ package org.khee.kheetun.client.gui;
 
 import java.awt.Image;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
 import org.khee.kheetun.client.kheetun;
 
 
@@ -49,10 +51,15 @@ public class Imx extends ImageIcon {
     public ImageIcon s16;
     public ImageIcon s24;
     public ImageIcon s32;
+    public ImageIcon s32a;
     public BufferedImage bs12;
     public BufferedImage bs16;
     public BufferedImage bs24;
     public BufferedImage bs32;
+    public BufferedImage bs32a;
+    
+    private ArrayList<BufferedImage> animation;
+    private int frame;
     
     protected static Imx loadImx( String file ) {
         
