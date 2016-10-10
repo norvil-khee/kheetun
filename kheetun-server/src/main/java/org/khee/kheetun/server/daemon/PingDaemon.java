@@ -6,17 +6,20 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.khee.kheetun.client.config.Tunnel;
 
+import com.jcraft.jsch.Channel;
+import com.jcraft.jsch.ChannelExec;
+import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 
 public class PingDaemon implements Runnable {
     
     private static Logger logger = LogManager.getLogger( "kheetund" );
     
-    private Boolean isRunning = true;
-    private Session session;
-    private Tunnel tunnel;
-    private int failCount = 0;
-    private ArrayList<PingDaemonListener> listeners = new ArrayList<PingDaemonListener>();
+    private Boolean                         isRunning = true;
+    private Session                         session;
+    private Tunnel                          tunnel;
+    private int                             failCount = 0;
+    private ArrayList<PingDaemonListener>   listeners = new ArrayList<PingDaemonListener>();
     
     public PingDaemon( Tunnel tunnel, Session session ) {
         this.tunnel  = tunnel;
@@ -37,24 +40,53 @@ public class PingDaemon implements Runnable {
             } catch ( InterruptedException e ) {
                 e.printStackTrace();
             }
-
             
-            if ( ! session.isConnected() ) {
+            if ( session.isConnected() ) {
                 
-                if ( ++failCount > 3 ) {
-                
+                try {
+                    
+                    Channel channel = session.openChannel( "exec" );
+                    ((ChannelExec)channel).setCommand( "echo" );
+                    
+                    long pingStart = System.currentTimeMillis();
+                    channel.connect( 3000 );
+                    channel.disconnect();
+                    long pingStop = System.currentTimeMillis();
+                    
                     for( PingDaemonListener listener : listeners ) {
                         
-                        listener.PingFailed( this, tunnel, session );
+                        listener.PingUpdate( tunnel, pingStop - pingStart );
                     }
+
+                    failCount = 0;
+                    
+                } catch ( JSchException e ) {
+                    
+                    logger.error( "Exception while measuring ping: " + e.getMessage() );
+                    logger.debug( "PING FAIL (ERROR) ( " + failCount + "/3 ): " + tunnel.getSignature() );
+                    failCount++;
                 }
-                logger.debug( "PING FAIL ( " + failCount + "/3 ): " + tunnel.getSignature() );
+
             } else {
                 
-                failCount = 0;
-                logger.debug( "PING OK: " + tunnel.getSignature() );
+                logger.debug( "PING FAIL (DISCONNECT) ( " + failCount + "/3 ): " + tunnel.getSignature() );
+                failCount++;
             }
             
+            if ( failCount > 0 ) {
+
+                for( PingDaemonListener listener : listeners ) {
+                    
+                    listener.PingUpdate( tunnel, -failCount );
+                }                
+            }
+
+            if ( failCount > 3 ) {
+                
+                for( PingDaemonListener listener : listeners ) {
+                    listener.PingFailed( this, tunnel, session );
+                }
+            }
         }
     }
     

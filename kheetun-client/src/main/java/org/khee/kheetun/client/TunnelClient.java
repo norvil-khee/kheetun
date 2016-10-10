@@ -145,7 +145,7 @@ public class TunnelClient implements Runnable {
                     
                     receive = (Protocol)commIn.readObject();
                     handle( receive );
-                    Thread.sleep( 1000 );
+//                    Thread.sleep( 1000 );
                     
                 } catch ( ClassNotFoundException e ) {
                     logger.error( "Class error: " + e.getMessage() );
@@ -212,7 +212,7 @@ public class TunnelClient implements Runnable {
         case Protocol.ERROR:
             logger.error( "Error on server: " + receive.getString() );
             for ( TunnelClientListener listener : listeners ) {
-                listener.error( receive.getString() );
+                listener.error( receive.getTunnel(), receive.getString() );
             }
             break;
             
@@ -222,7 +222,13 @@ public class TunnelClient implements Runnable {
                 listener.activeTunnels( receive.getSignatures() );
             }
             break;
-
+        
+        case Protocol.PING:
+            
+            for ( TunnelClientListener listener : listeners ) {
+                listener.tunnelPing( receive.getTunnel().getSignature(), receive.getNumber() );
+            }
+            break;
             
         default:
             break;

@@ -14,11 +14,13 @@ version=`grep public.*VERSION kheetun-client/src/main/java/org/khee/kheetun/clie
 echo "Building kheetun v$version" 
 
 cd kheetun-client
+mvn clean
 mvn package
 mvn install
 cd ..
 
 cd kheetun-server 
+mvn clean
 mvn package
 cd ..
 
@@ -44,6 +46,7 @@ cat << EOF > kheetun.list
 %readme ./README
 %version $version
 %packager Norvil Khee 
+%requires libjava-gnome-jni
 %description 2 component ssh tunnel manager. SSH tunnels and hosts file managed by daemon running as privileged user. Config managed by user client.
 
 %postinstall << _EOF

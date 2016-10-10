@@ -1,0 +1,3 @@
+* Server needs to start tunnels asynchrously (currently tunnel start request are handled synchronously)
+* Autostart on client (for those who have autostart flags)
+* Restructure Config(Frame)Listener and some kind of overseeing GUI management
