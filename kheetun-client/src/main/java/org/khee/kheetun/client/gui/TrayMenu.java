@@ -409,6 +409,7 @@ class TunnelMenuItem extends JPanel implements MouseListener, TunnelClientListen
     public void disconnected() {
         this.connected = false;
         labelTunnel.setForeground( Color.LIGHT_GRAY );
+        tunnelStopped( tunnel.getSignature() );
     }
     
     @Override

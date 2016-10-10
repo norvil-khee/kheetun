@@ -66,6 +66,10 @@ public class HostPingDaemon implements Runnable {
                         break;
                     }
                     
+                    if ( ! tunnel.getAutostart() || TunnelManager.isRunning( tunnel ) ) {
+                        continue;
+                    }
+                    
                     try {
                         
                         // disable DNS caching
