@@ -50,48 +50,52 @@ public class TunnelManager implements PingDaemonListener {
     @Override
     public void PingFailed( PingDaemon daemon, Tunnel tunnel, Session session ) {
         
+        if ( ! activeTunnels.containsKey( tunnel.getSignature() ) ) {
+            return;
+        }
+        
         stopTunnel( tunnel );
         server.send( new Protocol( Protocol.TUNNELSTOPPED, tunnel ) );
-        
         daemon.stop();
     }
     
-    private boolean setupPublickeyAuth( String key ) {
+    @Override
+    public void PingUpdate( Tunnel tunnel, long ping ) {
         
-        try {
-            
-            jsch.removeAllIdentity();
-            jsch.addIdentity( key );
-        } catch ( JSchException e ) {
-            
-            server.send( new Protocol( Protocol.ERROR, "Failed to setup session using public key auth: " + e.getMessage() ) );
-            return false;
+        if ( ! activeTunnels.containsKey( tunnel.getSignature() ) ) {
+            return;
         }
         
-        return true;
+        server.send( new Protocol( Protocol.PING, tunnel, ping ) );
     }
     
-    private boolean setupPublickeyAuth( String key, String passphrase ) {
+    private boolean setupPublickeyAuth( Tunnel tunnel ) {
         
         try {
             
             jsch.removeAllIdentity();
-            jsch.addIdentity( key, passphrase.getBytes() );
+            
+            if ( tunnel.getPassPhrase() != null ) {
+                
+                jsch.addIdentity( tunnel.getSshKeyString(), tunnel.getPassPhrase().getBytes() );
+                
+            } else {
+                jsch.addIdentity( tunnel.getSshKeyString() );
+            }
         } catch ( JSchException e ) {
             
-            server.send( new Protocol( Protocol.ERROR, "Failed to setup session using public key auth with passphrase: " + e.getMessage() ) );
+            server.send( new Protocol( Protocol.ERROR, tunnel, "Failed to setup session using public key auth: " + e.getMessage() ) );
             return false;
         }
         
         return true;
     }
 
-    private boolean setupSshAgentAuth( String socket ) {
+    private boolean setupSshAgentAuth( Tunnel tunnel ) {
         
         try {
-            
             JNAUSocketFactory udsf = new JNAUSocketFactory();
-            Connector con = new SSHSocketAgentConnector( udsf, socket );
+            Connector con = new SSHSocketAgentConnector( udsf, tunnel.getSshAgentSocket() );
 
             identities = new RemoteIdentityRepository( con );
 
@@ -99,7 +103,7 @@ public class TunnelManager implements PingDaemonListener {
             
         } catch ( AgentProxyException eAgent ) {
             
-            server.send( new Protocol( Protocol.ERROR, "Failed to setup session using ssh agent auth: " + eAgent.getMessage() ) );
+            server.send( new Protocol( Protocol.ERROR, tunnel, "Failed to setup session using ssh agent auth: " + eAgent.getMessage() ) );
             return false;
         }
         
@@ -162,7 +166,7 @@ public class TunnelManager implements PingDaemonListener {
             
             if ( session != null && session.isConnected() ) {
                 
-                server.send( new Protocol( Protocol.ERROR, "Tunnel already active" ) );
+                server.send( new Protocol( Protocol.ERROR, tunnel, "Tunnel already active" ) );
                 return false;
             }
         }
@@ -172,17 +176,11 @@ public class TunnelManager implements PingDaemonListener {
         try {
             
             if ( tunnel.getSshKeyString().length() > 0 ) {
-                if ( tunnel.getPassPhrase() != null ) {
-                    if ( ! setupPublickeyAuth( tunnel.getSshKeyString(), tunnel.getPassPhrase() ) ) {
-                        return false;
-                    }
-                } else {
-                    if ( ! setupPublickeyAuth( tunnel.getSshKeyString() ) ) {
-                        return false;
-                    }
+                if ( ! setupPublickeyAuth( tunnel ) ) {
+                    return false;
                 }
             } else {
-                if ( ! setupSshAgentAuth( tunnel.getSshAgentSocket() ) ) {
+                if ( ! setupSshAgentAuth( tunnel ) ) {
                     return false;
                 }
             }
@@ -220,6 +218,7 @@ public class TunnelManager implements PingDaemonListener {
                 }
             }
             
+            
             if ( hostEntries.size() > 0 ) {
                 
                 HostsManager.addForwards( hostEntries );
@@ -227,7 +226,7 @@ public class TunnelManager implements PingDaemonListener {
             
         } catch ( JSchException eJSch ) {
             
-            server.send( new Protocol( Protocol.ERROR, "SSH Session connection failed: " + eJSch.getMessage() ) );
+            server.send( new Protocol( Protocol.ERROR, tunnel, "SSH Session connection failed: " + eJSch.getMessage() ) );
             
             if ( session != null && session.isConnected() ) {
                 

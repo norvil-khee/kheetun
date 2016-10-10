@@ -23,6 +23,7 @@ public class Protocol implements Serializable {
     public static final int TUNNELSTOPPED   = 550;
     public static final int QUERYTUNNELS    = 600;
     public static final int ACTIVETUNNELS   = 650;
+    public static final int PING            = 700;
     public static final int ECHO            = 900;
     
     private static final HashMap<Integer, String> commandToString;
@@ -40,6 +41,7 @@ public class Protocol implements Serializable {
         commandToString.put( TUNNELSTOPPED, "TUNNELSTOPPED" );
         commandToString.put( QUERYTUNNELS,  "QUERYTUNNELS" );
         commandToString.put( ACTIVETUNNELS, "ACTIVETUNNELS" );
+        commandToString.put( PING,          "PING" );
         commandToString.put( ECHO,          "ECHO" );
     }
     
@@ -47,7 +49,7 @@ public class Protocol implements Serializable {
     private int command;
     private Tunnel tunnel;
     private String string;
-    private String socket;
+    private long number = -1;
     private ArrayList<String> signatures = new ArrayList<String>();
     
     public Protocol( int command ) {
@@ -63,11 +65,17 @@ public class Protocol implements Serializable {
         this.command = command;
         this.tunnel  = tunnel;
     }
-
-    public Protocol( int command, Tunnel tunnel, String socket ) {
+    
+    public Protocol( int command, Tunnel tunnel, String string ) {
         this.command = command;
         this.tunnel  = tunnel;
-        this.socket  = socket;
+        this.string  = string;
+    }
+    
+    public Protocol( int command, Tunnel tunnel, long number ) {
+        this.command = command;
+        this.tunnel  = tunnel;
+        this.number  = number;
     }
     
     public Protocol( int command, ArrayList<String> signatures ) {
@@ -99,14 +107,6 @@ public class Protocol implements Serializable {
         this.tunnel = tunnel;
     }
 
-    public String getSocket() {
-        return socket;
-    }
-
-    public void setSocket(String socket) {
-        this.socket = socket;
-    }
-
     public String getString() {
         return string;
     }
@@ -122,20 +122,28 @@ public class Protocol implements Serializable {
     public void setSignatures(ArrayList<String> signatures) {
         this.signatures = signatures;
     }
+    
+    public long getNumber() {
+        return number;
+    }
+
+    public void setNumber(long number) {
+        this.number = number;
+    }
 
     public void clear() {
         
         command = UNKNOWN;
         tunnel  = null;
         string  = "";
-        socket  = "";
+        number  = -1;
     }
     
     @Override
     public String toString() {
         
         
-        return "Protocol[ " + commandToString.get( getCommand() ) + ", String = " + getString() + ", Tunnel = " + ( getTunnel() != null ? getTunnel().getSignature() : "null" ) + ", Socket = " + getSocket() + " ]";
+        return "Protocol[ " + commandToString.get( getCommand() ) + ", String = " + getString() + ", Tunnel = " + ( getTunnel() != null ? getTunnel().getSignature() : "null" ) + " ]";
                  
     }
 

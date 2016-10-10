@@ -9,7 +9,6 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.khee.kheetun.server.TunnelServer;
 import org.khee.kheetun.server.manager.HostsManager;
 
 import sun.misc.Signal;
@@ -27,13 +26,12 @@ public class kheetund {
         Options options = new Options();
         
         options.addOption( OptionBuilder.withLongOpt( "port" ).withDescription( "Port to listen on for kheetun clients" ).withArgName( "num" ).hasArg().isRequired().create( "p" ) );
-        
 
         CommandLineParser parser =  new GnuParser();
         
         try {
         
-            CommandLine cmd = parser.parse( options, args);
+            CommandLine cmd = parser.parse( options, args );
 
             logger.info( "Started kheetun daemon " + VERSION );
 

@@ -1,22 +1,21 @@
 package org.khee.kheetun.client.gui;
 
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.Insets;
+import java.awt.Label;
 import java.awt.Point;
 import java.awt.Rectangle;
-import java.awt.Toolkit;
-import java.awt.TrayIcon;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -26,16 +25,18 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JSeparator;
 import javax.swing.JWindow;
+import javax.swing.UIDefaults;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.khee.kheetun.client.HostPingDaemon;
+import org.khee.kheetun.client.HostPingDaemonListener;
 import org.khee.kheetun.client.TunnelClient;
 import org.khee.kheetun.client.TunnelClientListener;
 import org.khee.kheetun.client.kheetun;
 import org.khee.kheetun.client.config.Config;
-import org.khee.kheetun.client.config.Forward;
 import org.khee.kheetun.client.config.Profile;
 import org.khee.kheetun.client.config.Tunnel;
 
@@ -45,33 +46,31 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigFrameListe
     
     public static final long serialVersionUID = 42;
     
-    private JLabel                      labelKheetun;
-    private JMenuItem                   itemExit;
-    private JMenuItem                   itemConfig;
-    private JMenuItem                   itemQuery;
-    private JMenuItem                   itemStopAll;
-    private ConfigFrame                 configFrame;
-    private HashMap<String, JMenuItem>  itemsBySignature    = new HashMap<String, JMenuItem>();
-    private HashMap<JMenuItem, Tunnel>  tunnelByItem        = new HashMap<JMenuItem, Tunnel>();
-    private HashSet<String>             activeTunnels       = new HashSet<String>();
-    private JPopupMenuEx                menu;
-    private JPanel                      panel;
-    private boolean                     connected           = false;
-    private TrayMenu                    tray                = this;
-    private TrayIcon                    icon;
+    private JLabel                          labelKheetun;
+    private JLabel                          labelConnected;
+    private JMenuItem                       itemExit;
+    private JMenuItem                       itemConfig;
+    private JMenuItem                       itemQuery;
+    private JMenuItem                       itemStopAll;
+    private ConfigFrame                     configFrame;
+    private HashMap<TunnelMenuItem, Tunnel> tunnelByItem        = new HashMap<TunnelMenuItem, Tunnel>();
+    private JPopupMenuEx                    menu;
+    private JPanel                          panel;
+    private boolean                         connected           = false;
     
-    public TrayMenu( TrayIcon tray, ConfigFrame frame ) {
+    public TrayMenu( ConfigFrame frame ) {
         
         setName( "kheetun" );
         setIconImage( Imx.CONFIG.getImage() );
         
         panel = new JPanel();
-        
-        icon = tray;
+        panel.setDoubleBuffered( true );
         
         menu = new JPopupMenuEx();
         menu.setVisible( true );
         menu.setEnabled( true );
+        menu.setLayout( new BoxLayout( menu, BoxLayout.PAGE_AXIS ) );
+        
         menu.setBorder( new EmptyBorder( new Insets( 8, 8, 8, 8 ) ) );
 
         panel.setLayout( new BoxLayout( panel, BoxLayout.PAGE_AXIS ) );
@@ -85,10 +84,19 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigFrameListe
         this.configFrame = frame;
         
         labelKheetun = new JLabel( "kheetun v" + kheetun.VERSION, Imx.KHEETUN, JLabel.LEADING );
-        labelKheetun.setBorder( new EmptyBorder( new Insets( 4, 0, 8, 0 ) ) );
+        labelKheetun.setIconTextGap( 8 );
+        labelKheetun.setBorder( new EmptyBorder( new Insets( 0, 10, 0, 0 ) ) );
+        labelKheetun.setAlignmentX( Component.LEFT_ALIGNMENT );
         labelKheetun.setFont( new Font( labelKheetun.getFont().getName(), Font.BOLD, labelKheetun.getFont().getSize() + 1 ) );
         
+        labelConnected = new JLabel( "disconnected", Imx.NONE, JLabel.LEADING );
+        labelConnected.setIconTextGap( 8 );
+        labelConnected.setForeground( Color.RED );
+        labelConnected.setAlignmentX( Component.LEFT_ALIGNMENT );
+        labelConnected.setBorder( new EmptyBorder( new Insets( 0, 10, 8, 0 ) ) );
+        
         itemExit = new JMenuItem( "Exit", Imx.EXIT );
+        itemExit.setIconTextGap( 8 );
         itemExit.addActionListener( new ActionListener() {
             
             public void actionPerformed(ActionEvent e) {
@@ -101,6 +109,7 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigFrameListe
         itemExit.addMouseListener( this );
         
         itemConfig = new JMenuItem( "Configure", Imx.CONFIG );
+        itemConfig.setIconTextGap( 8 );
         itemConfig.addActionListener( new ActionListener() {
             
             public void actionPerformed(ActionEvent e) {
@@ -115,6 +124,7 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigFrameListe
         itemConfig.addMouseListener( this );
 
         itemStopAll = new JMenuItem( "Stop all", Imx.STOP );
+        itemStopAll.setIconTextGap( 8 );
         itemStopAll.addActionListener( new ActionListener() {
             
             public void actionPerformed(ActionEvent e) {
@@ -127,9 +137,8 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigFrameListe
         });
         itemStopAll.addMouseListener( this );
         
-        
-
-        itemQuery = new JMenuItem( "Requery", Imx.FORWARDS );
+        itemQuery = new JMenuItem( "Requery", Imx.RELOAD );
+        itemQuery.setIconTextGap( 8 );
         itemQuery.addActionListener( new ActionListener() {
             
             public void actionPerformed(ActionEvent e) {
@@ -144,8 +153,6 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigFrameListe
         
         buildMenu( null );
         
-        tray.addMouseListener( this );
-        
         this.addMouseListener( this );
         panel.addMouseListener( this );
         menu.addMouseListener( this );
@@ -153,19 +160,19 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigFrameListe
         setFocusableWindowState( true );
         setFocusable( true );
         
-        TunnelClient.addClientListener( this );
-        
         configFrame.addConfigChangedListener( this );
+        
+        TunnelClient.addClientListener( this );
     }
     
     public void buildMenu( Config config ) {
         
         menu.removeAll();
         
-        itemsBySignature.clear();
         tunnelByItem.clear();
 
         menu.add( labelKheetun );
+        menu.add( labelConnected );
         menu.addSeparator();
         menu.add( itemConfig );
         menu.addSeparator();
@@ -177,8 +184,11 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigFrameListe
                 
                 menu.addSeparator();
                 menu.add( Box.createVerticalStrut( 4 ) );
-                JLabel labelProfile = new JLabel( profile.getName(), Imx.PROFILE, JLabel.LEADING );
+                JLabel labelProfile = new JLabel( profile.getName(), Imx.PROFILE, JLabel.TRAILING );
+                labelProfile.setIconTextGap( 8 );
+                labelProfile.setAlignmentX( Component.LEFT_ALIGNMENT );
                 labelProfile.setFont( new Font( labelProfile.getFont().getName(), Font.BOLD, labelProfile.getFont().getSize() ) );
+                labelProfile.setBorder( new EmptyBorder( new Insets( 0, 10, 8, 0 ) ) );
                 labelProfile.addMouseListener( this );
                 menu.add( labelProfile );
                 
@@ -186,36 +196,16 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigFrameListe
                     
                     menu.add( Box.createVerticalStrut( 2 ) );
                     
-                    JMenuItem itemTunnel = new JMenuItem( tunnel.getAlias(), Imx.INACTIVE );
-                    itemTunnel.setBorder( new EmptyBorder( new Insets( 0, 16, 0, 0 ) ) );
+                    TunnelMenuItem itemTunnel = new TunnelMenuItem( tunnel );
+                    itemTunnel.setBorder( new EmptyBorder( new Insets( 0, 20, 0, 0 ) ) );
                     itemTunnel.setEnabled( connected );
                     itemTunnel.addMouseListener( this );
-                    itemTunnel.addActionListener( new ActionListener() {
-                     
-                        
-                        public void actionPerformed(ActionEvent e) {
-
-                            JMenuItem sender = (JMenuItem)e.getSource();
-                            if ( tunnelByItem.containsKey( sender ) ) {
-                                
-                                if ( sender.getIcon().equals( Imx.INACTIVE ) )  {
-                                    
-                                    logger.info( "Requesting to start tunnel " + tunnelByItem.get( sender ).getSignature() );
-                                    TunnelClient.sendStartTunnel( tray, tunnelByItem.get( sender ) );
-                                } else {
-
-                                    logger.info( "Requesting to stop tunnel " + tunnelByItem.get( sender ).getSignature() );
-                                    TunnelClient.sendStopTunnel( tunnelByItem.get( sender ) );
-                                }
-                            }
-                            
-                            
-                        }
-                    });
+                    itemTunnel.setAlignmentX( Component.LEFT_ALIGNMENT );
+//                    itemTunnel.setMinimumSize( new Dimension( panel.getWidth(), itemTunnel.getMinimumSize().height ) );
+//                    itemTunnel.setMaximumSize( new Dimension( panel.getWidth(), itemTunnel.getMaximumSize().height ) );
                     
                     menu.add( itemTunnel );
                     
-                    itemsBySignature.put( tunnel.getSignature(), itemTunnel );
                     tunnelByItem.put( itemTunnel, tunnel );
                 }
             }
@@ -225,7 +215,6 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigFrameListe
         menu.addSeparator();
         menu.add( itemExit );
         menu.add( Box.createVerticalStrut( 4 ) );
-
         
         this.revalidate();
         this.pack();
@@ -235,145 +224,82 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigFrameListe
             TunnelClient.sendQueryTunnels();
         }
     }
-    
-    public void error(String error) {
-    }
-
-    public void connected() {
-        
-        for ( JMenuItem item : itemsBySignature.values() ) {
-            item.setEnabled( true );
-        }
-        
-        TunnelClient.sendQueryTunnels();
-        connected = true;
-    }
-
-    public void disconnected() {
-
-        for ( JMenuItem item : itemsBySignature.values() ) {
-            item.setEnabled( false );
-        }
-        
-        connected = false;
-    }
-
-    public void tunnelStarted(String signature) {
-        
-        if ( itemsBySignature.containsKey( signature ) ) {
-            
-            activeTunnels.add( signature );
-            
-            JMenuItem item = itemsBySignature.get( signature );
-            item.setIcon( Imx.ACTIVE );
-
-            if ( icon.getImage() != Imx.KHEETUN_ON.s24.getImage() ) {
-                icon.setImage( Imx.KHEETUN_ON.s24.getImage() );
-                icon.getImage().getGraphics();
-            }
-        }
-    }
-
-    public void tunnelStopped(String signature) {
-
-        if ( itemsBySignature.containsKey( signature ) ) {
-            
-            activeTunnels.remove( signature );
-            
-            JMenuItem item = itemsBySignature.get( signature );
-            item.setIcon( Imx.INACTIVE );
-            
-            if ( activeTunnels.size() == 0 && icon.getImage() == Imx.KHEETUN_ON.s24.getImage() ) {
-                icon.setImage( Imx.KHEETUN_OFF.s24.getImage() );
-            }
-        }
-    }
-
-    public void activeTunnels(ArrayList<String> signatures) {
-        
-        int countActive = 0;
-        
-        for ( String signature : itemsBySignature.keySet() ) {
-            
-            if ( signatures.contains( signature ) ) {
-                tunnelStarted( signature );
-                countActive++;
-            } else {
-                tunnelStopped( signature );
-            }
-        }
-        
-        if ( countActive > 0 ) {
-            if ( icon.getImage() != Imx.KHEETUN_ON.s24.getImage() ) {
-                icon.setImage( Imx.KHEETUN_ON.s24.getImage() );
-            }
-        } else {
-            if ( icon.getImage() != Imx.KHEETUN_OFF.s24.getImage() ) {
-                icon.setImage( Imx.KHEETUN_OFF.s24.getImage() );
-            }
-        }
-    }
 
     public void configChanged(Config config) {
         
         buildMenu( config );
     }
     
-    public void mouseClicked(MouseEvent e) {
+    public void toggle( Point p ) {
         
-        if ( ! ( e.getSource() instanceof TrayIcon ) ) {
-            return;
-        }
-
         if ( isVisible() ) {
+            
             setVisible( false );
-        
+            
         } else {
-
-            /*
-             * taskbar detection is not really working (here: ubuntu mint 17 / cinnamon),
-             * also popup window is acting strange and would be placed below taskbar,
-             * so a really fuzzy detection method for placing our popup is used. Sorry!
-             */
+            
             GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
-            Rectangle bounds = gd.getDefaultConfiguration().getBounds();
-//            Insets insets = Toolkit.getDefaultToolkit().getScreenInsets(gd.getDefaultConfiguration());
-
-            Rectangle safeBounds = new Rectangle(bounds);
-//            safeBounds.x += insets.left;
-//            safeBounds.y += insets.top;
-//            safeBounds.width -= (insets.left + insets.right);
-//            safeBounds.height -= (insets.top + insets.bottom);
+            int width  = gd.getDisplayMode().getWidth();
+            int height = gd.getDisplayMode().getHeight();            
             
-            Point position = new Point();
-                
-            // right
-            if ( e.getLocationOnScreen().x > safeBounds.x + safeBounds.width - icon.getSize().width  ) {
-                position.setLocation( safeBounds.x + safeBounds.width - panel.getWidth() - icon.getSize().width - 4, e.getLocationOnScreen().y - panel.getHeight() / 3 );
-            }
-            // left
-            else if ( e.getLocationOnScreen().x < safeBounds.x + icon.getSize().width ) { 
-                position.setLocation( safeBounds.x + icon.getSize().width + 4, e.getLocationOnScreen().y - panel.getHeight() / 3 );
-            }
-            // top
-            else if ( e.getLocationOnScreen().y < safeBounds.y + icon.getSize().height ) { 
-                position.setLocation( e.getLocationOnScreen().x - panel.getWidth() / 3, safeBounds.y + icon.getSize().height + 4 );
-            }
-            // bottom
-            else if ( e.getLocationOnScreen().y > safeBounds.y + safeBounds.height - icon.getSize().height ) { 
-                position.setLocation( e.getLocationOnScreen().x - panel.getWidth() / 3, safeBounds.y + safeBounds.height - panel.getHeight() - icon.getSize().height - 4 );
+            if ( p.x + this.getWidth() > width ) {
+                p.x = width - this.getWidth();
             }
             
-            // finally adjust potential clipping
-            int diffX = ( position.x + panel.getWidth() )  - ( safeBounds.x + safeBounds.width );
-            int diffY = ( position.y + panel.getHeight() ) - ( safeBounds.y + safeBounds.height );
+            if ( p.y + this.getHeight() > height ) {
+                p.y = height - this.getHeight();
+            }
             
-            position.x -= diffX > 0 ? diffX + 4 : 0;
-            position.y -= diffY > 0 ? diffY + 4 : 0;
-            
-            setLocation( position );
+            setLocation( p );
             setVisible( true );
+            requestFocus();
+            repaint();
         }
+    }
+    
+    @Override
+    public void connected() {
+        
+        labelConnected.setText( "connected" );
+        labelConnected.setForeground( new Color( 0, 100, 0 ) );
+    }
+    
+    @Override
+    public void disconnected() {
+        labelConnected.setText( "disconnected" );
+        labelConnected.setForeground( Color.RED );
+    }
+    
+    @Override
+    public void activeTunnels(ArrayList<String> signatures) {
+        // TODO Auto-generated method stub
+        
+    }
+    
+    @Override
+    public void error(Tunnel tunnel, String error) {
+        // TODO Auto-generated method stub
+        
+    }
+    
+    @Override
+    public void tunnelStarted(String signature) {
+        // TODO Auto-generated method stub
+        
+    }
+    
+    @Override
+    public void tunnelStopped(String signature) {
+        // TODO Auto-generated method stub
+        
+    }
+    
+    @Override
+    public void tunnelPing(String signature, long ping) {
+    }
+    
+    @Override
+    public void mouseClicked(MouseEvent e) {
     }
 
     public void mousePressed(MouseEvent e) {
@@ -387,78 +313,229 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigFrameListe
 
     public void mouseExited(MouseEvent e) {
 
-        try {
+        Rectangle rect = new Rectangle( panel.getLocationOnScreen() );
+        rect.setSize( panel.getSize() );
         
-            Rectangle rect = new Rectangle( panel.getLocationOnScreen() );
-            rect.setSize( panel.getSize() );
-            
-            if ( ! rect.contains( e.getLocationOnScreen() ) ) {
-                setVisible( false );
-            }
-        } catch ( Exception ex ) {
-            
+        if ( ! rect.contains( e.getLocationOnScreen() ) ) {
+            setVisible( false );
         }
     }
 }
 
 
-class ForwardLabel extends JPanel {
+class TunnelMenuItem extends JPanel implements MouseListener, TunnelClientListener, HostPingDaemonListener {
     
     public static final long serialVersionUID = 42;
     
-    private JLabel labelComment;
-    private JLabel labelType;
-    private JLabel labelBind;
-    private JLabel labelForward;
+    private static Logger logger = LogManager.getLogger( "kheetun" );
     
-    public ForwardLabel( Forward forward ) {
+    private JLabel    labelAuto;
+    private JLabel    labelTunnel;
+    private JLabel    labelIcon;
+    private JLabel    labelPing;
+    private JLabel    labelMs;
+    private AnImx     anImxProcessing = new AnImx( "loading.png", 50, 125, 16 );
+    private Color     colorBackground;
+    private Tunnel    tunnel;
+    private boolean   isActive;
+    private boolean   activating        = false;
+    private boolean   connected         = false;
+    private boolean   stoppedManually   = false;
+    
+    public TunnelMenuItem( Tunnel tunnel ) {
         
-        this.setLayout( new BoxLayout( this, BoxLayout.LINE_AXIS ) );
-        this.setAlignmentX( 0.0f );
-        this.setOpaque( false );
+        this.tunnel = tunnel;
         
-        labelComment = new JLabel( forward.getComment() );
-        labelType    = new JLabel( forward.getType().substring( 0, 1 ).toUpperCase() );
-        labelBind    = new JLabel( forward.getBindIp() + ":" + forward.getBindPort() );
-        labelForward = new JLabel( forward.getForwardedHost() + ":" + forward.getForwardedPort() );
+        UIDefaults defaults = javax.swing.UIManager.getDefaults();
+        colorBackground = defaults.getColor("List.selectionBackground");
+            
+        setOpaque( true );
+        setBorder( new EmptyBorder( new Insets( 0, 0, 0, 0 ) ) );
+        this.setLayout( new BoxLayout( this, BoxLayout.X_AXIS ) );
         
-        labelComment.setHorizontalAlignment( JLabel.LEFT );
-        labelType.setHorizontalAlignment( JLabel.LEFT );
-        labelBind.setHorizontalAlignment( JLabel.LEFT );
-        labelForward.setHorizontalAlignment( JLabel.LEFT );
+        labelAuto   = new JLabel( tunnel.getAutostart() ? Imx.AUTO : Imx.NONE );
+        labelTunnel = new JLabel( tunnel.getAlias() );
+        labelIcon   = new JLabel( Imx.INACTIVE );
+        labelPing   = new JLabel( "", Label.RIGHT );
+        labelMs     = new JLabel( "inactive" );
+
+        labelAuto.setToolTipText( "Autostart" );
+        labelAuto.setBorder( new EmptyBorder( new Insets( 0, 0, 0, 4 ) ) );
         
-        Font font = new Font( labelComment.getFont().getName(), labelComment.getFont().getStyle(), 10 );
-        labelComment.setFont( font );
-        labelType.setFont( font );
-        labelBind.setFont( font );
-        labelForward.setFont( font );
+        labelPing.setForeground( Color.GRAY );
+        labelPing.setAlignmentX( Component.RIGHT_ALIGNMENT );
         
-        labelComment.setForeground( Color.DARK_GRAY );
-        labelType.setForeground( forward.getType().equals( Forward.LOCAL ) ? Color.GREEN : Color.RED );
-        labelBind.setForeground( Color.GRAY );
-        labelForward.setForeground( Color.GRAY );
+        labelMs.setForeground( Color.LIGHT_GRAY );
+        labelMs.setBorder( new EmptyBorder( new Insets( 0, 8, 0, 0 ) ) );
         
-        Dimension dimType    = new Dimension( 16, labelType.getPreferredSize().height );
-        Dimension dimBind    = new Dimension( 90, labelBind.getPreferredSize().height );
-        Dimension dimComment = new Dimension( 130, labelComment.getPreferredSize().height );
-        Dimension dimForward = new Dimension( 220, labelForward.getPreferredSize().height );
-        labelType.setPreferredSize( dimType );
-        labelBind.setPreferredSize( dimBind );
-        labelComment.setPreferredSize( dimComment );
-        labelForward.setPreferredSize( dimForward );
+        labelTunnel.setOpaque( true );
+        labelTunnel.setBorder( new EmptyBorder( new Insets( 2, 8, 2, 0 ) ) );
         
-        this.add( Box.createHorizontalStrut( 40 ) );
-        this.add( labelType );
-        this.add( Box.createHorizontalStrut( 4 ) );
-        this.add( labelBind );
-        this.add( Box.createHorizontalStrut( 4 ) );
-        this.add( labelForward );
-        this.add( Box.createHorizontalStrut( 4 ) );
-        this.add( labelComment );
-        this.add( Box.createHorizontalGlue() );
+        anImxProcessing.setVisible( false );
+        labelIcon.setVisible( true );
+
+        add( labelAuto );
+        add( anImxProcessing );
+        add( labelIcon );
+        add( labelTunnel );
+        add( Box.createHorizontalGlue() );
+        add( labelPing );
+        add( labelMs );
+        
+        addMouseListener( this );
+        TunnelClient.addClientListener( this );
+        HostPingDaemon.addHostPingDaemonListener( this );
     }
     
+    @Override
+    public void activeTunnels(ArrayList<String> signatures) {
+        
+        for ( String signature : signatures ) {
+            
+            if ( signature.equals( tunnel.getSignature() ) ) {
+                
+                tunnelStarted( signature );
+            }
+        }
+    }
+    
+    @Override
+    public void connected() {
+        this.connected = true;
+        labelTunnel.setForeground( Color.BLACK );
+    }
+    
+    @Override
+    public void disconnected() {
+        this.connected = false;
+        labelTunnel.setForeground( Color.LIGHT_GRAY );
+    }
+    
+    @Override
+    public void tunnelStarted(String signature) {
+        
+        if ( signature.equals( tunnel.getSignature() ) ) {
+            
+            this.activating = false;
+            this.isActive = true;
+            labelIcon.setIcon( Imx.ACTIVE );
+            labelIcon.setVisible( true );
+            anImxProcessing.setVisible( false );
+            labelMs.setText( "ms" );
+            labelMs.setForeground( Color.GRAY );
+            labelPing.setText( "..." );
+        }
+    }
+    
+    @Override
+    public void tunnelStopped(String signature) {
+
+        if ( signature.equals( tunnel.getSignature() ) ) {
+            
+            this.activating = false;
+            this.isActive = false;
+            labelIcon.setIcon( Imx.INACTIVE );
+            labelIcon.setVisible( true );
+            anImxProcessing.setVisible( false );
+            labelMs.setText( "inactive" );
+            labelMs.setForeground( Color.LIGHT_GRAY );
+            labelPing.setText( "" );
+        }
+    }
+    
+    @Override
+    public void tunnelPing(String signature, long ping) {
+        
+        if ( signature.equals( tunnel.getSignature() ) ) {
+
+            if ( ping < 0 ) {
+
+                labelPing.setText( "" );
+                labelMs.setText( "failing" );
+                labelMs.setForeground( Color.RED );
+                
+                if ( ping < -1 ) {
+                    TrayManager.setState( Tray.STATE_WARNING );
+                }
+            
+            } else {
+                
+                labelPing.setText( String.valueOf( ping ) );
+                labelMs.setText( "ms" );
+                labelMs.setForeground( Color.GRAY );
+            }
+        }
+    }
+    
+    @Override
+    public void error( Tunnel tunnel, String error ) {
+        
+        if ( tunnel != null && tunnel.getSignature().equals( this.tunnel.getSignature() ) ) {
+            tunnelStopped( tunnel.getSignature() );
+        }
+    }
+    
+    
+    @Override
+    public void mouseEntered( MouseEvent e ) {
+        
+        setBackground( colorBackground );
+        labelTunnel.setBackground( colorBackground );
+    }
+    
+    @Override
+    public void mouseExited(MouseEvent e) {
+        
+        setBackground( null );
+        labelTunnel.setBackground( null );
+    }
+    
+    @Override
+    public void mouseClicked(MouseEvent e) {
+        
+        if ( ! this.connected || anImxProcessing.isVisible() ) {
+            return;
+        }
+        
+        labelIcon.setVisible( false );
+        anImxProcessing.setVisible( true );
+        
+        if ( isActive ) {
+            
+            this.stoppedManually = true;
+            logger.info( "Requesting to stop tunnel " + tunnel.getSignature() );
+            TunnelClient.sendStopTunnel( tunnel );
+        } else {
+            
+            this.activating = true;
+            logger.info( "Requesting to start tunnel " + tunnel.getSignature() );
+            TunnelClient.sendStartTunnel( this, tunnel );
+        }
+    }
+    
+    @Override
+    public void mousePressed(MouseEvent e) {
+        // TODO Auto-generated method stub
+        
+    }
+    
+    @Override
+    public void mouseReleased(MouseEvent e) {
+        // TODO Auto-generated method stub
+        
+    }
+    
+    @Override
+    public void hostReachable( Tunnel tunnel ) {
+        
+        if ( this.tunnel.getAutostart() && ! this.stoppedManually && ! this.isActive && ! this.activating && tunnel.getSignature().equals( this.tunnel.getSignature() ) ) {
+            
+            logger.info( "Host " + tunnel.getHostname() + " is now reachable, autostarting tunnel" );
+            mouseClicked( null );
+        }
+    }
 }
+
 
 
 

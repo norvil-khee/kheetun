@@ -7,4 +7,5 @@ import com.jcraft.jsch.Session;
 public interface PingDaemonListener {
 
     public void PingFailed( PingDaemon daemon, Tunnel tunnel, Session session );
+    public void PingUpdate( Tunnel tunnel, long ping );
 }

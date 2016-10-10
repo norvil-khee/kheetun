@@ -22,8 +22,7 @@ public class AnImx extends JPanel {
     private int frame = 0;
     private int scale;
     
-    
-    
+
     public AnImx( String file, long milliseconds, int size, int scale ) {
         
         this.scale = scale;
@@ -35,7 +34,7 @@ public class AnImx extends JPanel {
         setOpaque( false );
         
         try {
-            board = ImageIO.read( kheetun.class.getResource( "/images/" + file ) );
+            board = ImageIO.read( kheetun.class.getResource( "/images/icons/" + file ) );
             
             animation = new ArrayList<BufferedImage>();
             

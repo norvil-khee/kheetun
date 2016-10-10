@@ -21,13 +21,13 @@ public class TunnelServer implements Runnable {
     
     private static Logger logger = LogManager.getLogger( "kheetund" );
     
-    private ServerSocket serverSocket;
-    private Socket clientSocket;
-    private ObjectInputStream commIn;
-    private ObjectOutputStream commOut;
-    private HashMap<String, TunnelManager> tunnelManagers;
-    private TunnelManager tunnelManager;
-    private TunnelServer parent;
+    private ServerSocket                    serverSocket;
+    private Socket                          clientSocket;
+    private ObjectInputStream               commIn;
+    private ObjectOutputStream              commOut;
+    private HashMap<String, TunnelManager>  tunnelManagers;
+    private TunnelManager                   tunnelManager;
+    private TunnelServer                    parent;
     
     public TunnelServer( int port ) {
 
@@ -193,7 +193,11 @@ public class TunnelServer implements Runnable {
         
     }
     
-    public void send( Protocol protocol ) {
+    public synchronized void send( Protocol protocol ) {
+        
+        if ( clientSocket == null || ! clientSocket.isConnected() ) {
+            return;
+        }
         
         logger.debug( "Server sending: " + protocol );
         

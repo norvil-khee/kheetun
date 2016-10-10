@@ -496,7 +496,7 @@ public class ConfigFrame extends JFrame implements TunnelClientListener {
         }
     }
     
-    public void error( String error ) {
+    public void error( Tunnel tunnel, String error ) {
         
         showError( error );
     }
@@ -553,6 +553,10 @@ public class ConfigFrame extends JFrame implements TunnelClientListener {
         for ( String signature : signatures ) {
             tunnelStarted( signature );
         }
+    }
+    
+    @Override
+    public void tunnelPing(String signature, long ping) {
     }
     
     private void doConnect() {
