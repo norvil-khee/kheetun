@@ -8,6 +8,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.khee.kheetun.client.HostPingDaemon;
 import org.khee.kheetun.client.TunnelClient;
+import org.khee.kheetun.client.TunnelManager;
 import org.khee.kheetun.client.config.Config;
 
 public class Gui {
@@ -48,6 +49,8 @@ public class Gui {
         TrayManager.setTray( tray );
         
         menu.buildMenu( config );
+        
+        TunnelManager.init();
         
         TunnelClient.init();
         TunnelClient.connect( config.getPort() );
