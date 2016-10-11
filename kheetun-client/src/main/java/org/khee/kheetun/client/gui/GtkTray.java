@@ -39,6 +39,9 @@ public class GtkTray extends Tray {
     private Pixbuf      current;
     
     public GtkTray( TrayMenu menu ) {
+        
+        Thread blinkThread = new Thread( this );
+        blinkThread.start();
 
         icon.connect( new Activate() {
             

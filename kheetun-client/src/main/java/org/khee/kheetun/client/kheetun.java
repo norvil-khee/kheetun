@@ -1,6 +1,7 @@
 package org.khee.kheetun.client;
 
 import java.io.File;
+import java.security.Security;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -17,14 +18,17 @@ public class kheetun {
         
         Gtk.init( args );
         
-        logger.info( "Starting kheetun " + VERSION );
+        // disable DNS caching
+        //
+        Security.setProperty( "networkaddress.cache.ttl", "0" );
+        Security.setProperty( "networkaddress.cache.negative.ttl", "0" );
         
-//        try {
-//            UIManager.setLookAndFeel("com.sun.java.swing.plaf.gtk.GTKLookAndFeel");
-//        } catch ( Exception e ) {
-//            logger.fatal( e.getMessage() );
-//            System.exit( 1 );
-//        }
+        // disable xrender ( https://stackoverflow.com/questions/34188495/how-can-i-work-around-the-classcastexception-in-java2d-bug-id-7172749 )
+        // described bug will happen here if you switch from two monitors to one, and after that back to two.
+        //
+        System.setProperty( "sun.java2d.xrender", "false" );
+        
+        logger.info( "Starting kheetun " + VERSION );
         
         new File( System.getProperty( "user.home" ) + "/.kheetun" ).mkdir();
         

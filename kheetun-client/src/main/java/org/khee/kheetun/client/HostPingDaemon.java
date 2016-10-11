@@ -1,9 +1,8 @@
 package org.khee.kheetun.client;
 
 import java.io.IOException;
-import java.net.InetAddress;
+import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -18,7 +17,6 @@ public class HostPingDaemon implements Runnable {
     private Config config;
     private Thread thread;
     private boolean running = false;
-    private ArrayList<HostPingDaemonListener> listeners = new ArrayList<HostPingDaemonListener>();
     private static HostPingDaemon instance = null;
     
     protected HostPingDaemon() {
@@ -72,31 +70,35 @@ public class HostPingDaemon implements Runnable {
                     
                     try {
                         
-                        // disable DNS caching
+                        // try an SSH connect
+                        // TODO: make port configureable
                         //
-                        java.security.Security.setProperty( "networkaddress.cache.ttl", "0" );
-                        java.security.Security.setProperty( "networkaddress.cache.negative.ttl", "0" );
+                        Socket socket = new Socket( tunnel.getHostname(), 22 );
                         
-                        InetAddress address = InetAddress.getByName( tunnel.getHostname() );
-                        
-                        if ( address.isReachable( 2000 ) ) {
+                        if ( socket.isConnected() ) {
                             
-                            logger.debug( "Host " + tunnel.getHostname() + " is reachable ( timeout = " + java.security.Security.getProperty( "networkaddress.cache.ttl" ) + " )" );
-                            for ( HostPingDaemonListener listener : listeners ) {
-                                listener.hostReachable( tunnel );
-                            }
+                            logger.debug( "Host " + tunnel.getHostname() + " is reachable" );
+                            
+                            TunnelManager.autostartHostAvailable( tunnel );
                         } else {
                             
-                            logger.debug( "Host " + tunnel.getHostname() + " is not reachable" );
+                            logger.trace( "Host " + tunnel.getHostname() + " is not reachable" );
+                            
+                            TunnelManager.autostartHostUnavailable( tunnel );
                         }
+                        
+                        socket.close();
                         
                     } catch ( UnknownHostException e ) {
                         
+                        logger.trace( "Host " + tunnel.getHostname() + " is not reachable (unknown host)" );
+                        TunnelManager.autostartHostUnavailable( tunnel );
                         
                     } catch ( IOException eIO ) {
                         
+                        logger.trace( "Host " + tunnel.getHostname() + " is not reachable (IO error: " + eIO.getMessage() + ")" );
+                        TunnelManager.autostartHostUnavailable( tunnel );
                     }
-                    
                 }
             }
             
@@ -107,15 +109,4 @@ public class HostPingDaemon implements Runnable {
             }
         }
     }
-    
-    public static void addHostPingDaemonListener( HostPingDaemonListener listener ) {
-        
-        if ( instance == null ) {
-            
-            instance = new HostPingDaemon();
-        }
-        
-        instance.listeners.add( listener );
-    }
-    
 }

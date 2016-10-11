@@ -12,9 +12,6 @@ public class Tray implements Runnable {
     
     public Tray() {
 
-        super();
-        Thread blinkThread = new Thread( this );
-        blinkThread.start();
         instance = this;
     }
     

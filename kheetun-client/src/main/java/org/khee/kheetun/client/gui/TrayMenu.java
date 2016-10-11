@@ -4,17 +4,15 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.GraphicsDevice;
-import java.awt.GraphicsEnvironment;
 import java.awt.Insets;
 import java.awt.Label;
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.util.ArrayList;
 import java.util.HashMap;
 
 import javax.swing.Box;
@@ -31,16 +29,15 @@ import javax.swing.border.LineBorder;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.khee.kheetun.client.HostPingDaemon;
-import org.khee.kheetun.client.HostPingDaemonListener;
 import org.khee.kheetun.client.TunnelClient;
-import org.khee.kheetun.client.TunnelClientListener;
+import org.khee.kheetun.client.TunnelManager;
+import org.khee.kheetun.client.TunnelManagerListener;
 import org.khee.kheetun.client.kheetun;
 import org.khee.kheetun.client.config.Config;
 import org.khee.kheetun.client.config.Profile;
 import org.khee.kheetun.client.config.Tunnel;
 
-public class TrayMenu extends JWindow implements MouseListener, ConfigFrameListener, TunnelClientListener {
+public class TrayMenu extends JWindow implements MouseListener, ConfigFrameListener, TunnelManagerListener {
     
     private static Logger logger = LogManager.getLogger( "kheetun" );
     
@@ -162,7 +159,7 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigFrameListe
         
         configFrame.addConfigChangedListener( this );
         
-        TunnelClient.addClientListener( this );
+        TunnelManager.addTunnelManagerListener( this );
     }
     
     public void buildMenu( Config config ) {
@@ -238,16 +235,14 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigFrameListe
             
         } else {
             
-            GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
-            int width  = gd.getDisplayMode().getWidth();
-            int height = gd.getDisplayMode().getHeight();            
+            Dimension d = Toolkit.getDefaultToolkit().getScreenSize();
             
-            if ( p.x + this.getWidth() > width ) {
-                p.x = width - this.getWidth();
+            if ( p.x + this.getWidth() > d.width ) {
+                p.x = d.width - this.getWidth();
             }
             
-            if ( p.y + this.getHeight() > height ) {
-                p.y = height - this.getHeight();
+            if ( p.y + this.getHeight() > d.height ) {
+                p.y = d.height - this.getHeight();
             }
             
             setLocation( p );
@@ -258,44 +253,61 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigFrameListe
     }
     
     @Override
-    public void connected() {
-        
+    public void tunnelManagerOnline() {
         labelConnected.setText( "connected" );
         labelConnected.setForeground( new Color( 0, 100, 0 ) );
     }
     
     @Override
-    public void disconnected() {
+    public void tunnelManagerOffline() {
         labelConnected.setText( "disconnected" );
         labelConnected.setForeground( Color.RED );
     }
     
     @Override
-    public void activeTunnels(ArrayList<String> signatures) {
+    public void tunnelManagerTunnelActivated(String signature) {
+        // TODO Auto-generated method stub
+        
+    }
+    @Override
+    public void tunnelManagerTunnelActivating(String signature) {
+        // TODO Auto-generated method stub
+        
+    }
+    @Override
+    public void tunnelManagerTunnelDeactivated(String signature) {
         // TODO Auto-generated method stub
         
     }
     
     @Override
-    public void error(Tunnel tunnel, String error) {
+    public void tunnelManagerTunnelDeactivating(String signature) {
         // TODO Auto-generated method stub
         
     }
     
     @Override
-    public void tunnelStarted(String signature) {
+    public void tunnelManagerAutostartHostAvailable( Tunnel tunnel ) {
         // TODO Auto-generated method stub
         
     }
     
     @Override
-    public void tunnelStopped(String signature) {
+    public void tunnelManagerAutostartHostUnavailable( Tunnel tunnel ) {
         // TODO Auto-generated method stub
         
     }
     
     @Override
-    public void tunnelPing(String signature, long ping) {
+    public void tunnelManagerTunnelError(String signature, String error) {
+        // TODO Auto-generated method stub
+        
+    }
+    
+    @Override
+    public void tunnelManagerTunnelPing(String signature, long ping) {
+        // TODO Auto-generated method stub
+        
     }
     
     @Override
@@ -323,24 +335,18 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigFrameListe
 }
 
 
-class TunnelMenuItem extends JPanel implements MouseListener, TunnelClientListener, HostPingDaemonListener {
+class TunnelMenuItem extends JPanel implements MouseListener, TunnelManagerListener {
     
     public static final long serialVersionUID = 42;
-    
-    private static Logger logger = LogManager.getLogger( "kheetun" );
     
     private JLabel    labelAuto;
     private JLabel    labelTunnel;
     private JLabel    labelIcon;
-    private JLabel    labelPing;
-    private JLabel    labelMs;
+    private JLabel    labelStatus;
     private AnImx     anImxProcessing = new AnImx( "loading.png", 50, 125, 16 );
     private Color     colorBackground;
     private Tunnel    tunnel;
     private boolean   isActive;
-    private boolean   activating        = false;
-    private boolean   connected         = false;
-    private boolean   stoppedManually   = false;
     
     public TunnelMenuItem( Tunnel tunnel ) {
         
@@ -356,17 +362,14 @@ class TunnelMenuItem extends JPanel implements MouseListener, TunnelClientListen
         labelAuto   = new JLabel( tunnel.getAutostart() ? Imx.AUTO : Imx.NONE );
         labelTunnel = new JLabel( tunnel.getAlias() );
         labelIcon   = new JLabel( Imx.INACTIVE );
-        labelPing   = new JLabel( "", Label.RIGHT );
-        labelMs     = new JLabel( "inactive" );
-
+        labelStatus = new JLabel( "inactive", Label.RIGHT );
+        
         labelAuto.setToolTipText( "Autostart" );
         labelAuto.setBorder( new EmptyBorder( new Insets( 0, 0, 0, 4 ) ) );
         
-        labelPing.setForeground( Color.GRAY );
-        labelPing.setAlignmentX( Component.RIGHT_ALIGNMENT );
-        
-        labelMs.setForeground( Color.LIGHT_GRAY );
-        labelMs.setBorder( new EmptyBorder( new Insets( 0, 8, 0, 0 ) ) );
+        labelStatus.setForeground( Color.LIGHT_GRAY );
+        labelStatus.setBorder( new EmptyBorder( new Insets( 0, 8, 0, 0 ) ) );
+        labelStatus.setAlignmentX( Component.RIGHT_ALIGNMENT );
         
         labelTunnel.setOpaque( true );
         labelTunnel.setBorder( new EmptyBorder( new Insets( 2, 8, 2, 0 ) ) );
@@ -379,81 +382,65 @@ class TunnelMenuItem extends JPanel implements MouseListener, TunnelClientListen
         add( labelIcon );
         add( labelTunnel );
         add( Box.createHorizontalGlue() );
-        add( labelPing );
-        add( labelMs );
+        add( labelStatus );
         
         addMouseListener( this );
-        TunnelClient.addClientListener( this );
-        HostPingDaemon.addHostPingDaemonListener( this );
+        TunnelManager.addTunnelManagerListener( this );
     }
     
     @Override
-    public void activeTunnels(ArrayList<String> signatures) {
+    public void tunnelManagerOnline() {
         
-        for ( String signature : signatures ) {
-            
-            if ( signature.equals( tunnel.getSignature() ) ) {
-                
-                tunnelStarted( signature );
-            }
-        }
-    }
-    
-    @Override
-    public void connected() {
-        this.connected = true;
         labelTunnel.setForeground( Color.BLACK );
     }
     
     @Override
-    public void disconnected() {
-        this.connected = false;
+    public void tunnelManagerOffline() {
+        
         labelTunnel.setForeground( Color.LIGHT_GRAY );
-        tunnelStopped( tunnel.getSignature() );
+        
+        tunnelManagerTunnelDeactivated( tunnel.getSignature() );
     }
     
     @Override
-    public void tunnelStarted(String signature) {
-        
+    public void tunnelManagerTunnelActivated( String signature ) {
+
         if ( signature.equals( tunnel.getSignature() ) ) {
             
-            this.activating = false;
             this.isActive = true;
             labelIcon.setIcon( Imx.ACTIVE );
             labelIcon.setVisible( true );
             anImxProcessing.setVisible( false );
-            labelMs.setText( "ms" );
-            labelMs.setForeground( Color.GRAY );
-            labelPing.setText( "..." );
+
+            labelStatus.setText( "connected" );
+            labelStatus.setForeground( Color.GRAY );
         }
     }
     
     @Override
-    public void tunnelStopped(String signature) {
+    public void tunnelManagerTunnelDeactivated( String signature ) {
 
         if ( signature.equals( tunnel.getSignature() ) ) {
             
-            this.activating = false;
             this.isActive = false;
             labelIcon.setIcon( Imx.INACTIVE );
             labelIcon.setVisible( true );
             anImxProcessing.setVisible( false );
-            labelMs.setText( "inactive" );
-            labelMs.setForeground( Color.LIGHT_GRAY );
-            labelPing.setText( "" );
+            labelStatus.setText( "inactive" );
+            labelStatus.setForeground( Color.LIGHT_GRAY );
         }
     }
     
+    
     @Override
-    public void tunnelPing(String signature, long ping) {
-        
+    public void tunnelManagerTunnelPing(String signature, long ping) {
+
         if ( signature.equals( tunnel.getSignature() ) ) {
 
             if ( ping < 0 ) {
 
-                labelPing.setText( "" );
-                labelMs.setText( "failing" );
-                labelMs.setForeground( Color.RED );
+                labelStatus.setText( "failing (" + String.valueOf( -ping ) + "/3)" );
+                labelStatus.setForeground( Color.RED );
                 
                 if ( ping < -1 ) {
                     TrayManager.setState( Tray.STATE_WARNING );
@@ -461,21 +448,56 @@ class TunnelMenuItem extends JPanel implements MouseListener, TunnelClientListen
             
             } else {
                 
-                labelPing.setText( String.valueOf( ping ) );
-                labelMs.setText( "ms" );
-                labelMs.setForeground( Color.GRAY );
+                labelStatus.setText( String.valueOf( ping ) + " ms" );
+                labelStatus.setForeground( Color.GRAY );
             }
         }
     }
     
     @Override
-    public void error( Tunnel tunnel, String error ) {
-        
+    public void tunnelManagerTunnelError(String signature, String error) {
+
         if ( tunnel != null && tunnel.getSignature().equals( this.tunnel.getSignature() ) ) {
-            tunnelStopped( tunnel.getSignature() );
+            
+            tunnelManagerTunnelDeactivated( tunnel.getSignature() );
         }
     }
     
+    @Override
+    public void tunnelManagerAutostartHostAvailable( Tunnel tunnel ) {
+
+        if ( tunnel.getSignature().equals( this.tunnel.getSignature() ) ) {
+            labelStatus.setText( "autostarting" );
+            labelStatus.setForeground( Color.GRAY );
+        }
+    }
+    
+    @Override
+    public void tunnelManagerAutostartHostUnavailable( Tunnel tunnel ) {
+        
+        if ( tunnel.getSignature().equals( this.tunnel.getSignature() ) ) {
+            labelStatus.setText( "waiting" );
+            labelStatus.setForeground( Color.GRAY );
+        }
+    }
+    
+    @Override
+    public void tunnelManagerTunnelActivating(String signature) {
+        
+        if ( tunnel.getSignature().equals( signature ) ) {
+            labelIcon.setVisible( false );
+            anImxProcessing.setVisible( true );
+        }
+    }
+    
+    @Override
+    public void tunnelManagerTunnelDeactivating(String signature) {
+
+        if ( tunnel.getSignature().equals( signature ) ) {
+            labelIcon.setVisible( false );
+            anImxProcessing.setVisible( true );
+        }
+    }
     
     @Override
     public void mouseEntered( MouseEvent e ) {
@@ -494,7 +516,7 @@ class TunnelMenuItem extends JPanel implements MouseListener, TunnelClientListen
     @Override
     public void mouseClicked(MouseEvent e) {
         
-        if ( ! this.connected || anImxProcessing.isVisible() ) {
+        if ( ! TunnelManager.isConnected() || TunnelManager.isBusy( tunnel ) ) {
             return;
         }
         
@@ -503,14 +525,10 @@ class TunnelMenuItem extends JPanel implements MouseListener, TunnelClientListen
         
         if ( isActive ) {
             
-            this.stoppedManually = true;
-            logger.info( "Requesting to stop tunnel " + tunnel.getSignature() );
-            TunnelClient.sendStopTunnel( tunnel );
+            TunnelManager.stopTunnel( tunnel );
         } else {
             
-            this.activating = true;
-            logger.info( "Requesting to start tunnel " + tunnel.getSignature() );
-            TunnelClient.sendStartTunnel( this, tunnel );
+            TunnelManager.startTunnel( tunnel );
         }
     }
     
@@ -524,16 +542,6 @@ class TunnelMenuItem extends JPanel implements MouseListener, TunnelClientListen
     public void mouseReleased(MouseEvent e) {
         // TODO Auto-generated method stub
         
-    }
-    
-    @Override
-    public void hostReachable( Tunnel tunnel ) {
-        
-        if ( this.tunnel.getAutostart() && ! this.stoppedManually && ! this.isActive && ! this.activating && tunnel.getSignature().equals( this.tunnel.getSignature() ) ) {
-            
-            logger.info( "Host " + tunnel.getHostname() + " is now reachable, autostarting tunnel" );
-            mouseClicked( null );
-        }
     }
 }
 

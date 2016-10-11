@@ -1,6 +1,5 @@
 package org.khee.kheetun.client;
 
-import java.awt.Component;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -8,7 +7,6 @@ import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.ArrayList;
 import java.util.concurrent.Semaphore;
 
 import javax.swing.JOptionPane;
@@ -36,7 +34,6 @@ public class TunnelClient implements Runnable {
     private static TunnelClient             instance;
     private Thread                          client;
     private boolean                         clientRunning;
-    private ArrayList<TunnelClientListener> listeners;
     private Semaphore                       sender = new Semaphore( 1 );
     private boolean                         connected = false;
     
@@ -48,16 +45,7 @@ public class TunnelClient implements Runnable {
     
     public static void init() {
         
-        /*
-         * if there already was an instance, dont forget to copy the action listeners
-         */
-        ArrayList<TunnelClientListener> oldListeners = new ArrayList<TunnelClientListener>();
-        if ( instance != null && instance.listeners.size() > 0 ) {
-             oldListeners = new ArrayList<TunnelClientListener>( instance.listeners );
-        }
-        
         instance = new TunnelClient();
-        instance.listeners = oldListeners;
     }
     
     public void setPort(Integer port) {
@@ -74,12 +62,6 @@ public class TunnelClient implements Runnable {
         assert( instance != null );
         
         instance.stopClient();
-    }
-    
-    public static void addClientListener( TunnelClientListener listener ) {
-        assert( instance != null );
-        
-        instance.listeners.add( listener );
     }
     
     public void startClient( Integer port ) {
@@ -117,11 +99,8 @@ public class TunnelClient implements Runnable {
             
             logger.warn( e.getMessage() );
         }
-        
-        for ( TunnelClientListener listener : listeners ) {
-            listener.disconnected();
-        }
-        
+
+        TunnelManager.offline();
     }
     
     public void run() {
@@ -189,45 +168,35 @@ public class TunnelClient implements Runnable {
             connected = true;
             
             send( new Protocol( Protocol.ECHO, "Its cool you accepted me!" ) );
-
-            for ( TunnelClientListener listener : listeners ) {
-                listener.connected();
-            }
+            
+            TunnelClient.sendQueryTunnels();
+            TunnelManager.online();
             break;
             
         case Protocol.TUNNELSTARTED:
-
-            for ( TunnelClientListener listener : listeners ) {
-                listener.tunnelStarted( receive.getTunnel().getSignature() );
-            }
+            
+            TunnelManager.started( receive.getTunnel().getSignature() );
             break;
             
         case Protocol.TUNNELSTOPPED:
             
-            for ( TunnelClientListener listener : listeners ) {
-                listener.tunnelStopped( receive.getTunnel().getSignature() );
-            }
+            TunnelManager.stopped( receive.getTunnel().getSignature() );
             break;
 
         case Protocol.ERROR:
             logger.error( "Error on server: " + receive.getString() );
-            for ( TunnelClientListener listener : listeners ) {
-                listener.error( receive.getTunnel(), receive.getString() );
-            }
+            
+            TunnelManager.raiseError( receive.getTunnel(), receive.getString() );
             break;
             
         case Protocol.ACTIVETUNNELS:
             
-            for ( TunnelClientListener listener : listeners ) {
-                listener.activeTunnels( receive.getSignatures() );
-            }
+            TunnelManager.refreshActivated( receive.getSignatures() );
             break;
         
         case Protocol.PING:
             
-            for ( TunnelClientListener listener : listeners ) {
-                listener.tunnelPing( receive.getTunnel().getSignature(), receive.getNumber() );
-            }
+            TunnelManager.updatePing( receive.getTunnel().getSignature(), receive.getNumber() );
             break;
             
         default:
@@ -245,7 +214,7 @@ public class TunnelClient implements Runnable {
         instance.send( new Protocol( Protocol.QUERYTUNNELS ) );
     }
     
-    public static void sendStartTunnel( Component sender, Tunnel tunnel ) {
+    public static void sendStartTunnel( Tunnel tunnel ) {
         
         if ( instance == null || ! instance.connected ) {
             logger.warn( "No connection" );
@@ -261,7 +230,7 @@ public class TunnelClient implements Runnable {
             } catch ( JSchException e ) {
 
                 logger.error( e.getMessage() );
-                JOptionPane.showMessageDialog( sender, e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE );
+                TunnelManager.raiseError( tunnel, e.getMessage() );
                 return;
             }
             

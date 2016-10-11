@@ -54,7 +54,7 @@ import javax.swing.table.TableCellRenderer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.khee.kheetun.client.TunnelClient;
-import org.khee.kheetun.client.TunnelClientListener;
+import org.khee.kheetun.client.TunnelManager;
 import org.khee.kheetun.client.config.Config;
 import org.khee.kheetun.client.config.Forward;
 import org.khee.kheetun.client.config.Profile;
@@ -65,7 +65,7 @@ import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.KeyPair;
 
-public class ConfigFrame extends JFrame implements TunnelClientListener {
+public class ConfigFrame extends JFrame {
     
     private static Logger logger = LogManager.getLogger( "kheetun" );
     
@@ -388,8 +388,6 @@ public class ConfigFrame extends JFrame implements TunnelClientListener {
             }
         });
         
-        TunnelClient.addClientListener( this );
-        
         fieldPort.addActionListener( new ActionListener() {
             
             @Override
@@ -555,10 +553,6 @@ public class ConfigFrame extends JFrame implements TunnelClientListener {
         }
     }
     
-    @Override
-    public void tunnelPing(String signature, long ping) {
-    }
-    
     private void doConnect() {
         
         TunnelClient.init();
@@ -606,7 +600,7 @@ public class ConfigFrame extends JFrame implements TunnelClientListener {
             return;
         }
         
-        TunnelClient.sendStartTunnel( this, selectedTunnel );
+        TunnelManager.startTunnel( selectedTunnel );
     }
     
     private void doStopTunnel() {
@@ -615,7 +609,7 @@ public class ConfigFrame extends JFrame implements TunnelClientListener {
             return;
         }
         
-        TunnelClient.sendStopTunnel( selectedTunnel );
+        TunnelManager.stopTunnel( selectedTunnel );
     }    
     
     private boolean confirm() {

@@ -19,6 +19,8 @@ public class Gui {
     
     public Gui() {
         
+        TunnelManager.init();
+        
         dialogConfig = new ConfigFrame();
 
         TrayMenu menu = new TrayMenu( dialogConfig );
@@ -50,10 +52,10 @@ public class Gui {
         
         menu.buildMenu( config );
         
-        TunnelManager.init();
         
         TunnelClient.init();
         TunnelClient.connect( config.getPort() );
+        TunnelClient.sendQueryTunnels();
     }
     
     public void show() {
