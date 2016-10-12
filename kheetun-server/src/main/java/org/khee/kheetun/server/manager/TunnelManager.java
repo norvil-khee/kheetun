@@ -194,6 +194,7 @@ public class TunnelManager implements PingDaemonListener {
                 return false;
             }
             
+            session.setTimeout( 10000 );
             session.connect();
             tunnel.setPassPhrase( "" );
             

@@ -14,6 +14,8 @@ public interface TunnelManagerListener {
     
     public void tunnelManagerAutostartHostAvailable( Tunnel tunnel );
     public void tunnelManagerAutostartHostUnavailable( Tunnel tunnel );
+    public void tunnelManagerAutostartDisabled( Tunnel tunnel );
+    public void tunnelManagerAutostartEnabled( Tunnel tunnel );
     
     public void tunnelManagerTunnelError( String signature, String error );
     

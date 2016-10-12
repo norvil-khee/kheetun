@@ -2,6 +2,7 @@ package org.khee.kheetun.client.gui;
 
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Insets;
@@ -9,6 +10,7 @@ import java.awt.Label;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.Toolkit;
+import java.awt.Window.Type;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
@@ -24,6 +26,7 @@ import javax.swing.JPopupMenu;
 import javax.swing.JSeparator;
 import javax.swing.JWindow;
 import javax.swing.UIDefaults;
+import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 
@@ -49,13 +52,12 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigFrameListe
     private JMenuItem                       itemConfig;
     private JMenuItem                       itemQuery;
     private JMenuItem                       itemStopAll;
-    private ConfigFrame                     configFrame;
     private HashMap<TunnelMenuItem, Tunnel> tunnelByItem        = new HashMap<TunnelMenuItem, Tunnel>();
     private JPopupMenuEx                    menu;
     private JPanel                          panel;
     private boolean                         connected           = false;
     
-    public TrayMenu( ConfigFrame frame ) {
+    public TrayMenu() {
         
         setName( "kheetun" );
         setIconImage( Imx.CONFIG.getImage() );
@@ -78,8 +80,6 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigFrameListe
         this.getContentPane().setLayout( new BoxLayout( this.getContentPane(), BoxLayout.PAGE_AXIS ) );
         this.getContentPane().add( panel );
 
-        this.configFrame = frame;
-        
         labelKheetun = new JLabel( "kheetun v" + kheetun.VERSION, Imx.KHEETUN, JLabel.LEADING );
         labelKheetun.setIconTextGap( 8 );
         labelKheetun.setBorder( new EmptyBorder( new Insets( 0, 10, 0, 0 ) ) );
@@ -110,12 +110,8 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigFrameListe
         itemConfig.addActionListener( new ActionListener() {
             
             public void actionPerformed(ActionEvent e) {
-                configFrame.setVisible( ! configFrame.isVisible() );
                 
-                if ( configFrame.isVisible() ) {
-                    configFrame.revalidate();
-                    configFrame.repaint();
-                }
+                TrayManager.showConfigDialog();
             }
         });
         itemConfig.addMouseListener( this );
@@ -156,8 +152,6 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigFrameListe
             
         setFocusableWindowState( true );
         setFocusable( true );
-        
-        configFrame.addConfigChangedListener( this );
         
         TunnelManager.addTunnelManagerListener( this );
     }
@@ -311,6 +305,18 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigFrameListe
     }
     
     @Override
+    public void tunnelManagerAutostartDisabled(Tunnel tunnel) {
+        // TODO Auto-generated method stub
+        
+    }
+    
+    @Override
+    public void tunnelManagerAutostartEnabled(Tunnel tunnel) {
+        // TODO Auto-generated method stub
+        
+    }
+    
+    @Override
     public void mouseClicked(MouseEvent e) {
     }
 
@@ -343,10 +349,11 @@ class TunnelMenuItem extends JPanel implements MouseListener, TunnelManagerListe
     private JLabel    labelTunnel;
     private JLabel    labelIcon;
     private JLabel    labelStatus;
+    private JLabel    labelMessage;
+    private JWindow   windowMessage;
     private AnImx     anImxProcessing = new AnImx( "loading.png", 50, 125, 16 );
     private Color     colorBackground;
     private Tunnel    tunnel;
-    private boolean   isActive;
     
     public TunnelMenuItem( Tunnel tunnel ) {
         
@@ -366,6 +373,7 @@ class TunnelMenuItem extends JPanel implements MouseListener, TunnelManagerListe
         
         labelAuto.setToolTipText( "Autostart" );
         labelAuto.setBorder( new EmptyBorder( new Insets( 0, 0, 0, 4 ) ) );
+        labelAuto.setCursor( Cursor.getPredefinedCursor( Cursor.HAND_CURSOR ) );
         
         labelStatus.setForeground( Color.LIGHT_GRAY );
         labelStatus.setBorder( new EmptyBorder( new Insets( 0, 8, 0, 0 ) ) );
@@ -376,6 +384,21 @@ class TunnelMenuItem extends JPanel implements MouseListener, TunnelManagerListe
         
         anImxProcessing.setVisible( false );
         labelIcon.setVisible( true );
+        
+        labelIcon.addMouseListener( this );
+        labelAuto.addMouseListener( this );
+        
+        labelMessage = new JLabel( Imx.WARNING );
+        labelMessage.setIconTextGap( 8 );
+        labelMessage.setBorder( new CompoundBorder( new LineBorder( Color.RED ), new EmptyBorder( new Insets( 4, 4, 4, 4 ) ) ) );
+        labelMessage.setForeground( Color.BLACK );
+        
+        windowMessage = new JWindow();
+        windowMessage.setLocation( this.getLocation() );
+        windowMessage.getContentPane().setLayout( new BoxLayout( windowMessage.getContentPane(), BoxLayout.PAGE_AXIS ) );
+        windowMessage.getContentPane().add( labelMessage );
+        windowMessage.setAlwaysOnTop( true );
+        windowMessage.setType( Type.POPUP );
 
         add( labelAuto );
         add( anImxProcessing );
@@ -407,7 +430,6 @@ class TunnelMenuItem extends JPanel implements MouseListener, TunnelManagerListe
 
         if ( signature.equals( tunnel.getSignature() ) ) {
             
-            this.isActive = true;
             labelIcon.setIcon( Imx.ACTIVE );
             labelIcon.setVisible( true );
             anImxProcessing.setVisible( false );
@@ -422,7 +444,6 @@ class TunnelMenuItem extends JPanel implements MouseListener, TunnelManagerListe
 
         if ( signature.equals( tunnel.getSignature() ) ) {
             
-            this.isActive = false;
             labelIcon.setIcon( Imx.INACTIVE );
             labelIcon.setVisible( true );
             anImxProcessing.setVisible( false );
@@ -441,11 +462,7 @@ class TunnelMenuItem extends JPanel implements MouseListener, TunnelManagerListe
 
                 labelStatus.setText( "failing (" + String.valueOf( -ping ) + "/3)" );
                 labelStatus.setForeground( Color.RED );
-                
-                if ( ping < -1 ) {
-                    TrayManager.setState( Tray.STATE_WARNING );
-                }
-            
+
             } else {
                 
                 labelStatus.setText( String.valueOf( ping ) + " ms" );
@@ -456,10 +473,16 @@ class TunnelMenuItem extends JPanel implements MouseListener, TunnelManagerListe
     
     @Override
     public void tunnelManagerTunnelError(String signature, String error) {
-
-        if ( tunnel != null && tunnel.getSignature().equals( this.tunnel.getSignature() ) ) {
+        
+        if ( this.tunnel.getSignature().equals( signature ) ) {
             
             tunnelManagerTunnelDeactivated( tunnel.getSignature() );
+            
+            TrayManager.blink();
+            
+            labelIcon.setIcon( Imx.WARNING );
+            
+            labelMessage.setText( error );
         }
     }
     
@@ -500,7 +523,47 @@ class TunnelMenuItem extends JPanel implements MouseListener, TunnelManagerListe
     }
     
     @Override
+    public void tunnelManagerAutostartDisabled(Tunnel tunnel) {
+        
+        if ( tunnel.getSignature().equals( this.tunnel.getSignature() ) ) {
+            
+            labelAuto.setIcon( Imx.AUTO_DISABLED );
+            
+            if ( ! TunnelManager.isRunning( this.tunnel.getSignature() ) ) {
+                tunnelManagerTunnelDeactivated( this.tunnel.getSignature() );
+            }
+        }
+    }
+    
+    @Override
+    public void tunnelManagerAutostartEnabled(Tunnel tunnel) {
+
+        if ( tunnel.getSignature().equals( this.tunnel.getSignature() ) ) {
+            
+            labelAuto.setIcon( Imx.AUTO );
+        }
+    }
+    
+    @Override
     public void mouseEntered( MouseEvent e ) {
+        
+        if ( labelIcon.isVisible() && ( labelIcon.getIcon() == Imx.WARNING || labelIcon.getIcon() == Imx.WARNING_DISABLED ) ) {
+            
+            labelIcon.setIcon( Imx.WARNING_DISABLED );
+            
+            windowMessage.pack();
+            
+            Point p = this.getLocationOnScreen();
+            
+            if ( p.x - windowMessage.getWidth() < 0 ) {
+                p.setLocation( p.x + this.getWidth(), p.y );
+            } else {
+                p.setLocation( p.x - windowMessage.getWidth(), p.y );
+            }
+            
+            windowMessage.setLocation( p );
+            windowMessage.setVisible( true );
+        }
         
         setBackground( colorBackground );
         labelTunnel.setBackground( colorBackground );
@@ -509,12 +572,30 @@ class TunnelMenuItem extends JPanel implements MouseListener, TunnelManagerListe
     @Override
     public void mouseExited(MouseEvent e) {
         
+        if ( windowMessage.isVisible() ) {
+
+            windowMessage.setVisible( false );
+        }
+        
         setBackground( null );
         labelTunnel.setBackground( null );
     }
     
     @Override
     public void mouseClicked(MouseEvent e) {
+        
+        if ( e.getComponent() == labelAuto && this.tunnel.getAutostart() ) {
+            
+            if ( labelAuto.getIcon() == Imx.AUTO ) {
+
+                TunnelManager.disableAutostart( this.tunnel );
+                
+            } else {
+                
+                TunnelManager.enableAutostart( this.tunnel );
+            }
+            return;
+        }
         
         if ( ! TunnelManager.isConnected() || TunnelManager.isBusy( tunnel ) ) {
             return;
@@ -523,7 +604,7 @@ class TunnelMenuItem extends JPanel implements MouseListener, TunnelManagerListe
         labelIcon.setVisible( false );
         anImxProcessing.setVisible( true );
         
-        if ( isActive ) {
+        if ( TunnelManager.isRunning( tunnel.getSignature() ) ) {
             
             TunnelManager.stopTunnel( tunnel );
         } else {

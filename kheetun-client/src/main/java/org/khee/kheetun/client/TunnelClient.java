@@ -41,6 +41,7 @@ public class TunnelClient implements Runnable {
     protected TunnelClient() {
 
         client              = new Thread( this );
+        client.setName( "kheetun-client-thread" );
     }
     
     public static void init() {
@@ -221,15 +222,15 @@ public class TunnelClient implements Runnable {
             return;
         }
         
-        
         if ( tunnel.getSshKey() != null ) {
 
             KeyPair keypair = null;
             try {
                 keypair = KeyPair.load( new JSch(), tunnel.getSshKeyString() );
             } catch ( JSchException e ) {
-
+                
                 logger.error( e.getMessage() );
+                logger.debug( "", e );
                 TunnelManager.raiseError( tunnel, e.getMessage() );
                 return;
             }

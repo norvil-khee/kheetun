@@ -34,13 +34,13 @@ public class GtkTray extends Tray {
     };
     
     private StatusIcon  icon        = new StatusIcon(); 
-    private boolean     blinking    = false;
     private Menu        hack        = new Menu();
     private Pixbuf      current;
     
-    public GtkTray( TrayMenu menu ) {
+    public GtkTray() {
         
         Thread blinkThread = new Thread( this );
+        blinkThread.setName( "kheetun-tray-blink-thread" );
         blinkThread.start();
 
         icon.connect( new Activate() {
@@ -56,8 +56,7 @@ public class GtkTray extends Tray {
                 // 
                 hack.popup( tray );
                 hack.hide();
-                menu.toggle( new Point( hack.getWindow().getOriginX(), hack.getWindow().getOriginY() ) );
-                unblink();
+                TrayManager.toggleMenu( new Point( hack.getWindow().getOriginX(), hack.getWindow().getOriginY() ) );
             }
         });        
     }
@@ -91,29 +90,18 @@ public class GtkTray extends Tray {
         }
     }
     
-    
-    protected void setState( int state ) {
+    @Override
+    protected void setIcon(Imx icon) {
         
-        unblink();
-        
-        switch( state ) {
-        
-        case STATE_ONLINE:
-            current = ONLINE;
-            unblink();
-            break;
+        try {
             
-        case STATE_OFFLINE:
-            current = OFFLINE;
-            unblink();
-            break;
+            current = GtkTray.pixbufFromBufferedImage( icon.bs32 );
+            this.icon.setFromPixbuf( current );
             
-        case STATE_WARNING:
-            current = WARNING;
-            blink();
-            break;
+        } catch ( IOException e ) {
+            
+            logger.error( "Could not set tray icon: " + e.getMessage() );
         }
-        icon.setFromPixbuf( current );
     }
-
+    
 }

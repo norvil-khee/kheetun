@@ -22,6 +22,7 @@ public class HostPingDaemon implements Runnable {
     protected HostPingDaemon() {
         
         this.thread = new Thread( this );
+        this.thread.setName( "kheetun-hostping-thread" );
     }
     
     public static void setConfig( Config config ) {

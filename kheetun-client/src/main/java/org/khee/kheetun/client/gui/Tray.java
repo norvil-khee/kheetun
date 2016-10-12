@@ -1,7 +1,12 @@
 package org.khee.kheetun.client.gui;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class Tray implements Runnable {
     
+    protected static Logger logger = LogManager.getLogger( "kheetun" );
+
     public static final int STATE_OFFLINE = 1;
     public static final int STATE_ONLINE  = 2;
     public static final int STATE_WARNING = 3;
@@ -16,6 +21,8 @@ public class Tray implements Runnable {
     }
     
     protected void setState( int state ) { };
+    
+    protected void setIcon( Imx icon ) { };
     
     @Override
     public void run() {

@@ -44,11 +44,12 @@ public class TunnelManager {
             }
             
             instance.activating.add( tunnel.getSignature() );
-            TunnelClient.sendStartTunnel( tunnel );
 
             for ( TunnelManagerListener listener : instance.listeners ) {
                 listener.tunnelManagerTunnelActivating( tunnel.getSignature() );
             }
+            
+            TunnelClient.sendStartTunnel( tunnel );
         }
     }
     
@@ -72,9 +73,7 @@ public class TunnelManager {
             
             // since this is a manual stop, we deactivate autostarting this tunnel again
             //
-            if ( ! instance.ignoreAutostart.contains( tunnel.getSignature() ) ) {
-                instance.ignoreAutostart.add( tunnel.getSignature() );
-            }
+            TunnelManager.disableAutostart( tunnel );
 
             for ( TunnelManagerListener listener : instance.listeners ) {
                 listener.tunnelManagerTunnelDeactivating( tunnel.getSignature() );
@@ -88,18 +87,45 @@ public class TunnelManager {
         if ( tunnel != null ) {
             
             if ( instance.activating.contains( tunnel.getSignature() ) ) {
+                logger.debug( "Remove activating tunnel because of error" );
                 instance.activating.remove( tunnel.getSignature() );
             }
             
             if ( instance.deactivating.contains( tunnel.getSignature() ) ) {
+                logger.debug( "Remove deactivating tunnel because of error" );
                 instance.deactivating.remove( tunnel.getSignature() );
             }
             
             TunnelManager.stopped( tunnel.getSignature() );
+
+            for ( TunnelManagerListener listener : instance.listeners ) {
+                logger.debug( "Notifying " + listener );
+                listener.tunnelManagerTunnelError( tunnel.getSignature(), error );
+            }
         }
+    }
+    
+    public static void enableAutostart( Tunnel tunnel ) {
         
-        for ( TunnelManagerListener listener : instance.listeners ) {
-            listener.tunnelManagerTunnelError( tunnel.getSignature(), error );
+        if ( instance.ignoreAutostart.contains( tunnel.getSignature() ) ) {
+            
+            instance.ignoreAutostart.remove( tunnel.getSignature() ); 
+
+            for ( TunnelManagerListener listener : instance.listeners ) {
+                listener.tunnelManagerAutostartEnabled( tunnel );
+            }
+        }
+    }
+    
+    public static void disableAutostart( Tunnel tunnel ) {
+        
+        if ( ! instance.ignoreAutostart.contains( tunnel.getSignature() ) ) {
+            
+            instance.ignoreAutostart.add( tunnel.getSignature() ); 
+
+            for ( TunnelManagerListener listener : instance.listeners ) {
+                listener.tunnelManagerAutostartDisabled( tunnel );
+            }
         }
     }
     
@@ -188,11 +214,12 @@ public class TunnelManager {
         if ( ! instance.running.contains( tunnel.getSignature() ) && ! instance.ignoreAutostart.contains( tunnel.getSignature() ) ) {
             
             logger.debug( "Trigger tunnel start: " + tunnel.getAlias() );
-            TunnelManager.startTunnel( tunnel );
 
             for ( TunnelManagerListener listener : instance.listeners ) {
                 listener.tunnelManagerAutostartHostAvailable( tunnel );
             }
+
+            TunnelManager.startTunnel( tunnel );
         }
 
     }
