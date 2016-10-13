@@ -20,7 +20,7 @@ import org.khee.kheetun.client.gui.TrayMenu;
 public class kheetun {
 
     private static Logger logger = LogManager.getLogger( "kheetun" );
-    public static final String VERSION = "0.7";
+    public static final String VERSION = "0.8";
     
     public static void main(String[] args) {
         

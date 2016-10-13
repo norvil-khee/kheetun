@@ -48,7 +48,6 @@ public class Imx extends ImageIcon {
     public static final Imx RELOAD              = loadImx( "reload.png" );
     public static final Imx AUTO                = loadImx( "favorite.png" );
     public static final Imx AUTO_DISABLED       = loadImx( "favorite_gray.png" );
-    public static final Imx MESSAGE             = loadImx( "loudspeaker.png" );
 
     public ImageIcon s12;
     public ImageIcon s16;

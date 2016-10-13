@@ -89,9 +89,9 @@ done
 cp ../kheetun-client/src/main/resources/kheetun.sh bin/kheetun
 echo "f 755 root root /opt/kheetun/bin/kheetun ./bin/kheetun" >> kheetun.list
 
-epm -f deb kheetun
+sudo epm -f deb kheetun
 
-cp linux*/*.deb ..
+sudo cp linux*/*.deb ..
 
 cd ..
 

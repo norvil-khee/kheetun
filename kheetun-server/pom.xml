@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.khee.kheetun</groupId>
   <artifactId>server</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>0.8</version>
   <name>Kheetun Server</name>
   <description>Kheetun, Server component</description>
   <build>
