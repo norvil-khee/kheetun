@@ -56,6 +56,7 @@ public class TunnelManager implements PingDaemonListener {
         
         stopTunnel( tunnel );
         server.send( new Protocol( Protocol.TUNNELSTOPPED, tunnel ) );
+        server.send( new Protocol( Protocol.ERROR, tunnel, "Ping timeout" ) );
         daemon.stop();
     }
     
