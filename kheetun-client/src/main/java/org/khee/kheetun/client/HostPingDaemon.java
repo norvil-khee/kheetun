@@ -7,10 +7,12 @@ import java.net.UnknownHostException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.khee.kheetun.client.config.Config;
+import org.khee.kheetun.client.config.ConfigManager;
+import org.khee.kheetun.client.config.ConfigManagerListener;
 import org.khee.kheetun.client.config.Profile;
 import org.khee.kheetun.client.config.Tunnel;
 
-public class HostPingDaemon implements Runnable {
+public class HostPingDaemon implements Runnable, ConfigManagerListener {
     
     private static Logger logger = LogManager.getLogger( "kheetun" );
 
@@ -23,14 +25,17 @@ public class HostPingDaemon implements Runnable {
         
         this.thread = new Thread( this );
         this.thread.setName( "kheetun-hostping-thread" );
+        
+        ConfigManager.addConfigManagerListener( this );
     }
     
-    public static void setConfig( Config config ) {
+    public static void init() {
         
-        if ( instance == null ) {
-            instance = new HostPingDaemon();
-        }
-
+        instance = new HostPingDaemon();
+    }
+    
+    private void setConfig( Config config ) {
+        
         instance.config = config;
         instance.running = false;
         
@@ -46,6 +51,12 @@ public class HostPingDaemon implements Runnable {
             logger.error( "Failed to (re)start host ping thread: " + e.getMessage() );
         }
         
+    }
+    
+    @Override
+    public void configManagerConfigChanged(Config config) {
+        
+        this.setConfig( config );
     }
     
     @Override

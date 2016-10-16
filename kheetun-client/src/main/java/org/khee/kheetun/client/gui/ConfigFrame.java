@@ -555,8 +555,8 @@ public class ConfigFrame extends JFrame {
     
     private void doConnect() {
         
-        TunnelClient.init();
-        TunnelClient.connect( configCurrent.getPort() );
+//        TunnelClient.init();
+//        TunnelClient.connect( configCurrent.getPort() );
     }
 
     private void doSave() {

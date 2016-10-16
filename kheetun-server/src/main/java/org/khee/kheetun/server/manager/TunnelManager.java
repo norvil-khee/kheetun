@@ -152,6 +152,8 @@ public class TunnelManager implements PingDaemonListener {
         pingDaemons.get( tunnel.getSignature() ).stop();
         pingDaemons.remove( tunnel.getSignature() );
         
+        logger.info( "Stopped tunnel with signature: " + tunnel.getSignature() );
+        
         return true;
     }
     

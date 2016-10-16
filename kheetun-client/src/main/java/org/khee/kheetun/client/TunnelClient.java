@@ -15,6 +15,9 @@ import javax.swing.JPasswordField;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.khee.kheetun.client.comm.Protocol;
+import org.khee.kheetun.client.config.Config;
+import org.khee.kheetun.client.config.ConfigManager;
+import org.khee.kheetun.client.config.ConfigManagerListener;
 import org.khee.kheetun.client.config.Tunnel;
 
 import com.jcraft.jsch.JSch;
@@ -22,26 +25,26 @@ import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.KeyPair;
 
 
-public class TunnelClient implements Runnable {
+public class TunnelClient implements Runnable, ConfigManagerListener {
     
     private static Logger logger = LogManager.getLogger( "kheetun" );
     
     private Socket                          clientSocket;
-    private Integer                         port;
     private Protocol                        receive;
     private ObjectInputStream               commIn;
     private ObjectOutputStream              commOut;
     private static TunnelClient             instance;
     private Thread                          client;
     private boolean                         clientRunning;
-    private Semaphore                       sender = new Semaphore( 1 );
-    private boolean                         connected = false;
+    private Integer                         port            = -1;
+    private Semaphore                       sender          = new Semaphore( 1 );
+    private boolean                         connected       = false;
     
     
     protected TunnelClient() {
 
-        client              = new Thread( this );
-        client.setName( "kheetun-client-thread" );
+        client = new Thread( this, "kheetun-client-thread" );
+        ConfigManager.addConfigManagerListener( this );
     }
     
     public static void init() {
@@ -49,35 +52,40 @@ public class TunnelClient implements Runnable {
         instance = new TunnelClient();
     }
     
-    public void setPort(Integer port) {
-        this.port = port;
-    }
-    
-    
-    public static void connect( Integer port ) {
+    @Override
+    public void configManagerConfigChanged( Config config ) {
         
-        instance.startClient( port );
+        if ( ! this.port.equals( config.getPort() ) ) {
+            
+            logger.info( "Port changed from " + this.port + " to " + config.getPort() );
+            
+            this.stopClient();
+            
+            if ( client.isAlive() ) {
+                try {
+                    client.join();
+                } catch ( InterruptedException e ) {
+                    
+                    logger.error( "Interrupted while waiting for client thread to stop" );
+                }
+            }
+            
+            this.port = config.getPort();
+            this.client.start();
+        }
     }
-    
+ 
     public static void disconnect() {
         assert( instance != null );
         
         instance.stopClient();
     }
     
-    public void startClient( Integer port ) {
-        
-        if ( ! client.isAlive() ) {
-            
-            setPort( port );
-            client.start();
-        }
-    }
-    
     public void stopClient() {
         
         if ( client.isAlive() ) {
             send( new Protocol( Protocol.QUIT ) );
+            
             instance.clientRunning = false;
         }
     }

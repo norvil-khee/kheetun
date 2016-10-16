@@ -37,10 +37,12 @@ import org.khee.kheetun.client.TunnelManager;
 import org.khee.kheetun.client.TunnelManagerListener;
 import org.khee.kheetun.client.kheetun;
 import org.khee.kheetun.client.config.Config;
+import org.khee.kheetun.client.config.ConfigManager;
+import org.khee.kheetun.client.config.ConfigManagerListener;
 import org.khee.kheetun.client.config.Profile;
 import org.khee.kheetun.client.config.Tunnel;
 
-public class TrayMenu extends JWindow implements MouseListener, ConfigFrameListener, TunnelManagerListener {
+public class TrayMenu extends JWindow implements MouseListener, ConfigManagerListener, TunnelManagerListener {
     
     private static Logger logger = LogManager.getLogger( "kheetun" );
     
@@ -154,6 +156,7 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigFrameListe
         setFocusable( true );
         
         TunnelManager.addTunnelManagerListener( this );
+        ConfigManager.addConfigManagerListener( this );
     }
     
     public void buildMenu( Config config ) {
@@ -215,9 +218,10 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigFrameListe
             TunnelClient.sendQueryTunnels();
         }
     }
+    
+    @Override
+    public void configManagerConfigChanged(Config config) {
 
-    public void configChanged(Config config) {
-        
         buildMenu( config );
     }
     
