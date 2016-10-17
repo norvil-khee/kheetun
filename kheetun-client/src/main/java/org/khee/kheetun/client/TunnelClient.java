@@ -7,6 +7,7 @@ import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.ArrayList;
 import java.util.concurrent.Semaphore;
 
 import javax.swing.JOptionPane;
@@ -43,7 +44,6 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
     
     protected TunnelClient() {
 
-        client = new Thread( this, "kheetun-client-thread" );
         ConfigManager.addConfigManagerListener( this );
     }
     
@@ -54,14 +54,24 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
     
     @Override
     public void configManagerConfigChanged( Config config ) {
+    }
+    
+    @Override
+    public void configManagerConfigInvalid( Config config, ArrayList<String> errorStack ) {
         
-        if ( ! this.port.equals( config.getPort() ) ) {
+        this.stopClient();
+    }
+    
+    @Override
+    public void configManagerConfigValid(Config config) {
+        
+        if ( ! this.port.equals( config.getPort() ) || ! connected ) {
             
             logger.info( "Port changed from " + this.port + " to " + config.getPort() );
             
             this.stopClient();
             
-            if ( client.isAlive() ) {
+            if ( client != null && client.isAlive() ) {
                 try {
                     client.join();
                 } catch ( InterruptedException e ) {
@@ -71,6 +81,7 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
             }
             
             this.port = config.getPort();
+            this.client = new Thread( this, "kheetun-client-thread" );
             this.client.start();
         }
     }
@@ -83,7 +94,7 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
     
     public void stopClient() {
         
-        if ( client.isAlive() ) {
+        if ( client != null && client.isAlive() ) {
             send( new Protocol( Protocol.QUIT ) );
             
             instance.clientRunning = false;
@@ -157,6 +168,7 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
 
         closeSocket();
         
+        connected       = false;
         clientRunning   = false;
 
         

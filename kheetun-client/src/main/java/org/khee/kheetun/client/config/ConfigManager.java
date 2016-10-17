@@ -8,6 +8,7 @@ import javax.xml.bind.JAXBException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.khee.kheetun.client.TunnelManager;
+import org.khee.kheetun.client.verify.VerifierFactory;
 
 public class ConfigManager implements Runnable {
     
@@ -15,9 +16,9 @@ public class ConfigManager implements Runnable {
 
     private static ConfigManager instance = null;
     
-    private Config  config;
-    private Config  backup;
-    private long    lastModified = -1;
+    private Config              config;
+    private long                lastModified = -1;
+    private ArrayList<String>   errorStack = new ArrayList<String>();
     
     private ArrayList<ConfigManagerListener> listeners  = new ArrayList<ConfigManagerListener>();
     
@@ -87,23 +88,67 @@ public class ConfigManager implements Runnable {
                 
                 this.lastModified = f.lastModified();
                 
+                Config newConfig = new Config();
+                
                 try {
                     
-                    Config newConfig = Config.load( f );
+                    newConfig = Config.load( f );
                     
-                    this.stopStaleTunnels( newConfig );
+                } catch ( JAXBException eJAX ) {
+                    
+                    String error = ( eJAX.getCause() != null ? eJAX.getCause().getLocalizedMessage() : eJAX.getLocalizedMessage() );
+                    
+                    this.errorStack.add( "Configuration XML: " + error );
+                    
+                    logger.error( "Error while loading configuration: " + error );
                     
                     for ( ConfigManagerListener listener : this.listeners ) {
-                        listener.configManagerConfigChanged( newConfig );
+                        
+                        listener.configManagerConfigInvalid( null, this.errorStack );
                     }
                     
-                    backup = config;
-                    config = newConfig;
+                } catch ( Exception e ) {
                     
-                } catch ( JAXBException e ) {
+                    this.errorStack.add( "Configuration: " + e.getLocalizedMessage() );
                     
-                    logger.error( "Error while loading configuration: " + e.getMessage() );
+                    logger.error( "Error while loading configuration: " + e.getLocalizedMessage() );
+
+                    for ( ConfigManagerListener listener : this.listeners ) {
+                        
+                        listener.configManagerConfigInvalid( null, this.errorStack );
+                    }
                 }
+                
+                this.stopStaleTunnels( newConfig );
+                
+                if ( ! this.validate( newConfig ) ) {
+                    
+                    for ( String error : this.errorStack ) {
+                        
+                        logger.error( "Config error: " + error );
+                    }
+                    
+                    for ( ConfigManagerListener listener : this.listeners ) {
+                        
+                        listener.configManagerConfigInvalid( newConfig, this.errorStack );
+                    }
+                    
+                    newConfig = new Config();
+                    
+                } else {
+                    
+                    for ( ConfigManagerListener listener : this.listeners ) {
+                        
+                        listener.configManagerConfigValid( newConfig );
+                    }
+                }
+                
+                for ( ConfigManagerListener listener : this.listeners ) {
+                    listener.configManagerConfigChanged( newConfig );
+                }
+                
+                config = newConfig;
+                
             }
             
             try {
@@ -112,6 +157,77 @@ public class ConfigManager implements Runnable {
                 logger.error( "Interrupted while sleeping in ConfigManager watcher" );
             }
         }
+    }
+    
+    public synchronized boolean validate( Config config ) {
+        
+        errorStack.clear();
+        ArrayList<String> bindIps    = new ArrayList<String>();
+        
+        for ( Profile profile : config.getProfiles() ) {
+            
+            for ( Tunnel tunnel : profile.getTunnels() ) {
+                
+                bindIps.clear();
+                
+                if ( ! VerifierFactory.getAliasVerifier().verify( tunnel.getAlias() ) ) {
+                    
+                    errorStack.add( "Tunnel '" + tunnel.getAlias() +"': invalid alias '" + tunnel.getAlias() + "'" );
+                }
+                
+                if ( ! VerifierFactory.getHostnameVerifier().verify( tunnel.getHostname() ) ) {
+                    
+                    errorStack.add( "Tunnel '" + tunnel.getAlias() +"': invalid hostname '" + tunnel.getHostname() + "'" );
+                } else {
+                    logger.info( "Hey, " + tunnel.getHostname() + " seems to be great" );
+                }
+                
+                if ( ! VerifierFactory.getSshKeyVerifier().verify( tunnel.getSshKey().getAbsolutePath() ) ) {
+                    
+                    errorStack.add( "Tunnel '" + tunnel.getAlias() +"': invalid SSH key '" + tunnel.getSshKey().getAbsolutePath() + "'" );
+                }
+                
+                if ( ! VerifierFactory.getUserVerifier().verify( tunnel.getUser() ) ) {
+                    
+                    errorStack.add( "Tunnel '" + tunnel.getAlias() +"': invalid user '" + tunnel.getUser() + "'" );
+                }
+                
+                int f = 0;
+                
+                for ( Forward forward : tunnel.getForwards() ) {
+                    
+                    f++;
+                    
+                    if ( ! VerifierFactory.getPortVerifier().verify( forward.getBindPort() ) ) {
+                        errorStack.add( "Tunnel '" + tunnel.getAlias() +"', Forward " + f + ": invalid bind port '" + forward.getBindPort() + "'" );
+                    }
+
+                    if ( ! VerifierFactory.getPortVerifier().verify( forward.getForwardedPort() ) ) {
+                        errorStack.add( "Tunnel '" + tunnel.getAlias() +"', Forward " + f + ": invalid forwarded port '" + forward.getBindPort() + "'" );
+                    }
+                    
+                    if ( ! VerifierFactory.getHostnameVerifier().verify( forward.getForwardedHost() ) ) {
+                        errorStack.add( "Tunnel '" + tunnel.getAlias() +"', Forward " + f + ": invalid forwarded host '" + forward.getForwardedHost() + "'" );
+                    }
+
+                    if ( bindIps.contains( forward.getBindIp() ) ) {
+                        
+                        errorStack.add( "Tunnel '" + tunnel.getAlias() +"', Forward " + f + ": duplicate bind IP '" + forward.getBindIp() + "'" );
+                        
+                    } else {
+
+                        bindIps.add( forward.getBindIp() );
+                        
+                        if ( ! VerifierFactory.getIpAddressVerifier().verify( forward.getBindIp() ) ) {
+                            
+                            errorStack.add( "Tunnel '" + tunnel.getAlias() +"', Forward " + f + ": invalid bind IP '" + forward.getBindIp() + "'" );
+                        }
+                    }
+                }
+            }
+        }
+        
+        return errorStack.isEmpty();
     }
     
     public static void addConfigManagerListener( ConfigManagerListener listener ) {

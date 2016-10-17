@@ -3,6 +3,7 @@ package org.khee.kheetun.client;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -23,9 +24,6 @@ public class HostPingDaemon implements Runnable, ConfigManagerListener {
     
     protected HostPingDaemon() {
         
-        this.thread = new Thread( this );
-        this.thread.setName( "kheetun-hostping-thread" );
-        
         ConfigManager.addConfigManagerListener( this );
     }
     
@@ -41,9 +39,11 @@ public class HostPingDaemon implements Runnable, ConfigManagerListener {
         
         try {
             
-            if ( instance.thread.isAlive() ) {
+            if ( instance.thread != null && instance.thread.isAlive() ) {
                 instance.thread.join();
             }
+            
+            instance.thread = new Thread( instance, "kheetun-hostping-thread" );
             instance.running = true;
             instance.thread.start();
         } catch ( InterruptedException e ) {
@@ -54,7 +54,15 @@ public class HostPingDaemon implements Runnable, ConfigManagerListener {
     }
     
     @Override
-    public void configManagerConfigChanged(Config config) {
+    public void configManagerConfigChanged( Config config ) {
+    }
+    
+    @Override
+    public void configManagerConfigInvalid(Config config, ArrayList<String> errorStack) {
+    }
+    
+    @Override
+    public void configManagerConfigValid(Config config) {
         
         this.setConfig( config );
     }

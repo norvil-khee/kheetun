@@ -15,6 +15,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import javax.swing.Box;
@@ -50,8 +51,10 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
     
     private JLabel                          labelKheetun;
     private JLabel                          labelConnected;
+    private JLabel                          labelStatus;
+    private JLabel                          labelMessage;
+    private JWindow                         windowMessage;
     private JMenuItem                       itemExit;
-    private JMenuItem                       itemConfig;
     private JMenuItem                       itemQuery;
     private JMenuItem                       itemStopAll;
     private HashMap<TunnelMenuItem, Tunnel> tunnelByItem        = new HashMap<TunnelMenuItem, Tunnel>();
@@ -92,7 +95,28 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
         labelConnected.setIconTextGap( 8 );
         labelConnected.setForeground( Color.RED );
         labelConnected.setAlignmentX( Component.LEFT_ALIGNMENT );
-        labelConnected.setBorder( new EmptyBorder( new Insets( 0, 10, 8, 0 ) ) );
+        labelConnected.setBorder( new EmptyBorder( new Insets( 4, 10, 0, 0 ) ) );
+        labelConnected.addMouseListener( this );
+        
+        labelStatus = new JLabel( "", Imx.NONE, JLabel.LEADING );
+        labelStatus.setIconTextGap( 8 );
+        labelStatus.setForeground( Color.RED );
+        labelStatus.setAlignmentX( Component.LEFT_ALIGNMENT );
+        labelStatus.setBorder( new EmptyBorder( new Insets( 4, 10, 8, 0 ) ) );
+        labelStatus.addMouseListener( this );
+
+        labelMessage = new JLabel( Imx.WARNING );
+        labelMessage.setIconTextGap( 8 );
+        labelMessage.setBorder( new CompoundBorder( new LineBorder( Color.RED ), new EmptyBorder( new Insets( 4, 4, 4, 4 ) ) ) );
+        labelMessage.setForeground( Color.BLACK );
+        
+        windowMessage = new JWindow();
+        windowMessage.setLocation( this.getLocation() );
+        windowMessage.getContentPane().setLayout( new BoxLayout( windowMessage.getContentPane(), BoxLayout.PAGE_AXIS ) );
+        windowMessage.getContentPane().add( labelMessage );
+        windowMessage.setAlwaysOnTop( true );
+        windowMessage.setType( Type.POPUP );
+        windowMessage.setVisible( false );
         
         itemExit = new JMenuItem( "Exit", Imx.EXIT );
         itemExit.setIconTextGap( 8 );
@@ -107,17 +131,6 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
         });
         itemExit.addMouseListener( this );
         
-        itemConfig = new JMenuItem( "Configure", Imx.CONFIG );
-        itemConfig.setIconTextGap( 8 );
-        itemConfig.addActionListener( new ActionListener() {
-            
-            public void actionPerformed(ActionEvent e) {
-                
-                TrayManager.showConfigDialog();
-            }
-        });
-        itemConfig.addMouseListener( this );
-
         itemStopAll = new JMenuItem( "Stop all", Imx.STOP );
         itemStopAll.setIconTextGap( 8 );
         itemStopAll.addActionListener( new ActionListener() {
@@ -167,8 +180,7 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
 
         menu.add( labelKheetun );
         menu.add( labelConnected );
-        menu.addSeparator();
-        menu.add( itemConfig );
+        menu.add( labelStatus );
         menu.addSeparator();
         menu.add( itemStopAll );
         menu.add( itemQuery );
@@ -195,8 +207,6 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
                     itemTunnel.setEnabled( connected );
                     itemTunnel.addMouseListener( this );
                     itemTunnel.setAlignmentX( Component.LEFT_ALIGNMENT );
-//                    itemTunnel.setMinimumSize( new Dimension( panel.getWidth(), itemTunnel.getMinimumSize().height ) );
-//                    itemTunnel.setMaximumSize( new Dimension( panel.getWidth(), itemTunnel.getMaximumSize().height ) );
                     
                     menu.add( itemTunnel );
                     
@@ -223,6 +233,34 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
     public void configManagerConfigChanged(Config config) {
 
         buildMenu( config );
+    }
+    
+    @Override
+    public void configManagerConfigInvalid(Config config, ArrayList<String> errorStack) {
+        
+        String message = "<html><body>Configuration errors:";
+        
+        for ( String error : errorStack ) {
+            
+            message += "<br>    * " + error;
+        }
+        
+        message += "</body></html>";
+        
+        labelMessage.setText( message );
+        labelStatus.setIcon( Imx.WARNING );
+        labelStatus.setText( "Config error" );
+        labelStatus.setForeground( Color.RED );
+        
+        TrayManager.blink();
+    }
+    
+    @Override
+    public void configManagerConfigValid(Config config) {
+        
+        labelStatus.setIcon( Imx.NONE );
+        labelStatus.setText( "OK" );
+        labelStatus.setForeground( new Color( 0, 100, 0 ) );
     }
     
     public void toggle( Point p ) {
@@ -331,9 +369,32 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
     }
 
     public void mouseEntered(MouseEvent e) {
+        
+        if ( e.getComponent().equals( labelStatus ) && ( labelStatus.getIcon() == Imx.WARNING || labelStatus.getIcon() == Imx.WARNING_DISABLED ) ) {
+            
+            labelStatus.setIcon( Imx.WARNING_DISABLED );
+            
+            windowMessage.pack();
+            
+            Point p = labelStatus.getLocationOnScreen();
+            
+            if ( p.x - windowMessage.getWidth() < 0 ) {
+                p.setLocation( p.x + this.getWidth(), p.y );
+            } else {
+                p.setLocation( p.x - windowMessage.getWidth(), p.y );
+            }
+            
+            windowMessage.setLocation( p );
+            windowMessage.setVisible( true );
+        }
     }
 
     public void mouseExited(MouseEvent e) {
+        
+        if ( e.getComponent().equals( labelStatus ) && windowMessage.isVisible() ) {
+            
+            windowMessage.setVisible( false );
+        }
 
         Rectangle rect = new Rectangle( panel.getLocationOnScreen() );
         rect.setSize( panel.getSize() );
@@ -461,6 +522,9 @@ class TunnelMenuItem extends JPanel implements MouseListener, TunnelManagerListe
     public void tunnelManagerTunnelPing(String signature, long ping) {
 
         if ( signature.equals( tunnel.getSignature() ) ) {
+
+            labelIcon.setIcon( Imx.ACTIVE );
+            labelIcon.setVisible( true );
 
             if ( ping < 0 ) {
 

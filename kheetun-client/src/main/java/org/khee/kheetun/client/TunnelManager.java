@@ -119,6 +119,12 @@ public class TunnelManager {
     
     public static void disableAutostart( Tunnel tunnel ) {
         
+        if ( ! tunnel.getAutostart() ) {
+            return;
+        }
+        
+        logger.info( "Disable autostart temporary for tunnel " + tunnel.getAlias() );
+        
         if ( ! instance.ignoreAutostart.contains( tunnel.getSignature() ) ) {
             
             instance.ignoreAutostart.add( tunnel.getSignature() ); 
@@ -126,6 +132,9 @@ public class TunnelManager {
             for ( TunnelManagerListener listener : instance.listeners ) {
                 listener.tunnelManagerAutostartDisabled( tunnel );
             }
+        } else {
+            
+            logger.warn( "Autostart already temporarily disabled for tunnel " + tunnel.getAlias() );
         }
     }
     
@@ -194,7 +203,8 @@ public class TunnelManager {
     public static void offline() {
         
         instance.connected = false;
-
+        
+        logger.info( "TunnelManager: offline" );
         for ( TunnelManagerListener listener : instance.listeners ) {
             listener.tunnelManagerOffline();
         }
@@ -203,6 +213,11 @@ public class TunnelManager {
     public static void online() {
         
         instance.connected = true;
+
+        instance.activating.clear();
+        instance.deactivating.clear();
+        instance.running.clear();
+        instance.ignoreAutostart.clear();
 
         for ( TunnelManagerListener listener : instance.listeners ) {
             listener.tunnelManagerOnline();

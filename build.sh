@@ -32,6 +32,7 @@ cp kheetun-server/src/main/resources/kheetund.default kheetun/etc/kheetund.defau
 cp kheetun-client/src/main/resources/kheetun.desktop kheetun/etc/kheetun.desktop
 cp kheetun-client/src/main/resources/kheetun.png kheetun/etc/kheetun.png
 cp kheetun-server/LICENSE kheetun/etc
+cp kheetun-client/src/main/resources/CHANGELOG.md kheetun/etc/CHANGELOG.md
 
 mv kheetun/bin/client*.jar kheetun/bin/kheetun-client.jar
 mv kheetun/bin/server*.jar kheetun/bin/kheetun-server.jar
