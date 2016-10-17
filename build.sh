@@ -3,13 +3,13 @@
 # dirty dirty little package script
 #
 mkdir kheetun 2> /dev/null
-rm -rf kheetun/*
+sudo rm -rf kheetun/*
 mkdir kheetun/lib
 mkdir kheetun/etc
 mkdir kheetun/log
 mkdir kheetun/bin
 
-version=`grep public.*VERSION kheetun-client/src/main/java/org/khee/kheetun/client/kheetun.java | perl -p -e 's/^.*(\d+.\d+).*$/$1/g'`
+version=`grep public.*VERSION kheetun-client/src/main/java/org/khee/kheetun/client/kheetun.java | perl -p -e 's/^.*(\d+.\d+.\d+).*$/$1/g'`
 
 echo "Building kheetun v$version" 
 
@@ -90,7 +90,7 @@ done
 cp ../kheetun-client/src/main/resources/kheetun.sh bin/kheetun
 echo "f 755 root root /opt/kheetun/bin/kheetun ./bin/kheetun" >> kheetun.list
 
-sudo epm -f deb kheetun
+sudo epm -f deb -nsm kheetun
 
 sudo cp linux*/*.deb ..
 
