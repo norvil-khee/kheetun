@@ -4,9 +4,11 @@ import java.util.ArrayList;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.khee.kheetun.client.config.Config;
+import org.khee.kheetun.client.config.ConfigManagerListener;
 import org.khee.kheetun.client.config.Tunnel;
 
-public class TunnelManager {
+public class TunnelManager implements ConfigManagerListener {
     
     private static Logger logger = LogManager.getLogger( "kheetun" );
     
@@ -28,7 +30,7 @@ public class TunnelManager {
         instance = new TunnelManager();
     }
     
-    public static void startTunnel( Tunnel tunnel ) {
+    public synchronized static void startTunnel( Tunnel tunnel ) {
         
         if ( ! instance.connected ) {
             return;
@@ -53,7 +55,7 @@ public class TunnelManager {
         }
     }
     
-    public static void stopTunnel( Tunnel tunnel ) {
+    public synchronized static void stopTunnel( Tunnel tunnel ) {
         
         if ( ! instance.connected ) {
             return;
@@ -105,7 +107,7 @@ public class TunnelManager {
         }
     }
     
-    public static void enableAutostart( Tunnel tunnel ) {
+    public synchronized static void enableAutostart( Tunnel tunnel ) {
         
         if ( instance.ignoreAutostart.contains( tunnel.getSignature() ) ) {
             
@@ -117,7 +119,7 @@ public class TunnelManager {
         }
     }
     
-    public static void disableAutostart( Tunnel tunnel ) {
+    public synchronized static void disableAutostart( Tunnel tunnel ) {
         
         if ( ! tunnel.getAutostart() ) {
             return;
@@ -210,7 +212,7 @@ public class TunnelManager {
         }
     }
 
-    public static void online() {
+    public synchronized static void online() {
         
         instance.connected = true;
 
@@ -272,6 +274,29 @@ public class TunnelManager {
     public static void addTunnelManagerListener( TunnelManagerListener listener ) {
         
         instance.listeners.add( listener );
+    }
+    
+    @Override
+    public void configManagerConfigChanged(Config config) {
+        // TODO Auto-generated method stub
+        
+    }
+    
+    @Override
+    public void configManagerConfigInvalid(Config config,
+            ArrayList<String> errorStack) {
+        // TODO Auto-generated method stub
+        
+    }
+    
+    @Override
+    public void configManagerConfigValid(Config config) {
+        
+        instance.activating.clear();
+        instance.deactivating.clear();
+        instance.running.clear();
+        instance.ignoreAutostart.clear();
+        TunnelClient.sendQueryTunnels();
     }
     
 }
