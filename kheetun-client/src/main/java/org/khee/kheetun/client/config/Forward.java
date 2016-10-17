@@ -9,15 +9,12 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlType;
 
-import org.khee.kheetun.client.gui.TableModelAttribute;
-import org.khee.kheetun.client.gui.TableModelAttributeOrder;
 import org.khee.kheetun.client.verify.VerifierFactory;
 
 
 @XmlAccessorType(XmlAccessType.NONE)
 @XmlRootElement
 @XmlType( propOrder={"type","bindIp","bindPort","forwardedHost","forwardedPort","hostsEntry","comment"} )
-@TableModelAttributeOrder( order={"active","type","bindIp","bindPort","forwardedHost","forwardedPort","hostsEntry","comment","delete"} )
 public class Forward implements Serializable {
     
     public static final long serialVersionUID = 42;
@@ -25,30 +22,22 @@ public class Forward implements Serializable {
     public static final String REMOTE = "remote";
     public static final String LOCAL  = "local";
     
-    @TableModelAttribute( name="Type" )
     private String type   = LOCAL;
     
-    @TableModelAttribute( name="Bind IP" )
     private String bindIp = "127.0.0.1";
     
-    @TableModelAttribute( name="Bind Port" )
     private Integer bindPort = 0;
     
-    @TableModelAttribute( name="Forwarded Host" )
     private String forwardedHost = "";
     
-    @TableModelAttribute( name="Forwarded Port" )
     private Integer forwardedPort = 0;
     
-    @TableModelAttribute( name="Hosts Entry" )
     private Boolean hostsEntry = true;
 
-    @TableModelAttribute( name="Comment" )
     private String comment = "";
     
     private Boolean active;
     
-    @TableModelAttribute( name="Delete" )
     private Object delete;    
     
 

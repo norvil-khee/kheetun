@@ -7,7 +7,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.gnome.gtk.Gtk;
 import org.khee.kheetun.client.config.ConfigManager;
-import org.khee.kheetun.client.gui.ConfigFrame;
 import org.khee.kheetun.client.gui.GtkTray;
 import org.khee.kheetun.client.gui.Imx;
 import org.khee.kheetun.client.gui.Tray;
@@ -43,12 +42,10 @@ public class kheetun {
         
         Tray        tray            = new GtkTray();
         TrayMenu    menu            = new TrayMenu();
-        ConfigFrame configDialog    = new ConfigFrame();
         
         TrayManager.init();
         TrayManager.setTray( tray );
         TrayManager.setMenu( menu );
-        TrayManager.setConfigDialog( configDialog );
         TrayManager.setIcon( Imx.KHEETUN_OFF );
         
         HostPingDaemon.init();

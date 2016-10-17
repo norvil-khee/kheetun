@@ -12,28 +12,21 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlType;
 
-import org.khee.kheetun.client.gui.TableModelAttribute;
-import org.khee.kheetun.client.gui.TableModelAttributeOrder;
 import org.khee.kheetun.client.verify.VerifierFactory;
 
 @XmlAccessorType(XmlAccessType.NONE)
 @XmlRootElement
 @XmlType( propOrder={"alias","user","hostname","sshKeyString","autostart","forwards"} )
-@TableModelAttributeOrder( order={"active","alias","autostart","user","hostname","sshKey", "delete"} )
 public class Tunnel implements Serializable {
     
     public static final long serialVersionUID = 42;
     
-    @TableModelAttribute( name="Alias" )
     protected String alias;
     
-    @TableModelAttribute( name="User" )
     private String user;
     
-    @TableModelAttribute( name="Host" )
     private String hostname;
     
-    @TableModelAttribute( name="SSH Key" )
     private File sshKey;
     
     private String sshKeyString;
@@ -42,10 +35,8 @@ public class Tunnel implements Serializable {
     
     private Integer ping;
     
-    @TableModelAttribute( name="Status", editable=false )
     private Boolean active   = false;
     
-    @TableModelAttribute( name="Delete" )
     private Object delete    = null;
     
     private ArrayList<Forward> forwards;

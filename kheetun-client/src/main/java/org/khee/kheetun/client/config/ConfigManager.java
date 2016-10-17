@@ -178,13 +178,13 @@ public class ConfigManager implements Runnable {
                 if ( ! VerifierFactory.getHostnameVerifier().verify( tunnel.getHostname() ) ) {
                     
                     errorStack.add( "Tunnel '" + tunnel.getAlias() +"': invalid hostname '" + tunnel.getHostname() + "'" );
-                } else {
-                    logger.info( "Hey, " + tunnel.getHostname() + " seems to be great" );
                 }
                 
-                if ( ! VerifierFactory.getSshKeyVerifier().verify( tunnel.getSshKey().getAbsolutePath() ) ) {
-                    
-                    errorStack.add( "Tunnel '" + tunnel.getAlias() +"': invalid SSH key '" + tunnel.getSshKey().getAbsolutePath() + "'" );
+                if ( tunnel.getSshKey() != null ) {
+                    if ( ! VerifierFactory.getSshKeyVerifier().verify( tunnel.getSshKey().getAbsolutePath() ) ) {
+                        
+                        errorStack.add( "Tunnel '" + tunnel.getAlias() +"': invalid SSH key '" + tunnel.getSshKey().getAbsolutePath() + "'" );
+                    }
                 }
                 
                 if ( ! VerifierFactory.getUserVerifier().verify( tunnel.getUser() ) ) {
