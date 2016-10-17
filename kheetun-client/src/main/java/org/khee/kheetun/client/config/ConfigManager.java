@@ -162,13 +162,13 @@ public class ConfigManager implements Runnable {
     public synchronized boolean validate( Config config ) {
         
         errorStack.clear();
-        ArrayList<String> bindIps    = new ArrayList<String>();
+        ArrayList<String> binds = new ArrayList<String>();
         
         for ( Profile profile : config.getProfiles() ) {
             
             for ( Tunnel tunnel : profile.getTunnels() ) {
                 
-                bindIps.clear();
+                binds.clear();
                 
                 if ( ! VerifierFactory.getAliasVerifier().verify( tunnel.getAlias() ) ) {
                     
@@ -210,18 +210,18 @@ public class ConfigManager implements Runnable {
                         errorStack.add( "Tunnel '" + tunnel.getAlias() +"', Forward " + f + ": invalid forwarded host '" + forward.getForwardedHost() + "'" );
                     }
 
-                    if ( bindIps.contains( forward.getBindIp() ) ) {
+                    if ( binds.contains( forward.getBindIp() + ":" + forward.getBindPort() ) ) {
                         
                         errorStack.add( "Tunnel '" + tunnel.getAlias() +"', Forward " + f + ": duplicate bind IP '" + forward.getBindIp() + "'" );
                         
                     } else {
 
-                        bindIps.add( forward.getBindIp() );
+                        binds.add( forward.getBindIp() + ":" + forward.getBindPort() );
+                    }
+                    
+                    if ( ! VerifierFactory.getIpAddressVerifier().verify( forward.getBindIp() ) ) {
                         
-                        if ( ! VerifierFactory.getIpAddressVerifier().verify( forward.getBindIp() ) ) {
-                            
-                            errorStack.add( "Tunnel '" + tunnel.getAlias() +"', Forward " + f + ": invalid bind IP '" + forward.getBindIp() + "'" );
-                        }
+                        errorStack.add( "Tunnel '" + tunnel.getAlias() +"', Forward " + f + ": invalid bind IP '" + forward.getBindIp() + "'" );
                     }
                 }
             }
