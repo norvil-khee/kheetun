@@ -2,11 +2,12 @@
 All notable changes to this project will be documented in this file.
 
 
-## 0.9.0 - 2016-10-17
+## 0.9.0 - 2016-10-18
 
 ### Added
 - configuration changes handled while running
 - reconnect on config changes
+- autoconnect when daemon is started
 
 ### Changed
 - config now done in XML only
@@ -14,6 +15,10 @@ All notable changes to this project will be documented in this file.
 ### Removed
 - removed configuration dialog because it was ugly
 
+### Fixes
+- stop all disables autostart temporary
+- ping daemon on server does not send ping updates if client is disconnected
+- stop displaying autostart symbol for tunnels that were stopped manually
 
 
 ## 0.8.0 - 2016-10-10 

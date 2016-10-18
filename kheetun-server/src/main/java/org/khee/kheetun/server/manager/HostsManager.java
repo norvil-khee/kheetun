@@ -111,7 +111,7 @@ public class HostsManager {
         
         if ( start > -1 && end > -1 ) {
             
-            ArrayList<String> top    = new ArrayList<String>( content.subList( 0, start -1 ) ); 
+            ArrayList<String> top    = new ArrayList<String>( start > 0 ? content.subList( 0, start -1 ) : new ArrayList<String>() );
             ArrayList<String> bottom = new ArrayList<String>( content.subList( end + 1, content.size() ) ); 
             
             content = new ArrayList<String>( top );

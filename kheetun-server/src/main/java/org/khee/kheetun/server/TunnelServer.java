@@ -64,7 +64,7 @@ public class TunnelServer implements Runnable {
         this.clientSocket   = clientSocket;
         this.parent         = parent;
         
-        Thread server = new Thread( this );
+        Thread server = new Thread( this, "kheetun-server-thread-" + clientSocket.getInetAddress().toString() + "/" + clientSocket.getLocalPort() );
         server.start();
     }
 
@@ -195,7 +195,7 @@ public class TunnelServer implements Runnable {
     
     public synchronized void send( Protocol protocol ) {
         
-        if ( clientSocket == null || ! clientSocket.isConnected() ) {
+        if ( clientSocket == null || ! clientSocket.isConnected() || clientSocket.isClosed() ) {
             return;
         }
         

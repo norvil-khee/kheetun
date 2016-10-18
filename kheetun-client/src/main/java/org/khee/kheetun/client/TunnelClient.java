@@ -127,51 +127,58 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
         
         clientRunning   = true;
         
-        logger.info( "Connecting to kheetun server" );
+        while ( clientRunning ) {
         
-        try {
+            logger.info( "Trying to connect to kheetun server at port " + port );
             
-            clientSocket = new Socket( InetAddress.getLocalHost(), port );
-            commOut     = new ObjectOutputStream( clientSocket.getOutputStream() );
-            commOut.flush();
-
-            send( new Protocol( Protocol.CONNECT ) );
+            try {
+                
+                clientSocket = new Socket( InetAddress.getLocalHost(), port );
+                commOut     = new ObjectOutputStream( clientSocket.getOutputStream() );
+                commOut.flush();
+    
+                send( new Protocol( Protocol.CONNECT ) );
+                
+                commIn      = new ObjectInputStream( clientSocket.getInputStream() );
+                
+                do {
+                    try {
+                        
+                        receive = (Protocol)commIn.readObject();
+                        handle( receive );
+                        
+                    } catch ( ClassNotFoundException e ) {
+                        logger.error( "Class error: " + e.getMessage() );
+                    }
+                } while ( receive.getCommand() != Protocol.QUIT && clientRunning );
+                
+            } catch ( ConnectException eConnect ) {
+                
+                logger.error( "Could not connect to kheetun server: " + eConnect.getMessage() );
+                
+            } catch ( SocketException eSocket ) {
+                
+                logger.error( "Socket error: " + eSocket.getMessage() + ", disconnected" );
+            } catch ( IOException eIO ) {
+                
+                logger.error( "Socket IO error: " + eIO.getMessage() + ", disconnected" );
+            } catch ( Exception e ) {
+                
+                logger.warn( e.getMessage() );
+            }
+    
+            closeSocket();
+            connected = false;
+            logger.info( "Disconnected from kheetun server, retrying in 2 seconds" );
             
-            commIn      = new ObjectInputStream( clientSocket.getInputStream() );
-            
-            do {
-                try {
-                    
-                    receive = (Protocol)commIn.readObject();
-                    handle( receive );
-//                    Thread.sleep( 1000 );
-                    
-                } catch ( ClassNotFoundException e ) {
-                    logger.error( "Class error: " + e.getMessage() );
-                }
-            } while ( receive.getCommand() != Protocol.QUIT && clientRunning );
-            
-        } catch ( ConnectException eConnect ) {
-            
-            logger.error( "Could not connect to kheetun server: " + eConnect.getMessage() );
-            
-        } catch ( SocketException eSocket ) {
-            
-            logger.error( "Socket error: " + eSocket.getMessage() + ", disconnected" );
-        } catch ( IOException eIO ) {
-            
-            logger.error( "Socket IO error: " + eIO.getMessage() + ", disconnected" );
-        } catch ( Exception e ) {
-            
-            logger.warn( e.getMessage() );
+            try {
+                Thread.sleep( 2000 );
+            } catch ( InterruptedException e ) {
+                logger.warn( "Error while trying to sleep before reconnect: " + e.getLocalizedMessage() );
+            }
         }
-
-        closeSocket();
         
-        connected       = false;
-        clientRunning   = false;
-
-        
+        logger.info( "Client stopped" );
     }
     
     private void handle( Protocol receive ) {
@@ -187,6 +194,8 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
         case Protocol.ACCEPT:
             
             connected = true;
+            
+            logger.info( "Connected to kheetun server" );
             
             send( new Protocol( Protocol.ECHO, "Its cool you accepted me!" ) );
             
@@ -301,7 +310,7 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
     
     private void send( Protocol protocol ) {
         
-        if ( ! clientSocket.isConnected() ) {
+        if ( clientSocket == null || ! clientSocket.isConnected() ) {
             logger.warn( "Client not connected while trying to send" );
             return;
         }

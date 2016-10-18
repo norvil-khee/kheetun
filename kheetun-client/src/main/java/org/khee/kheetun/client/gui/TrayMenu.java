@@ -139,7 +139,7 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
                 
                 for( Tunnel tunnel : tunnelByItem.values() ) {
                     
-                    TunnelClient.sendStopTunnel( tunnel );
+                    TunnelManager.stopTunnel( tunnel );
                 }
             }
         });
@@ -249,7 +249,7 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
         
         labelMessage.setText( message );
         labelStatus.setIcon( Imx.WARNING );
-        labelStatus.setText( "Config error" );
+        labelStatus.setText( "config error" );
         labelStatus.setForeground( Color.RED );
         
         TrayManager.blink();
@@ -259,7 +259,7 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
     public void configManagerConfigValid(Config config) {
         
         labelStatus.setIcon( Imx.NONE );
-        labelStatus.setText( "OK" );
+        labelStatus.setText( "config valid" );
         labelStatus.setForeground( new Color( 0, 100, 0 ) );
     }
     
@@ -290,7 +290,7 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
     
     @Override
     public void tunnelManagerOnline() {
-        labelConnected.setText( "connected" );
+        labelConnected.setText( "connected to daemon" );
         labelConnected.setForeground( new Color( 0, 100, 0 ) );
     }
     

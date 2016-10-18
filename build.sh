@@ -32,7 +32,7 @@ cp kheetun-server/src/main/resources/kheetund.default kheetun/etc/kheetund.defau
 cp kheetun-client/src/main/resources/kheetun.desktop kheetun/etc/kheetun.desktop
 cp kheetun-client/src/main/resources/kheetun.png kheetun/etc/kheetun.png
 cp kheetun-server/LICENSE kheetun/etc
-cp kheetun-client/src/main/resources/CHANGELOG.md kheetun/etc/CHANGELOG.md
+cp CHANGELOG.md kheetun/etc/CHANGELOG.md
 
 mv kheetun/bin/client*.jar kheetun/bin/kheetun-client.jar
 mv kheetun/bin/server*.jar kheetun/bin/kheetun-server.jar
@@ -41,12 +41,12 @@ cd kheetun
 
 cat << EOF > kheetun.list
 %product kheetun, pretty friendly ssh tunnel manager
-%copyright (c) Norvil Khee (norvil@norvil-khee.de)
-%vendor http://www.norvil-khee.de
+%copyright (c) Sir Norvil Khee (volker@superhein.de)
+%vendor http://www.khee.org
 %license ./LICENSE
 %readme ./README
 %version $version
-%packager Norvil Khee 
+%packager Sir Norvil Khee 
 %requires libjava-gnome-jni
 %description 2 component ssh tunnel manager. SSH tunnels and hosts file managed by daemon running as privileged user. Config managed by user client.
 

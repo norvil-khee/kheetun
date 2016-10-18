@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.khee.kheetun.client.config.Config;
+import org.khee.kheetun.client.config.ConfigManager;
 import org.khee.kheetun.client.config.ConfigManagerListener;
 import org.khee.kheetun.client.config.Tunnel;
 
@@ -23,6 +24,8 @@ public class TunnelManager implements ConfigManagerListener {
     private boolean                             connected       = false;
     
     protected TunnelManager() {
+        
+        ConfigManager.addConfigManagerListener( this );
     }
     
     public static void init() {
@@ -36,7 +39,7 @@ public class TunnelManager implements ConfigManagerListener {
             return;
         }
         
-        if ( ! instance.activating.contains( tunnel.getSignature() ) ) {
+        if ( ! instance.running.contains( tunnel.getSignature() ) && ! instance.activating.contains( tunnel.getSignature() ) ) {
             
             logger.info( "Starting tunnel: " + tunnel.getAlias() );
             logger.debug( tunnel.getSignature() );
@@ -61,7 +64,7 @@ public class TunnelManager implements ConfigManagerListener {
             return;
         }
         
-        if ( ! instance.deactivating.contains( tunnel.getSignature() ) ) {
+        if ( instance.running.contains( tunnel.getSignature() ) && ! instance.deactivating.contains( tunnel.getSignature() ) ) {
             
             logger.info( "Stopping tunnel: " + tunnel.getAlias() );
             logger.debug( tunnel.getSignature() );
@@ -206,7 +209,6 @@ public class TunnelManager implements ConfigManagerListener {
         
         instance.connected = false;
         
-        logger.info( "TunnelManager: offline" );
         for ( TunnelManagerListener listener : instance.listeners ) {
             listener.tunnelManagerOffline();
         }
@@ -278,15 +280,10 @@ public class TunnelManager implements ConfigManagerListener {
     
     @Override
     public void configManagerConfigChanged(Config config) {
-        // TODO Auto-generated method stub
-        
     }
     
     @Override
-    public void configManagerConfigInvalid(Config config,
-            ArrayList<String> errorStack) {
-        // TODO Auto-generated method stub
-        
+    public void configManagerConfigInvalid(Config config, ArrayList<String> errorStack) {
     }
     
     @Override

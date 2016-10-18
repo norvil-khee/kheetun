@@ -74,13 +74,13 @@ public class HostPingDaemon implements Runnable, ConfigManagerListener {
             
             for ( Profile profile : config.getProfiles() ) {
                 
-                if ( ! running ) {
+                if ( ! running || ! TunnelManager.isConnected() ) {
                     break;
                 }
                 
                 for ( Tunnel tunnel : profile.getTunnels() ) {
                     
-                    if ( ! running ) {
+                    if ( ! running || ! TunnelManager.isConnected()  ) {
                         break;
                     }
                     

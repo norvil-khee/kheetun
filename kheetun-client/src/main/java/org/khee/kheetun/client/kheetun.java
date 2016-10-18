@@ -23,6 +23,9 @@ public class kheetun {
         Gtk.init( args );
         
         ConfigManager.init();
+        TunnelManager.init();
+        TunnelClient.init();
+        HostPingDaemon.init();
         
         // disable DNS caching
         //
@@ -38,8 +41,6 @@ public class kheetun {
         
         new File( System.getProperty( "user.home" ) + "/.kheetun" ).mkdir();
         
-        TunnelManager.init();
-        
         Tray        tray            = new GtkTray();
         TrayMenu    menu            = new TrayMenu();
         
@@ -47,11 +48,7 @@ public class kheetun {
         TrayManager.setTray( tray );
         TrayManager.setMenu( menu );
         TrayManager.setIcon( Imx.KHEETUN_OFF );
-        
-        HostPingDaemon.init();
-        
-        TunnelClient.init();
-        
+
         ConfigManager.start();
         
         Gtk.main();

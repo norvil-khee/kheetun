@@ -25,7 +25,7 @@ public class PingDaemon implements Runnable {
         this.tunnel  = tunnel;
         this.session = session;
         
-        Thread daemon = new Thread( this );
+        Thread daemon = new Thread( this, "kheetun-ping-thread" );
         daemon.start();
     }
     

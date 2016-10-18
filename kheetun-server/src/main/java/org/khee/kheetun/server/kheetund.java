@@ -18,7 +18,7 @@ import sun.misc.SignalHandler;
 public class kheetund {
     
     private static Logger logger = LogManager.getLogger( "kheetund" );
-    private static final String VERSION = "0.1";
+    private static final String VERSION = "0.9.0";
 
     @SuppressWarnings("static-access")
     public static void main(String[] args) {
