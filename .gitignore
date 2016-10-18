@@ -1,4 +1,5 @@
 .gitignore
+.project
 kheetun/**
 *.deb
 */.project
