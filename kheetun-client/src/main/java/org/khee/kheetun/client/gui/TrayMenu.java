@@ -31,8 +31,6 @@ import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.khee.kheetun.client.TunnelClient;
 import org.khee.kheetun.client.TunnelManager;
 import org.khee.kheetun.client.TunnelManagerListener;
@@ -44,8 +42,6 @@ import org.khee.kheetun.client.config.Profile;
 import org.khee.kheetun.client.config.Tunnel;
 
 public class TrayMenu extends JWindow implements MouseListener, ConfigManagerListener, TunnelManagerListener {
-    
-    private static Logger logger = LogManager.getLogger( "kheetun" );
     
     public static final long serialVersionUID = 42;
     
@@ -124,9 +120,7 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
             
             public void actionPerformed(ActionEvent e) {
                 
-                logger.info( "Exiting" );
-                TunnelClient.disconnect();
-                System.exit( 0 );
+                TunnelManager.quit();
             }
         });
         itemExit.addMouseListener( this );

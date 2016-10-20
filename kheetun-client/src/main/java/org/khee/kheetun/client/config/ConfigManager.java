@@ -2,6 +2,7 @@ package org.khee.kheetun.client.config;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import javax.xml.bind.JAXBException;
 
@@ -17,8 +18,10 @@ public class ConfigManager implements Runnable {
     private static ConfigManager instance = null;
     
     private Config              config;
-    private long                lastModified = -1;
-    private ArrayList<String>   errorStack = new ArrayList<String>();
+    private String              fingerprint     = "";
+    private ArrayList<String>   errorStack      = new ArrayList<String>();
+    private File                configDirectory = new File( System.getProperty( "user.home" ) + "/.kheetun/kheetun.d" );
+
     
     private ArrayList<ConfigManagerListener> listeners  = new ArrayList<ConfigManagerListener>();
     
@@ -68,31 +71,63 @@ public class ConfigManager implements Runnable {
                 }
                 
                 if ( stale ) {
-                    logger.info( "Stopping stale tunnel after config change: " + oldTunnel.getAlias() );
-                    TunnelManager.stopTunnel( oldTunnel );
+                    TunnelManager.setStale( oldTunnel );
                 }
             }
         }
     }
     
+    private boolean configChanged() {
+        
+        boolean deprecatedConfigExists = new File( System.getProperty( "user.home" ) + "/.kheetun/kheetun.xml" ).exists();
+        
+        if ( deprecatedConfigExists ) {
+            return true;
+        }
+        
+        String fingerprint = "";
+        
+        if ( configDirectory.exists() ) {
+            
+            File[] files = configDirectory.listFiles();
+            
+            Arrays.sort( files );
+           
+            for ( File file : files ) {
+                
+                if ( ! file.getAbsolutePath().matches( ".*\\.xml$" ) ) {
+                    continue;
+                }
+                
+                fingerprint += file.getAbsolutePath() + file.lastModified();
+            }
+        }
+            
+        logger.debug( "ConfigManager: fingerprint ( " + fingerprint + "/" + this.fingerprint + ")" );
+            
+        if ( this.fingerprint.equals( fingerprint ) ) {
+            return false;
+        }
+        
+        this.fingerprint = fingerprint;
+
+        return true;
+    }
+    
     @Override
     public void run() {
         
-        File f = new File( System.getProperty( "user.home" ) + "/.kheetun/kheetun.xml" );
-        
         while( true ) {
         
-            if ( f.lastModified() != this.lastModified && f.exists() ) {
+            if ( this.configChanged() ) {
                 
                 logger.info( "Configuration changed, updating" );
-                
-                this.lastModified = f.lastModified();
-                
+               
                 Config newConfig = new Config();
                 
                 try {
                     
-                    newConfig = Config.load( f );
+                    newConfig = Config.load();
                     
                 } catch ( JAXBException eJAX ) {
                     
@@ -112,6 +147,7 @@ public class ConfigManager implements Runnable {
                     this.errorStack.add( "Configuration: " + e.getLocalizedMessage() );
                     
                     logger.error( "Error while loading configuration: " + e.getLocalizedMessage() );
+                    logger.debug( "", e );
 
                     for ( ConfigManagerListener listener : this.listeners ) {
                         

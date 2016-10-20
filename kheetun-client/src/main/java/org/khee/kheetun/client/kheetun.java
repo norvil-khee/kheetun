@@ -16,7 +16,7 @@ import org.khee.kheetun.client.gui.TrayMenu;
 public class kheetun {
 
     private static Logger logger = LogManager.getLogger( "kheetun" );
-    public static final String VERSION = "0.9.0";
+    public static final String VERSION = "0.10.0";
     
     public static void main(String[] args) {
         
@@ -40,6 +40,7 @@ public class kheetun {
         logger.info( "Starting kheetun " + VERSION );
         
         new File( System.getProperty( "user.home" ) + "/.kheetun" ).mkdir();
+        new File( System.getProperty( "user.home" ) + "/.kheetun/kheetun.d" ).mkdir();
         
         Tray        tray            = new GtkTray();
         TrayMenu    menu            = new TrayMenu();

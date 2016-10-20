@@ -94,7 +94,7 @@ public class TunnelServer implements Runnable {
                     break;
                 }
                 
-            } while ( receive.getCommand() != Protocol.QUIT );
+            } while ( ( receive.getCommand() != Protocol.QUIT && receive.getCommand() != Protocol.DISCONNECT ) ); 
             
             logger.info( "Client at " + clientSocket.getInetAddress().toString() + " disconnected" );
             
@@ -186,6 +186,12 @@ public class TunnelServer implements Runnable {
             
             send( new Protocol( Protocol.QUIT ) );
             break;
+            
+        case Protocol.DISCONNECT:
+            
+            send( new Protocol( Protocol.DISCONNECT ) );
+            break;
+            
 
         default:
             break;

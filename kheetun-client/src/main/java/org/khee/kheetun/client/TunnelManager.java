@@ -20,6 +20,8 @@ public class TunnelManager implements ConfigManagerListener {
     private ArrayList<String>                   running         = new ArrayList<String>();   
     private ArrayList<TunnelManagerListener>    listeners       = new ArrayList<TunnelManagerListener>();
     private ArrayList<String>                   ignoreAutostart = new ArrayList<String>();
+    private ArrayList<Tunnel>                   stale           = new ArrayList<Tunnel>();
+    private ArrayList<Tunnel>                   queued          = new ArrayList<Tunnel>();
     
     private boolean                             connected       = false;
     
@@ -54,7 +56,14 @@ public class TunnelManager implements ConfigManagerListener {
                 listener.tunnelManagerTunnelActivating( tunnel.getSignature() );
             }
             
-            TunnelClient.sendStartTunnel( tunnel );
+            if ( ! instance.stale.isEmpty() ) {
+                
+                logger.info( "Queueing start of tunnel " + tunnel.getAlias() + " as there are still running stale tunnels on daemon" );
+                instance.queued.add( tunnel );
+            } else {
+            
+                TunnelClient.sendStartTunnel( tunnel );
+            }
         }
     }
     
@@ -87,6 +96,15 @@ public class TunnelManager implements ConfigManagerListener {
         }
     }
     
+    public static void setStale( Tunnel tunnel ) {
+        
+        if ( ! instance.stale.contains( tunnel ) ) {
+            
+            logger.info( "Marking tunnel " + tunnel.getAlias() + " as stale" );
+            instance.stale.add( tunnel );
+        }
+    }
+    
     public static void raiseError( Tunnel tunnel, String error ) {
         
         if ( tunnel != null ) {
@@ -101,7 +119,7 @@ public class TunnelManager implements ConfigManagerListener {
                 instance.deactivating.remove( tunnel.getSignature() );
             }
             
-            TunnelManager.stopped( tunnel.getSignature() );
+            TunnelManager.stopped( tunnel );
 
             for ( TunnelManagerListener listener : instance.listeners ) {
                 logger.debug( "Notifying " + listener );
@@ -143,36 +161,69 @@ public class TunnelManager implements ConfigManagerListener {
         }
     }
     
-    public static void started( String signature ) {
+    public static void quit() {
         
-        if ( ! instance.running.contains( signature ) ) {
+        if ( instance.connected ) {
             
-            if ( instance.activating.contains( signature ) ) {
-                instance.activating.remove( signature );
+            TunnelClient.sendQuit();
+        } else {
+            
+            logger.info( "Bye!" );
+            System.exit( 0 );
+        }
+    }
+    
+    public static void started( Tunnel tunnel ) {
+        
+        if ( ! instance.running.contains( tunnel.getSignature() ) ) {
+            
+            if ( instance.activating.contains( tunnel.getSignature() ) ) {
+                instance.activating.remove( tunnel.getSignature() );
             }
             
-            instance.running.add( signature );
+            if ( instance.queued.contains( tunnel ) ) {
+                instance.queued.remove( tunnel );
+            }
+            
+            instance.running.add( tunnel.getSignature() );
             
             for ( TunnelManagerListener listener : instance.listeners ) {
-                listener.tunnelManagerTunnelActivated( signature );
+                listener.tunnelManagerTunnelActivated( tunnel.getSignature() );
             }
         }        
     }
     
     
-    public static void stopped( String signature ) {
+    public static void stopped( Tunnel tunnel ) {
         
-        if ( instance.running.contains( signature ) ) {
+        if ( instance.running.contains( tunnel.getSignature() ) ) {
             
-            if ( instance.deactivating.contains( signature ) ) {
-                instance.deactivating.remove( signature );
+            if ( instance.deactivating.contains( tunnel.getSignature() ) ) {
+                instance.deactivating.remove( tunnel.getSignature() );
             }
             
-            instance.running.remove( signature );
+            instance.running.remove( tunnel.getSignature() );
 
             for ( TunnelManagerListener listener : instance.listeners ) {
-                listener.tunnelManagerTunnelDeactivated( signature );
+                listener.tunnelManagerTunnelDeactivated( tunnel.getSignature() );
             }
+            
+            if ( instance.stale.contains( tunnel ) ) {
+                
+                logger.info( "Stale tunnel " + tunnel.getAlias() + " stopped" );
+                instance.stale.remove( tunnel );
+                
+                // start queued tunnels that were queued because they waited for stale tunnels to be stopped
+                //
+                if ( instance.stale.isEmpty() && ! instance.queued.isEmpty() ) {
+                    
+                    for ( Tunnel queued : instance.queued ) {
+                        
+                        TunnelManager.startTunnel( queued );
+                    }
+                }
+            }
+            
         }      
     }
     
@@ -226,6 +277,23 @@ public class TunnelManager implements ConfigManagerListener {
         for ( TunnelManagerListener listener : instance.listeners ) {
             listener.tunnelManagerOnline();
         }
+        
+        // clear stale tunnels, now that we are connected
+        //
+        if ( ! instance.stale.isEmpty() ) {
+            
+            for ( Tunnel tunnel : instance.stale ) {
+                
+                logger.info( "Stopping stale tunnel after connect: " + tunnel.getAlias() );
+                
+                TunnelClient.sendStopTunnel( tunnel );
+            }
+        }
+    }
+    
+    public static boolean isStale( Tunnel tunnel ) {
+        
+        return instance.stale.contains( tunnel ); 
     }
     
     public static void autostartHostAvailable( Tunnel tunnel ) {

@@ -1,6 +1,20 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## 0.10.0 - 2016-10-20
+
+### Added
+- stale tunnels (tunnels which are running, but not defined in config anymore) are now stopped before new configuration will be applied
+- config file conversion from 0.9.0 to new layout
+
+### Changed
+- switched from "single configuration" file layout to "multiple configuration" file layout
+- XML configuration files are now to be stored in $HOME/.kheetun/kheetun.d, where each file contains one ``<profile>`` block
+- global configuration is now done in $HOME/.kheetun/kheetun.conf
+- deprecated configuration files will be converted to new layout (XML files named after profile name, lower case)
+
+### Fixes
+- ``/etc/hosts`` entry manager occasionally swallowed the last line
 
 ## 0.9.0 - 2016-10-18
 

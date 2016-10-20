@@ -59,68 +59,22 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
     @Override
     public void configManagerConfigInvalid( Config config, ArrayList<String> errorStack ) {
         
-        this.stopClient();
+        this.send( new Protocol( Protocol.DISCONNECT ) );
     }
     
     @Override
     public void configManagerConfigValid(Config config) {
         
-        if ( ! this.port.equals( config.getPort() ) || ! connected ) {
-            
-            logger.info( "Port changed from " + this.port + " to " + config.getPort() );
-            
-            this.stopClient();
-            
-            if ( client != null && client.isAlive() ) {
-                try {
-                    client.join();
-                } catch ( InterruptedException e ) {
-                    
-                    logger.error( "Interrupted while waiting for client thread to stop" );
-                }
-            }
-            
-            this.port = config.getPort();
+        logger.info( "Connecting to port " + config.getPort() + " after config change" );
+        
+        this.port = config.getPort();
+        
+        this.send( new Protocol( Protocol.DISCONNECT ) );
+        
+        if ( this.client == null ) {
             this.client = new Thread( this, "kheetun-client-thread" );
             this.client.start();
         }
-    }
- 
-    public static void disconnect() {
-        assert( instance != null );
-        
-        instance.stopClient();
-    }
-    
-    public void stopClient() {
-        
-        if ( client != null && client.isAlive() ) {
-            send( new Protocol( Protocol.QUIT ) );
-            
-            instance.clientRunning = false;
-        }
-    }
-    
-    private void closeSocket() {
-        
-        try {
-            if ( commIn != null ) {
-                commIn.close();
-            }
-            if ( commOut != null ) {
-                commOut.close();
-            }
-            if ( clientSocket != null ) {
-                clientSocket.close();
-                logger.info( "Disconnected from kheetun server" );
-            }
-        
-        } catch ( IOException e ) {
-            
-            logger.warn( e.getMessage() );
-        }
-
-        TunnelManager.offline();
     }
     
     public void run() {
@@ -150,7 +104,7 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
                     } catch ( ClassNotFoundException e ) {
                         logger.error( "Class error: " + e.getMessage() );
                     }
-                } while ( receive.getCommand() != Protocol.QUIT && clientRunning );
+                } while ( receive.getCommand() != Protocol.DISCONNECT && receive.getCommand() != Protocol.QUIT && clientRunning );
                 
             } catch ( ConnectException eConnect ) {
                 
@@ -166,10 +120,29 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
                 
                 logger.warn( e.getMessage() );
             }
-    
-            closeSocket();
+            
+            try {
+                if ( commIn != null ) {
+                    commIn.close();
+                }
+                if ( commOut != null ) {
+                    commOut.close();
+                }
+                if ( clientSocket != null ) {
+                    clientSocket.close();
+                    logger.info( "Disconnected from kheetun server" );
+                }
+            
+            } catch ( IOException e ) {
+                
+                logger.warn( e.getMessage() );
+            }
+
+            TunnelManager.offline();            
+            
             connected = false;
-            logger.info( "Disconnected from kheetun server, retrying in 2 seconds" );
+            
+            logger.debug( "Disconnected from kheetun server, retrying in 2 seconds" );
             
             try {
                 Thread.sleep( 2000 );
@@ -205,12 +178,12 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
             
         case Protocol.TUNNELSTARTED:
             
-            TunnelManager.started( receive.getTunnel().getSignature() );
+            TunnelManager.started( receive.getTunnel() );
             break;
             
         case Protocol.TUNNELSTOPPED:
             
-            TunnelManager.stopped( receive.getTunnel().getSignature() );
+            TunnelManager.stopped( receive.getTunnel() );
             break;
 
         case Protocol.ERROR:
@@ -229,27 +202,28 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
             TunnelManager.updatePing( receive.getTunnel().getSignature(), receive.getNumber() );
             break;
             
+        case Protocol.QUIT:
+            
+            logger.info( "Received QUIT command, bye!" );
+            System.exit( 0 );
+            break;
+            
         default:
             break;
         }
     }
     
+    public static void sendQuit() {
+        
+        instance.send( new Protocol( Protocol.QUIT ) );
+    }
     
     public static void sendQueryTunnels() {
-        
-        if ( instance == null || ! instance.connected ) {
-            return;
-        }
         
         instance.send( new Protocol( Protocol.QUERYTUNNELS ) );
     }
     
     public static void sendStartTunnel( Tunnel tunnel ) {
-        
-        if ( instance == null || ! instance.connected ) {
-            logger.warn( "No connection" );
-            return;
-        }
         
         if ( tunnel.getSshKey() != null ) {
 
@@ -290,10 +264,7 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
             }
         }
         
-        
         instance.send(new Protocol( Protocol.STARTTUNNEL, tunnel,  "" ));
-        
-//        instance.send( new Protocol( Protocol.STARTTUNNEL, tunnel, System.getenv( "SSH_AUTH_SOCK" ) ) );
         
         tunnel.setPassPhrase( "" );
     }
@@ -311,6 +282,7 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
     private void send( Protocol protocol ) {
         
         if ( clientSocket == null || ! clientSocket.isConnected() ) {
+            
             logger.warn( "Client not connected while trying to send" );
             return;
         }

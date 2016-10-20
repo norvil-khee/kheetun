@@ -41,7 +41,6 @@ public class Tunnel implements Serializable {
     
     private ArrayList<Forward> forwards;
 
-//    @TableModelAttribute( name="Autostart" )
     private Boolean autostart;
     
     public Tunnel() {
@@ -107,10 +106,10 @@ public class Tunnel implements Serializable {
         this.hostname = hostname;
     }
     
-    @XmlAttribute
     public File getSshKey() {
         return sshKey;
     }
+    
     public void setSshKey(File sshKey) {
         
         if ( sshKey != null ) {
