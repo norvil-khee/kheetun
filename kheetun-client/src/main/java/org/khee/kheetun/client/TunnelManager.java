@@ -19,7 +19,7 @@ public class TunnelManager implements ConfigManagerListener {
     private ArrayList<String>                   deactivating    = new ArrayList<String>();
     private ArrayList<String>                   running         = new ArrayList<String>();   
     private ArrayList<TunnelManagerListener>    listeners       = new ArrayList<TunnelManagerListener>();
-    private ArrayList<String>                   ignoreAutostart = new ArrayList<String>();
+    private ArrayList<Tunnel>                   ignoreAutostart = new ArrayList<Tunnel>();
     private ArrayList<Tunnel>                   stale           = new ArrayList<Tunnel>();
     private ArrayList<Tunnel>                   queued          = new ArrayList<Tunnel>();
     
@@ -150,7 +150,7 @@ public class TunnelManager implements ConfigManagerListener {
         
         if ( ! instance.ignoreAutostart.contains( tunnel.getSignature() ) ) {
             
-            instance.ignoreAutostart.add( tunnel.getSignature() ); 
+            instance.ignoreAutostart.add( tunnel ); 
 
             for ( TunnelManagerListener listener : instance.listeners ) {
                 listener.tunnelManagerAutostartDisabled( tunnel );
@@ -160,7 +160,7 @@ public class TunnelManager implements ConfigManagerListener {
             logger.warn( "Autostart already temporarily disabled for tunnel " + tunnel.getAlias() );
         }
     }
-    
+       
     public static void quit() {
         
         if ( instance.connected ) {
@@ -339,6 +339,11 @@ public class TunnelManager implements ConfigManagerListener {
     public static boolean isBusy( Tunnel tunnel ) {
         
         return instance.activating.contains( tunnel.getSignature() ) || instance.deactivating.contains( tunnel.getSignature() );
+    }
+    
+    public static boolean isAutostartDisabled( Tunnel tunnel ) {
+        
+        return instance.ignoreAutostart.contains( tunnel );
     }
     
     public static void addTunnelManagerListener( TunnelManagerListener listener ) {

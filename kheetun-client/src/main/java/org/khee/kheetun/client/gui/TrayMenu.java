@@ -474,6 +474,11 @@ class TunnelMenuItem extends JPanel implements MouseListener, TunnelManagerListe
     public void tunnelManagerOnline() {
         
         labelTunnel.setForeground( Color.BLACK );
+        
+        if ( tunnel.getAutostart() && ! TunnelManager.isAutostartDisabled( this.tunnel ) ) {
+            
+            this.tunnelManagerAutostartHostUnavailable( tunnel );
+        }
     }
     
     @Override

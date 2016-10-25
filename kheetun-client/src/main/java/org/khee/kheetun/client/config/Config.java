@@ -128,7 +128,7 @@ public class Config {
             
             oldConfig.save();
             
-            fileConfig_0_9_0.delete();
+            fileConfig_0_9_0.renameTo( new File( System.getProperty( "user.home") + "/.kheetun/kheetun.xml.deprecated" ) );
         }
         
         Config config = new Config();

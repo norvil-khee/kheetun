@@ -17,9 +17,9 @@ public class Imx extends ImageIcon {
     
     private static Logger logger = LogManager.getLogger( "kheetun" );
     
-    public static final Imx KHEETUN             = loadImx( "kheetun1.png" );
-    public static final Imx KHEETUN_ON          = loadImx( "kheetun1.png" );
-    public static final Imx KHEETUN_OFF         = loadImx( "kheetun1.png" );
+    public static final Imx KHEETUN             = loadImx( "khee_tray_blue_32x32.png" );
+    public static final Imx KHEETUN_ON          = loadImx( "khee_tray_green_32x32.png" );
+    public static final Imx KHEETUN_OFF         = loadImx( "khee_tray_red_32x32.png" );
     public static final Imx SAVE                = loadImx( "save.png" );
     public static final Imx NEW                 = loadImx( "new.png" );
     public static final Imx LOAD                = loadImx( "load.png" );
