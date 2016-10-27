@@ -1,6 +1,7 @@
 package org.khee.kheetun.client;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -33,6 +34,8 @@ public class HostPingDaemon implements Runnable, ConfigManagerListener {
     }
     
     private void setConfig( Config config ) {
+        
+        logger.info( "Start host ping due to config change" );
         
         instance.config = config;
         instance.running = false;
@@ -75,16 +78,26 @@ public class HostPingDaemon implements Runnable, ConfigManagerListener {
             for ( Profile profile : config.getProfiles() ) {
                 
                 if ( ! running || ! TunnelManager.isConnected() ) {
+                    logger.trace( "Break requested or TunnelManager is not connected, breaking host ping" );
                     break;
                 }
                 
                 for ( Tunnel tunnel : profile.getTunnels() ) {
                     
                     if ( ! running || ! TunnelManager.isConnected()  ) {
+                        logger.trace( "Break requested or TunnelManager is not connected, breaking host ping" );
                         break;
                     }
                     
-                    if ( ! tunnel.getAutostart() || TunnelManager.isRunning( tunnel ) ) {
+                    if ( TunnelManager.isRunning( tunnel ) ) {
+                        
+                        logger.trace( "Tunnel " + tunnel.getAlias() + " is running -> no host ping required" );
+                        continue;
+                    }
+
+                    if ( ! tunnel.getAutostart() && ! tunnel.getRestart() ) {
+
+                        logger.trace( "Tunnel " + tunnel.getAlias() + " has neither auto- nor restart set -> no host ping required" );
                         continue;
                     }
                     
@@ -93,7 +106,9 @@ public class HostPingDaemon implements Runnable, ConfigManagerListener {
                         // try an SSH connect
                         // TODO: make port configureable
                         //
-                        Socket socket = new Socket( tunnel.getHostname(), 22 );
+                        logger.trace( "Try SSH connect to " + tunnel.getHostname() );
+                        Socket socket = new Socket();
+                        socket.connect( new InetSocketAddress( tunnel.getHostname(), 22 ), 2000 ); 
                         
                         if ( socket.isConnected() ) {
                             
@@ -122,11 +137,14 @@ public class HostPingDaemon implements Runnable, ConfigManagerListener {
                 }
             }
             
+            logger.trace( "Host ping sleep 1 second" );
             try {
                 Thread.sleep( 1000 );
             } catch ( InterruptedException e ) {
                 logger.error( "Error while trying thread sleep in host ping daemon: " + e.getMessage() );
             }
         }
+        
+        logger.trace( "Host ping thread ended" );
     }
 }

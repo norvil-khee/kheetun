@@ -1,7 +1,9 @@
 package org.khee.kheetun.server.manager;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -28,20 +30,15 @@ public class TunnelManager implements PingDaemonListener {
     
     public static final long serialVersionUID = 42;
     
-    private HashMap<String, Session> activeTunnels;
-    private HashMap<String, PingDaemon> pingDaemons;
-    private JSch jsch;
-    private IdentityRepository identities;
-    private TunnelServer server;
+    private Map<Tunnel, Session>        activeTunnels   = Collections.synchronizedMap( new HashMap<Tunnel, Session>() );
+    private Map<Tunnel, PingDaemon>     pingDaemons     = Collections.synchronizedMap( new HashMap<Tunnel, PingDaemon>() );
+    private JSch                        jsch            = new JSch();
+    private IdentityRepository          identities;
+    private TunnelServer                server;
 
     
     public TunnelManager() {
-        
-        activeTunnels   = new HashMap<String, Session>();
-        pingDaemons     = new HashMap<String, PingDaemon>();
-        jsch            = new JSch();
     }
-    
     
     public void setServer(TunnelServer server) {
         this.server = server;
@@ -50,11 +47,11 @@ public class TunnelManager implements PingDaemonListener {
     @Override
     public void PingFailed( PingDaemon daemon, Tunnel tunnel, Session session ) {
         
-        if ( ! activeTunnels.containsKey( tunnel.getSignature() ) ) {
+        if ( ! activeTunnels.containsKey( tunnel ) ) {
             return;
         }
         
-        stopTunnel( tunnel );
+        this.stopTunnel( tunnel );
         server.send( new Protocol( Protocol.TUNNELSTOPPED, tunnel ) );
         server.send( new Protocol( Protocol.ERROR, tunnel, "Ping timeout" ) );
         daemon.stop();
@@ -63,7 +60,7 @@ public class TunnelManager implements PingDaemonListener {
     @Override
     public void PingUpdate( Tunnel tunnel, long ping ) {
         
-        if ( ! activeTunnels.containsKey( tunnel.getSignature() ) ) {
+        if ( ! activeTunnels.containsKey( tunnel ) ) {
             return;
         }
         
@@ -111,18 +108,30 @@ public class TunnelManager implements PingDaemonListener {
         return true;
     }
     
-    public ArrayList<String> getActiveTunnels() {
+    public ArrayList<Tunnel> getActiveTunnels() {
         
-        return new ArrayList<String>( activeTunnels.keySet() );
+        return new ArrayList<Tunnel>( this.activeTunnels.keySet() );
+    }
+    
+    public boolean stopAllTunnels() {
+        
+        ArrayList<Tunnel> tunnels = new ArrayList<Tunnel>( activeTunnels.keySet() );
+        
+        for ( Tunnel tunnel : tunnels ) {
+            
+            this.stopTunnel( tunnel );
+        }
+        
+        return true;
     }
     
     public boolean stopTunnel( Tunnel tunnel ) {
 
-        if ( ! activeTunnels.containsKey( tunnel.getSignature() ) ) {
+        if ( ! activeTunnels.containsKey( tunnel ) ) {
             return false;
         }
 
-        Session session = activeTunnels.get( tunnel.getSignature() );
+        Session session = activeTunnels.get( tunnel );
         
         if ( session != null ) {
 
@@ -146,13 +155,15 @@ public class TunnelManager implements PingDaemonListener {
             }
         }
         
-        logger.debug( "Removing tunnel from active tunnels: " + tunnel.getSignature() );
+        logger.debug( "Removing tunnel from active tunnels: " + tunnel );
         
-        activeTunnels.remove( tunnel.getSignature() );
-        pingDaemons.get( tunnel.getSignature() ).stop();
-        pingDaemons.remove( tunnel.getSignature() );
+        activeTunnels.remove( tunnel );
+        pingDaemons.get( tunnel ).stop();
+        pingDaemons.remove( tunnel );
         
-        logger.info( "Stopped tunnel with signature: " + tunnel.getSignature() );
+        logger.info( "Stopped tunnel: " + tunnel );
+        
+        server.send( new Protocol( Protocol.TUNNELSTOPPED, tunnel ) );
         
         return true;
     }
@@ -163,9 +174,9 @@ public class TunnelManager implements PingDaemonListener {
          * check if this tunnel is active already
          * and if so, if session is still okay
          */
-        if ( activeTunnels.containsKey( tunnel.getSignature() ) ) {
+        if ( activeTunnels.containsKey( tunnel ) ) {
             
-            Session session = activeTunnels.get( tunnel.getSignature() );
+            Session session = activeTunnels.get( tunnel );
             
             if ( session != null && session.isConnected() ) {
                 
@@ -203,7 +214,7 @@ public class TunnelManager implements PingDaemonListener {
             
             PingDaemon pingd = new PingDaemon( tunnel, session );
             pingd.addPingDaemonListener( this );
-            pingDaemons.put( tunnel.getSignature(), pingd );
+            pingDaemons.put( tunnel, pingd );
             
             ArrayList<Forward> hostEntries = new ArrayList<Forward>();
             
@@ -241,8 +252,10 @@ public class TunnelManager implements PingDaemonListener {
             
         } 
         
-        activeTunnels.put( tunnel.getSignature(), session );
-        logger.info( "Started tunnel with signature: " + tunnel.getSignature() );
+        activeTunnels.put( tunnel, session );
+        logger.info( "Started tunnel: " + tunnel );
+        
+        server.send( new Protocol( Protocol.TUNNELSTARTED, tunnel ) );
         
         return true;
     }

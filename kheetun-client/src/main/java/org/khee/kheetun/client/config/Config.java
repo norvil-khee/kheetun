@@ -61,23 +61,6 @@ public class Config {
         return this.getPort() != null;
     }
     
-    public ArrayList<Tunnel> findTunnels( String signature ) {
-        
-        ArrayList<Tunnel> tunnels = new ArrayList<Tunnel>();
-        
-        for( Profile profile : getProfiles() ) {
-            
-            for ( Tunnel tunnel : profile.getTunnels() ) {
-                
-                if ( tunnel.getSignature().equals( signature ) ) {
-                    tunnels.add( tunnel );
-                }
-            }
-        }
-        
-        return tunnels;
-    }
-    
     public Integer getPort() {
         
         return new Integer( this.properties.getProperty( "port" ) );

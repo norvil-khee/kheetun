@@ -83,7 +83,7 @@ public class TunnelServer implements Runnable {
                 try {
                     
                     receive = (Protocol)commIn.readObject();
-                    handle( receive );
+                    this.handle( receive );
                     
                 } catch ( ClassNotFoundException e ) {
                     logger.error( "Class error: " + e.getMessage() );
@@ -157,34 +157,36 @@ public class TunnelServer implements Runnable {
 
         case Protocol.CONNECT:
 
-            createTunnelManager( receive.getUser() );
+            this.createTunnelManager( receive.getUser() );
             send( new Protocol( Protocol.ACCEPT ) );
             break;
 
         case Protocol.STARTTUNNEL:
             
-            if ( tunnelManager.startTunnel( receive.getTunnel() ) ) {
+            tunnelManager.startTunnel( receive.getTunnel() );
                 
-                send( new Protocol( Protocol.TUNNELSTARTED, receive.getTunnel() ) );
-            }
             break;
             
         case Protocol.STOPTUNNEL:
             
-            if ( tunnelManager.stopTunnel( receive.getTunnel() ) ) {
+            this.tunnelManager.stopTunnel( receive.getTunnel() );
             
-                send( new Protocol( Protocol.TUNNELSTOPPED, receive.getTunnel() ) );
-            }
+            break;
+            
+        case Protocol.STOPALLTUNNELS:
+            
+            this.tunnelManager.stopAllTunnels();
+            
             break;
         
         case Protocol.QUERYTUNNELS:
             
-            send( new Protocol( Protocol.ACTIVETUNNELS, tunnelManager.getActiveTunnels() ) );
+            this.send( new Protocol( Protocol.ACTIVETUNNELS, tunnelManager.getActiveTunnels() ) );
             break;
             
         case Protocol.QUIT:
             
-            send( new Protocol( Protocol.QUIT ) );
+            this.send( new Protocol( Protocol.QUIT ) );
             break;
             
         case Protocol.DISCONNECT:

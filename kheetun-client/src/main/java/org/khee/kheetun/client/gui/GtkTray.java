@@ -11,6 +11,7 @@ import org.gnome.gdk.Pixbuf;
 import org.gnome.gtk.Menu;
 import org.gnome.gtk.StatusIcon;
 import org.gnome.gtk.StatusIcon.Activate;
+import org.gnome.gtk.StatusIcon.PopupMenu;
 
 public class GtkTray extends Tray {
     
@@ -58,7 +59,18 @@ public class GtkTray extends Tray {
                 hack.hide();
                 TrayManager.toggleMenu( new Point( hack.getWindow().getOriginX(), hack.getWindow().getOriginY() ) );
             }
-        });        
+        });
+        
+        icon.connect( new PopupMenu() {
+            
+            @Override
+            public void onPopupMenu(StatusIcon tray, int arg1, int arg2) {
+
+                hack.popup( tray );
+                hack.hide();
+                TrayManager.toggleMenu( new Point( hack.getWindow().getOriginX(), hack.getWindow().getOriginY() ) );
+            }
+        });
     }
     
     private static Pixbuf pixbufFromBufferedImage( BufferedImage image ) throws IOException {

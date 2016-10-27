@@ -63,13 +63,13 @@ public class PingDaemon implements Runnable {
                 } catch ( JSchException e ) {
                     
                     logger.error( "Exception while measuring ping: " + e.getMessage() );
-                    logger.debug( "PING FAIL (ERROR) ( " + failCount + "/3 ): " + tunnel.getSignature() );
+                    logger.debug( "PING FAIL (ERROR) ( " + failCount + "/3 ): " + tunnel );
                     failCount++;
                 }
 
             } else {
                 
-                logger.debug( "PING FAIL (DISCONNECT) ( " + failCount + "/3 ): " + tunnel.getSignature() );
+                logger.debug( "PING FAIL (DISCONNECT) ( " + failCount + "/3 ): " + tunnel );
                 failCount++;
             }
             

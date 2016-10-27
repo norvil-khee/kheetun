@@ -1,17 +1,24 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## 0.10.0 - 2016-10-20
+## 0.10.0 - 2016-10-27
 
 ### Added
 - stale tunnels (tunnels which are running, but not defined in config anymore) are now stopped before new configuration will be applied
 - config file conversion from 0.9.0 to new layout
+- once started, also non-autostart tunnels will be restarted if they failed (e.g. due to a ping timeout)
+- added an "autostart all" button to reenable autostarting of previously failed or manually stopped tunnels
+- added maximum attempts of retries after connection failures of autostarting tunnels - this is configureable in XML files as "maxFailures" property of a ``<tunnel>`` - the default being 3.
+- trigger tray menu on right-click and left-click 
 
 ### Changed
 - switched from "single configuration" file layout to "multiple configuration" file layout
 - XML configuration files are now to be stored in $HOME/.kheetun/kheetun.d, where each file contains one ``<profile>`` block
 - global configuration is now done in $HOME/.kheetun/kheetun.conf
 - deprecated configuration files will be converted to new layout (XML files named after profile name, lower case)
+- deprecated configuration will be renamed to ``kheetun.xml.deprecated``
+- yet another tray menu redesign
+- much internal code refactoring
 
 ### Fixes
 - ``/etc/hosts`` entry manager occasionally swallowed the last line

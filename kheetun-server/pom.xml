@@ -94,7 +94,7 @@
   	<dependency>
   		<groupId>org.khee.kheetun</groupId>
   		<artifactId>client</artifactId>
-  		<version>0.0.1-SNAPSHOT</version>
+  		<version>0.10.0</version>
   	</dependency>
   	<dependency>
   		<groupId>commons-cli</groupId>

@@ -20,6 +20,7 @@ public class ConfigManager implements Runnable {
     private Config              config;
     private String              fingerprint     = "";
     private ArrayList<String>   errorStack      = new ArrayList<String>();
+    private ArrayList<Tunnel>   tunnels         = new ArrayList<Tunnel>();
     private File                configDirectory = new File( System.getProperty( "user.home" ) + "/.kheetun/kheetun.d" );
 
     
@@ -38,6 +39,11 @@ public class ConfigManager implements Runnable {
         configWatcher.start();
     }
     
+    public static Config getConfig() {
+        
+        return instance.config;
+    }
+    
     private void stopStaleTunnels( Config newConfig ) {
         
         if ( config == null ) {
@@ -48,7 +54,7 @@ public class ConfigManager implements Runnable {
             
             for ( Tunnel oldTunnel : oldProfile.getTunnels() ) {
                 
-                if ( ! TunnelManager.isRunning( oldTunnel.getSignature() ) ) {
+                if ( ! TunnelManager.isRunning( oldTunnel ) ) {
                     continue;
                 }
                 
@@ -58,7 +64,7 @@ public class ConfigManager implements Runnable {
                     
                     for ( Tunnel newTunnel : newProfile.getTunnels() ) {
                         
-                        if ( newTunnel.getSignature().equals( oldTunnel.getSignature() ) ) {
+                        if ( newTunnel.equals( oldTunnel ) ) {
                             
                             stale = false;
                             break;
@@ -128,6 +134,14 @@ public class ConfigManager implements Runnable {
                 try {
                     
                     newConfig = Config.load();
+                    
+                    tunnels.clear();
+                    
+                    for ( Profile profile : newConfig.getProfiles() ) {
+                        for ( Tunnel tunnel : profile.getTunnels() ) {
+                            tunnels.add( tunnel );
+                        }
+                    }
                     
                 } catch ( JAXBException eJAX ) {
                     
@@ -264,6 +278,20 @@ public class ConfigManager implements Runnable {
         }
         
         return errorStack.isEmpty();
+    }
+    
+    public static Tunnel getTunnel( Tunnel tunnel ) {
+        
+        if ( instance.tunnels.contains( tunnel ) ) {
+            return instance.tunnels.get( instance.tunnels.indexOf( tunnel ) );
+        }
+        
+        return null;
+    }
+    
+    public static ArrayList<Tunnel> getTunnels() {
+        
+        return instance.tunnels;
     }
     
     public static void addConfigManagerListener( ConfigManagerListener listener ) {

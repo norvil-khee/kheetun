@@ -39,8 +39,6 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
     private boolean                         clientRunning;
     private Integer                         port            = -1;
     private Semaphore                       sender          = new Semaphore( 1 );
-    private boolean                         connected       = false;
-    
     
     protected TunnelClient() {
 
@@ -140,8 +138,6 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
 
             TunnelManager.offline();            
             
-            connected = false;
-            
             logger.debug( "Disconnected from kheetun server, retrying in 2 seconds" );
             
             try {
@@ -158,6 +154,34 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
         
         logger.debug( "Client handling " + receive );
         
+        // translate tunnels to tunnels known by configuration
+        // unknown tunnels are stale tunnels
+        //
+        if ( receive.getTunnel() != null ) {
+            
+            if ( ConfigManager.getTunnel( receive.getTunnel() ) != null ) {
+                receive.setTunnel( ConfigManager.getTunnel( receive.getTunnel() ) );
+            } else {
+                logger.info( "Stale tunnel: " + receive.getTunnel() );
+            }
+        }
+        
+        if ( receive.getTunnels().size() > 0 ) {
+            
+            ArrayList<Tunnel> tunnels = new ArrayList<Tunnel>();
+            
+            for ( Tunnel tunnel : receive.getTunnels() ) {
+                
+                if ( ConfigManager.getTunnel( tunnel ) != null ) {
+                    tunnels.add( ConfigManager.getTunnel( tunnel ) );
+                } else {
+                    logger.info( "Stale tunnel: " + tunnel );
+                }
+            }
+            
+            receive.setTunnels( tunnels );
+        }
+        
         switch ( receive.getCommand() ) {
 
         case Protocol.ECHO:
@@ -165,8 +189,6 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
             break;
 
         case Protocol.ACCEPT:
-            
-            connected = true;
             
             logger.info( "Connected to kheetun server" );
             
@@ -194,12 +216,12 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
             
         case Protocol.ACTIVETUNNELS:
             
-            TunnelManager.refreshActivated( receive.getSignatures() );
+            TunnelManager.refreshActivated( receive.getTunnels() );
             break;
         
         case Protocol.PING:
             
-            TunnelManager.updatePing( receive.getTunnel().getSignature(), receive.getNumber() );
+            TunnelManager.updatePing( receive.getTunnel(), receive.getNumber() );
             break;
             
         case Protocol.QUIT:
@@ -271,12 +293,12 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
     
     public static void sendStopTunnel( Tunnel tunnel ) {
         
-        if ( instance == null || ! instance.connected ) {
-            logger.warn( "No connection" );
-            return;
-        }
-        
         instance.send( new Protocol( Protocol.STOPTUNNEL, tunnel ) );
+    }
+    
+    public static void sendStopAllTunnels() {
+        
+        instance.send( new Protocol( Protocol.STOPALLTUNNELS ) );
     }
     
     private void send( Protocol protocol ) {

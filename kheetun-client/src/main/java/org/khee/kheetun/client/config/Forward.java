@@ -9,6 +9,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlType;
 
+import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.khee.kheetun.client.verify.VerifierFactory;
 
 
@@ -161,6 +162,17 @@ public class Forward implements Serializable {
          && VerifierFactory.getPortVerifier().verify( this.getForwardedPort() );
     }
     
+    @Override
+    public int hashCode() {
+        
+        return new HashCodeBuilder( 13, 39 )
+            .append( this.getType() )
+            .append( this.getBindIp() )
+            .append( this.getBindPort() )
+            .append( this.getForwardedHost() )
+            .append( this.getForwardedPort() )
+            .toHashCode();
+    }
     
     @Override
     public boolean equals(Object obj) {
@@ -170,13 +182,12 @@ public class Forward implements Serializable {
             this.getBindIp().equals(        ((Forward)obj).getBindIp()          ) &&
             this.getBindPort().equals(      ((Forward)obj).getBindPort()        ) &&
             this.getForwardedHost().equals( ((Forward)obj).getForwardedHost()   ) &&
-            this.getForwardedPort().equals( ((Forward)obj).getForwardedPort()   ) &&
-            this.getHostsEntry().equals(    ((Forward)obj).getHostsEntry()      ) &&
-            this.getComment().equals(       ((Forward)obj).getComment()         );
+            this.getForwardedPort().equals( ((Forward)obj).getForwardedPort()   );
     };
     
-    
-
-
-    
+    @Override
+    public String toString() {
+        
+        return "Forward[Type=" + this.type + " BindIP=" + this.bindIp + " BindPort=" + this.bindPort + " ForwardedHost=" + this.forwardedHost + " ForwardedPort=" + this.forwardedPort;
+    }
 }

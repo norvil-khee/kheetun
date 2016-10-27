@@ -9,9 +9,9 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
-import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlType;
 
+import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.khee.kheetun.client.verify.VerifierFactory;
 
 @XmlAccessorType(XmlAccessType.NONE)
@@ -21,27 +21,18 @@ public class Tunnel implements Serializable {
     
     public static final long serialVersionUID = 42;
     
-    protected String alias;
-    
-    private String user;
-    
-    private String hostname;
-    
-    private File sshKey;
-    
-    private String sshKeyString;
-    private String passPhrase;
-    private String sshAgentSocket = System.getenv( "SSH_AUTH_SOCK" );
-    
-    private Integer ping;
-    
-    private Boolean active   = false;
-    
-    private Object delete    = null;
-    
-    private ArrayList<Forward> forwards;
-
-    private Boolean autostart;
+    private String              alias;
+    private String              user;
+    private String              hostname;
+    private File                sshKey;
+    private String              sshKeyString;
+    private String              passPhrase;
+    private String              sshAgentSocket  = System.getenv( "SSH_AUTH_SOCK" );
+    private ArrayList<Forward>  forwards;
+    private Boolean             autostart       = false;
+    private boolean             restart         = false;
+    private int                 failures        = 0;
+    private int                 maxFailures     = 3;
     
     public Tunnel() {
         forwards    = new ArrayList<Forward>();
@@ -51,6 +42,7 @@ public class Tunnel implements Serializable {
         hostname        = "";
         sshKeyString    = "";
         autostart       = false;
+        restart         = false;
     }
     
     public Tunnel( Tunnel source ) {
@@ -61,25 +53,12 @@ public class Tunnel implements Serializable {
         this.user           = source.user;
         this.hostname       = source.hostname;
         this.autostart      = source.autostart;
+        this.restart        = source.restart;
         this.sshKeyString   = source.sshKeyString;
         
         for( Forward forward : source.getForwards() ) {
             addForward( new Forward( forward ) );
         }
-        
-    }
-    
-    @XmlTransient
-    public String getSignature() {
-        
-        String signature = getUser() + "@" + getHostname();
-        
-        for( Forward forward : getForwards() ) {
-            
-            signature += "+" + forward.getSignature();
-        }
-        
-        return signature;
     }
     
     @XmlAttribute
@@ -134,7 +113,6 @@ public class Tunnel implements Serializable {
         this.sshKeyString = sshKeyString;
     }
 
-    @XmlTransient
     public String getPassPhrase() {
         return passPhrase;
     }
@@ -142,7 +120,6 @@ public class Tunnel implements Serializable {
         this.passPhrase = passPhrase;
     }
     
-    @XmlTransient
     public String getSshAgentSocket() {
         return sshAgentSocket;
     }
@@ -170,35 +147,35 @@ public class Tunnel implements Serializable {
         this.autostart = autostart;
     }
     
+    public Boolean getRestart() {
+        return restart;
+    }
+
+    public void setRestart(boolean restart) {
+        this.restart = restart;
+    }
+    
+    public int getFailures() {
+        return failures;
+    }
+
+    public void setFailures(int failures) {
+        this.failures = failures;
+    }
+    
+    @XmlAttribute(required=false)
+    public int getMaxFailures() {
+        return maxFailures;
+    }
+
+    public void setMaxFailures(int maxFailures) {
+        this.maxFailures = maxFailures;
+    }
+
     public String getConnectionString() {
         return this.getUser() + "@" + this.getHostname();
     }
     
-    public Integer getPing() {
-        return ping;
-    }
-    public void setPing(Integer ping) {
-        this.ping = ping;
-    }
-
-    @XmlTransient
-    public Object getDelete() {
-        return delete;
-    }
-
-    public void setDelete(Object delete) {
-        this.delete = delete;
-    }
-
-    @XmlTransient
-    public Boolean getActive() {
-        return active;
-    }
-
-    public void setActive(Boolean active) {
-        this.active = active;
-    }
-
     public boolean isValid() {
         
         if ( this.getForwards().size() == 0 ) {
@@ -219,38 +196,43 @@ public class Tunnel implements Serializable {
        
     }
     
+    public int hashCode() {
+        
+        return new HashCodeBuilder( 13, 37 )
+            .append( this.getUser() )
+            .append( this.getHostname() )
+            .append( this.getForwards().hashCode() )
+            .hashCode();
+    }
+    
     @Override
     public boolean equals(Object obj) {
         
-        Tunnel compare = (Tunnel)obj;
-        
-        ArrayList<Forward> forwards = this.getForwards();
-        ArrayList<Forward> forwardsCompare = compare.getForwards();
-        
-        // not the same amount of forwards? not equal!
-        //
-        if ( forwards.size() != forwardsCompare.size() ) {
+        if ( ! ( obj instanceof Tunnel ) ) {
             return false;
         }
         
-        // forwards differ? not equal!
-        //
-        for ( int index = 0 ; index < forwards.size() ; index++ ) {
-            
-            if ( ! forwards.get( index ).equals( forwardsCompare.get( index )) ) {
-                return false;
-            }
-        }
+        Tunnel compare = (Tunnel)obj;
         
-        // some of the attributes differ? not equal!
-        //
-        return 
-                this.getAutostart().equals( compare.getAutostart() )
-             && this.getAlias().equals( compare.getAlias() ) 
-             && this.getHostname().equals( compare.getHostname() )
-             && this.getUser().equals( compare.getUser() )
-             && this.getSshKeyString().equals( compare.getSshKeyString() );
+        return this.hashCode() == compare.hashCode();
     }
     
+    @Override
+    public String toString() {
+        
+        String s = "Tunnel[Alias=" + this.alias + " Autostart=" + this.autostart + " Restart=" + this.restart + " ";
+        
+        StringBuilder sb = new StringBuilder();
+        
+        for ( Forward forward : this.forwards ) {
+            sb.append( forward );
+            sb.append( "," );
+        }
+        
+        s += "Forwards=" + sb.toString();
+        s += "]";
+        
+        return s;
+    }
 
 }

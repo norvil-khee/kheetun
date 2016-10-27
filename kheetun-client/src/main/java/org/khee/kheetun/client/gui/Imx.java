@@ -17,9 +17,9 @@ public class Imx extends ImageIcon {
     
     private static Logger logger = LogManager.getLogger( "kheetun" );
     
-    public static final Imx KHEETUN             = loadImx( "khee_tray_blue_32x32.png" );
-    public static final Imx KHEETUN_ON          = loadImx( "khee_tray_green_32x32.png" );
-    public static final Imx KHEETUN_OFF         = loadImx( "khee_tray_red_32x32.png" );
+    public static final Imx KHEETUN             = loadImx( "khee5.png" );
+    public static final Imx KHEETUN_ON          = loadImx( "kheetun1.png" );
+    public static final Imx KHEETUN_OFF         = loadImx( "kheetun1.png" );
     public static final Imx SAVE                = loadImx( "save.png" );
     public static final Imx NEW                 = loadImx( "new.png" );
     public static final Imx LOAD                = loadImx( "load.png" );
@@ -31,7 +31,7 @@ public class Imx extends ImageIcon {
     public static final Imx MINUS               = loadImx( "minus.png" );
     public static final Imx REVERT              = loadImx( "revert.png" );
     public static final Imx LION                = loadImx( "bug.png" );
-    public static final Imx START               = loadImx( "play.png" );
+    public static final Imx START               = loadImx( "play-button.png" );
     public static final Imx STOP                = loadImx( "pause.png" );
     public static final Imx KEY                 = loadImx( "key.png" );
     public static final Imx WARNING             = loadImx( "warning.png" );
@@ -48,12 +48,14 @@ public class Imx extends ImageIcon {
     public static final Imx RELOAD              = loadImx( "reload.png" );
     public static final Imx AUTO                = loadImx( "favorite.png" );
     public static final Imx AUTO_DISABLED       = loadImx( "favorite_gray.png" );
-
+    
+    public ImageIcon icon;
     public ImageIcon s12;
     public ImageIcon s16;
     public ImageIcon s24;
     public ImageIcon s32;
     public ImageIcon s32a;
+    public BufferedImage bimg;
     public BufferedImage bs12;
     public BufferedImage bs16;
     public BufferedImage bs24;
@@ -66,6 +68,8 @@ public class Imx extends ImageIcon {
             
             BufferedImage rgba = new BufferedImage( tmp.getWidth(), tmp.getHeight(), BufferedImage.TYPE_INT_ARGB );
             rgba.createGraphics().drawImage( tmp, 0, 0, null );
+            
+            ImageIcon icon = new ImageIcon( rgba );
             
             BufferedImage bimg12;
             BufferedImage bimg16;
@@ -88,7 +92,7 @@ public class Imx extends ImageIcon {
             bimg12.createGraphics().drawImage( rgba.getScaledInstance( 12, 12, Image.SCALE_SMOOTH ), 0, 0, null );
             ImageIcon icon12 = new ImageIcon( bimg12 );
             
-            return new Imx( icon12, icon16, icon24, icon32, bimg12, bimg16, bimg24, bimg32 );
+            return new Imx( icon, icon12, icon16, icon24, icon32, rgba, bimg12, bimg16, bimg24, bimg32 );
             
         } catch ( Exception e ) {
             logger.error( "Could not load " + file + ": " + e.getMessage() );
@@ -117,16 +121,18 @@ public class Imx extends ImageIcon {
 //        return image;
 //    }
     
-    protected Imx( ImageIcon icon12, ImageIcon icon16, ImageIcon icon24, ImageIcon icon32,
-            BufferedImage bimg12, BufferedImage bimg16, BufferedImage bimg24, BufferedImage bimg32 ) {
+    protected Imx( ImageIcon icon, ImageIcon icon12, ImageIcon icon16, ImageIcon icon24, ImageIcon icon32,
+            BufferedImage bimg, BufferedImage bimg12, BufferedImage bimg16, BufferedImage bimg24, BufferedImage bimg32 ) {
         
         this.setImage( icon16.getImage() );
         
-        this.s12 = icon12;
-        this.s16 = icon16;
-        this.s24 = icon24;
-        this.s32 = icon32;
+        this.icon   = icon;
+        this.s12    = icon12;
+        this.s16    = icon16;
+        this.s24    = icon24;
+        this.s32    = icon32;
         
+        this.bimg = bimg;
         this.bs12 = bimg12;
         this.bs16 = bimg16;
         this.bs24 = bimg24;
