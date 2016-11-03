@@ -432,21 +432,16 @@ public class TunnelManager implements ConfigManagerListener {
     }
     
     @Override
-    public void configManagerConfigChanged(Config config) {
-    }
-    
-    @Override
-    public void configManagerConfigInvalid(Config config, ArrayList<String> errorStack) {
-    }
-    
-    @Override
-    public void configManagerConfigValid(Config config) {
+    public void configManagerConfigChanged( Config config, boolean valid ) {
         
-        instance.activating.clear();
-        instance.deactivating.clear();
-        instance.running.clear();
-        instance.ignoreAutostart.clear();
-        TunnelClient.sendQueryTunnels();
+        if ( valid ) {
+
+            instance.activating.clear();
+            instance.deactivating.clear();
+            instance.running.clear();
+            instance.ignoreAutostart.clear();
+            TunnelClient.sendQueryTunnels();
+        }
     }
     
 }

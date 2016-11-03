@@ -22,6 +22,7 @@ public class Config {
     
     private         ArrayList<Profile>  profiles    = new ArrayList<Profile>();
     private         Properties          properties  = new Properties();
+    private         ArrayList<String>   errors      = new ArrayList<String>();
 
     
     public Config() { 
@@ -63,7 +64,14 @@ public class Config {
     
     public Integer getPort() {
         
-        return new Integer( this.properties.getProperty( "port" ) );
+        try {
+            
+            return new Integer( this.properties.getProperty( "port" ) );
+            
+        } catch ( NumberFormatException eNumber ) {
+            
+            return null;
+        }
     }
     
     public void setPort(Integer port) {
@@ -71,6 +79,14 @@ public class Config {
         this.properties.setProperty( "port", port.toString() );
     }
     
+    public ArrayList<String> getErrors() {
+        return errors;
+    }
+
+    public void addError( String error ) {
+        this.errors.add( error );
+    }
+
     public boolean equals(Object obj) {
         
         Config compare = (Config)obj;
@@ -97,7 +113,7 @@ public class Config {
     }
     
     
-    public static Config load() throws JAXBException, IOException {
+    public static Config load() {
         
         // handle deprecation
         //
@@ -107,11 +123,17 @@ public class Config {
             
             logger.info( "Deprecation: updating configuration from 0.9.0 to current" );
             
-            Config oldConfig = Config_0_9_0.load( fileConfig_0_9_0 );
-            
-            oldConfig.save();
-            
-            fileConfig_0_9_0.renameTo( new File( System.getProperty( "user.home") + "/.kheetun/kheetun.xml.deprecated" ) );
+            try {
+                Config oldConfig = Config_0_9_0.load( fileConfig_0_9_0 );
+                oldConfig.save();
+                
+                fileConfig_0_9_0.renameTo( new File( System.getProperty( "user.home") + "/.kheetun/kheetun.xml.deprecated" ) );
+                
+            } catch ( JAXBException eJAX ) {
+
+                String error = ( eJAX.getCause() != null ? eJAX.getCause().getLocalizedMessage() : eJAX.getLocalizedMessage() );
+                logger.error( "Error while reading deprecated config: " + error );
+            }
         }
         
         Config config = new Config();
@@ -120,16 +142,58 @@ public class Config {
         
         if ( configDirectory.exists() ) {
             
-            config.properties.load( new FileInputStream( new File ( System.getProperty( "user.home") + "/.kheetun/kheetun.conf" ) ) );
-            
-            JAXBContext context = JAXBContext.newInstance( Profile.class );
-            Unmarshaller u = context.createUnmarshaller();
-            
-            for ( File profileFile : configDirectory.listFiles() ) {
+            try {
                 
-                Profile profile = (Profile)u.unmarshal( profileFile );
+                config.properties.load( new FileInputStream( new File ( System.getProperty( "user.home") + "/.kheetun/kheetun.conf" ) ) );
                 
-                config.profiles.add( profile );
+                if ( config.getPort() == null ) {
+                    config.addError( "Port is undefined" );
+                }
+            
+            } catch ( IOException eIO ) {
+                
+                logger.error( "IO Error while loading general config: " + eIO.getLocalizedMessage() ) ;
+                config.addError( "IO exception: " + eIO.getLocalizedMessage() );
+            }
+            
+            
+            try {
+
+                JAXBContext context = JAXBContext.newInstance( Profile.class );
+                Unmarshaller u = context.createUnmarshaller();
+            
+                for ( File profileFile : configDirectory.listFiles() ) {
+                    
+                    if ( ! profileFile.getAbsolutePath().matches( ".*\\.xml$" ) ) {
+                        continue;
+                    }
+                    
+                    Profile profile;
+                    
+                    try {
+                    
+                        profile = (Profile)u.unmarshal( profileFile );
+
+                    } catch ( JAXBException eJAX ) {
+
+                        String error = ( eJAX.getCause() != null ? eJAX.getCause().getLocalizedMessage() : eJAX.getLocalizedMessage() );
+                        
+                        logger.error( "Error in profile while loading " + profileFile.getName() + ": " + error ) ;
+                        
+                        profile = new Profile();
+                        profile.addError( error );
+                    }
+                    
+                    profile.setConfigFile( profileFile.getName() );
+                    config.profiles.add( profile );
+                }
+                
+            } catch ( JAXBException eJAX ) {
+                
+                String error = ( eJAX.getCause() != null ? eJAX.getCause().getLocalizedMessage() : eJAX.getLocalizedMessage() );
+                
+                logger.error( "Error creating marshaller while loading config: " + error ) ;
+                config.addError( error );
             }
         }
         

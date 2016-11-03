@@ -18,6 +18,8 @@ public class Profile {
     private String                  name;
     private ArrayList<Tunnel>       tunnels;
     private String                  baseBindIp;
+    private ArrayList<String>       errors       = new ArrayList<String>();
+    private String                  configFile;
     
     public Profile() {
         tunnels = new ArrayList<Tunnel>();
@@ -63,6 +65,22 @@ public class Profile {
         tunnels.add( tunnel );
     }
     
+    public ArrayList<String> getErrors() {
+        return errors;
+    }
+
+    public void addError( String error ) {
+        this.errors.add( error );
+    }
+
+    public String getConfigFile() {
+        return configFile;
+    }
+
+    public void setConfigFile(String configFile) {
+        this.configFile = configFile;
+    }
+
     public boolean isValid() {
         
         for( Tunnel tunnel : getTunnels() ) {

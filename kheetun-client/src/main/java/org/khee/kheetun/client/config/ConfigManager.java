@@ -4,8 +4,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import javax.xml.bind.JAXBException;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.khee.kheetun.client.TunnelManager;
@@ -19,9 +17,9 @@ public class ConfigManager implements Runnable {
     
     private Config              config;
     private String              fingerprint     = "";
-    private ArrayList<String>   errorStack      = new ArrayList<String>();
     private ArrayList<Tunnel>   tunnels         = new ArrayList<Tunnel>();
     private File                configDirectory = new File( System.getProperty( "user.home" ) + "/.kheetun/kheetun.d" );
+    private File                globalConfig    = new File( System.getProperty( "user.home" ) + "/.kheetun/kheetun.conf" );
 
     
     private ArrayList<ConfigManagerListener> listeners  = new ArrayList<ConfigManagerListener>();
@@ -93,6 +91,11 @@ public class ConfigManager implements Runnable {
         
         String fingerprint = "";
         
+        if ( globalConfig.exists() ) {
+            
+            fingerprint += globalConfig.lastModified();
+        }
+        
         if ( configDirectory.exists() ) {
             
             File[] files = configDirectory.listFiles();
@@ -129,76 +132,28 @@ public class ConfigManager implements Runnable {
                 
                 logger.info( "Configuration changed, updating" );
                
-                Config newConfig = new Config();
+                Config newConfig = Config.load();
                 
-                try {
-                    
-                    newConfig = Config.load();
-                    
-                    tunnels.clear();
-                    
-                    for ( Profile profile : newConfig.getProfiles() ) {
-                        for ( Tunnel tunnel : profile.getTunnels() ) {
-                            tunnels.add( tunnel );
-                        }
-                    }
-                    
-                } catch ( JAXBException eJAX ) {
-                    
-                    String error = ( eJAX.getCause() != null ? eJAX.getCause().getLocalizedMessage() : eJAX.getLocalizedMessage() );
-                    
-                    this.errorStack.add( "Configuration XML: " + error );
-                    
-                    logger.error( "Error while loading configuration: " + error );
-                    
-                    for ( ConfigManagerListener listener : this.listeners ) {
-                        
-                        listener.configManagerConfigInvalid( null, this.errorStack );
-                    }
-                    
-                } catch ( Exception e ) {
-                    
-                    this.errorStack.add( "Configuration: " + e.getLocalizedMessage() );
-                    
-                    logger.error( "Error while loading configuration: " + e.getLocalizedMessage() );
-                    logger.debug( "", e );
-
-                    for ( ConfigManagerListener listener : this.listeners ) {
-                        
-                        listener.configManagerConfigInvalid( null, this.errorStack );
+                tunnels.clear();
+                
+                for ( Profile profile : newConfig.getProfiles() ) {
+                    for ( Tunnel tunnel : profile.getTunnels() ) {
+                        tunnels.add( tunnel );
                     }
                 }
-                
+                    
                 this.stopStaleTunnels( newConfig );
                 
-                if ( ! this.validate( newConfig ) ) {
+                for ( Profile profile : newConfig.getProfiles() ) {
                     
-                    for ( String error : this.errorStack ) {
-                        
-                        logger.error( "Config error: " + error );
-                    }
-                    
-                    for ( ConfigManagerListener listener : this.listeners ) {
-                        
-                        listener.configManagerConfigInvalid( newConfig, this.errorStack );
-                    }
-                    
-                    newConfig = new Config();
-                    
-                } else {
-                    
-                    for ( ConfigManagerListener listener : this.listeners ) {
-                        
-                        listener.configManagerConfigValid( newConfig );
-                    }
+                    this.validate( profile );
                 }
                 
                 for ( ConfigManagerListener listener : this.listeners ) {
-                    listener.configManagerConfigChanged( newConfig );
+                    listener.configManagerConfigChanged( newConfig, newConfig.getErrors().isEmpty() );
                 }
                 
                 config = newConfig;
-                
             }
             
             try {
@@ -209,75 +164,71 @@ public class ConfigManager implements Runnable {
         }
     }
     
-    public synchronized boolean validate( Config config ) {
+    public synchronized boolean validate( Profile profile ) {
         
-        errorStack.clear();
         ArrayList<String> binds = new ArrayList<String>();
         
-        for ( Profile profile : config.getProfiles() ) {
+        for ( Tunnel tunnel : profile.getTunnels() ) {
             
-            for ( Tunnel tunnel : profile.getTunnels() ) {
+            binds.clear();
+            
+            if ( ! VerifierFactory.getAliasVerifier().verify( tunnel.getAlias() ) ) {
                 
-                binds.clear();
+                profile.addError( "Tunnel '" + tunnel.getAlias() +"': invalid alias '" + tunnel.getAlias() + "'" );
+            }
+            
+            if ( ! VerifierFactory.getHostnameVerifier().verify( tunnel.getHostname() ) ) {
                 
-                if ( ! VerifierFactory.getAliasVerifier().verify( tunnel.getAlias() ) ) {
+                profile.addError( "Tunnel '" + tunnel.getAlias() +"': invalid hostname '" + tunnel.getHostname() + "'" );
+            }
+            
+            if ( tunnel.getSshKey() != null ) {
+                if ( ! VerifierFactory.getSshKeyVerifier().verify( tunnel.getSshKey().getAbsolutePath() ) ) {
                     
-                    errorStack.add( "Tunnel '" + tunnel.getAlias() +"': invalid alias '" + tunnel.getAlias() + "'" );
+                    profile.addError( "Tunnel '" + tunnel.getAlias() +"': invalid SSH key '" + tunnel.getSshKey().getAbsolutePath() + "'" );
                 }
+            }
+            
+            if ( ! VerifierFactory.getUserVerifier().verify( tunnel.getUser() ) ) {
                 
-                if ( ! VerifierFactory.getHostnameVerifier().verify( tunnel.getHostname() ) ) {
-                    
-                    errorStack.add( "Tunnel '" + tunnel.getAlias() +"': invalid hostname '" + tunnel.getHostname() + "'" );
+                profile.addError( "Tunnel '" + tunnel.getAlias() +"': invalid user '" + tunnel.getUser() + "'" );
+            }
+            
+            int f = 0;
+            
+            for ( Forward forward : tunnel.getForwards() ) {
+                
+                f++;
+                
+                if ( ! VerifierFactory.getPortVerifier().verify( forward.getBindPort() ) ) {
+                    profile.addError( "Tunnel '" + tunnel.getAlias() +"', Forward " + f + ": invalid bind port '" + forward.getBindPort() + "'" );
                 }
-                
-                if ( tunnel.getSshKey() != null ) {
-                    if ( ! VerifierFactory.getSshKeyVerifier().verify( tunnel.getSshKey().getAbsolutePath() ) ) {
-                        
-                        errorStack.add( "Tunnel '" + tunnel.getAlias() +"': invalid SSH key '" + tunnel.getSshKey().getAbsolutePath() + "'" );
-                    }
-                }
-                
-                if ( ! VerifierFactory.getUserVerifier().verify( tunnel.getUser() ) ) {
-                    
-                    errorStack.add( "Tunnel '" + tunnel.getAlias() +"': invalid user '" + tunnel.getUser() + "'" );
-                }
-                
-                int f = 0;
-                
-                for ( Forward forward : tunnel.getForwards() ) {
-                    
-                    f++;
-                    
-                    if ( ! VerifierFactory.getPortVerifier().verify( forward.getBindPort() ) ) {
-                        errorStack.add( "Tunnel '" + tunnel.getAlias() +"', Forward " + f + ": invalid bind port '" + forward.getBindPort() + "'" );
-                    }
 
-                    if ( ! VerifierFactory.getPortVerifier().verify( forward.getForwardedPort() ) ) {
-                        errorStack.add( "Tunnel '" + tunnel.getAlias() +"', Forward " + f + ": invalid forwarded port '" + forward.getBindPort() + "'" );
-                    }
-                    
-                    if ( ! VerifierFactory.getHostnameVerifier().verify( forward.getForwardedHost() ) ) {
-                        errorStack.add( "Tunnel '" + tunnel.getAlias() +"', Forward " + f + ": invalid forwarded host '" + forward.getForwardedHost() + "'" );
-                    }
+                if ( ! VerifierFactory.getPortVerifier().verify( forward.getForwardedPort() ) ) {
+                    profile.addError( "Tunnel '" + tunnel.getAlias() +"', Forward " + f + ": invalid forwarded port '" + forward.getBindPort() + "'" );
+                }
+                
+                if ( ! VerifierFactory.getHostnameVerifier().verify( forward.getForwardedHost() ) ) {
+                    profile.addError( "Tunnel '" + tunnel.getAlias() +"', Forward " + f + ": invalid forwarded host '" + forward.getForwardedHost() + "'" );
+                }
 
-                    if ( binds.contains( forward.getBindIp() + ":" + forward.getBindPort() ) ) {
-                        
-                        errorStack.add( "Tunnel '" + tunnel.getAlias() +"', Forward " + f + ": duplicate bind IP '" + forward.getBindIp() + "'" );
-                        
-                    } else {
-
-                        binds.add( forward.getBindIp() + ":" + forward.getBindPort() );
-                    }
+                if ( binds.contains( forward.getBindIp() + ":" + forward.getBindPort() ) ) {
                     
-                    if ( ! VerifierFactory.getIpAddressVerifier().verify( forward.getBindIp() ) ) {
-                        
-                        errorStack.add( "Tunnel '" + tunnel.getAlias() +"', Forward " + f + ": invalid bind IP '" + forward.getBindIp() + "'" );
-                    }
+                    profile.addError( "Tunnel '" + tunnel.getAlias() +"', Forward " + f + ": duplicate bind IP '" + forward.getBindIp() + "'" );
+                    
+                } else {
+
+                    binds.add( forward.getBindIp() + ":" + forward.getBindPort() );
+                }
+                
+                if ( ! VerifierFactory.getIpAddressVerifier().verify( forward.getBindIp() ) ) {
+                    
+                    profile.addError( "Tunnel '" + tunnel.getAlias() +"', Forward " + f + ": invalid bind IP '" + forward.getBindIp() + "'" );
                 }
             }
         }
         
-        return errorStack.isEmpty();
+        return profile.getErrors().isEmpty();
     }
     
     public static Tunnel getTunnel( Tunnel tunnel ) {

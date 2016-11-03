@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -57,17 +56,12 @@ public class HostPingDaemon implements Runnable, ConfigManagerListener {
     }
     
     @Override
-    public void configManagerConfigChanged( Config config ) {
-    }
-    
-    @Override
-    public void configManagerConfigInvalid(Config config, ArrayList<String> errorStack) {
-    }
-    
-    @Override
-    public void configManagerConfigValid(Config config) {
+    public void configManagerConfigChanged( Config config, boolean valid ) {
         
-        this.setConfig( config );
+        if ( valid ) {
+
+            this.setConfig( config );
+        }
     }
     
     @Override
@@ -78,8 +72,13 @@ public class HostPingDaemon implements Runnable, ConfigManagerListener {
             for ( Profile profile : config.getProfiles() ) {
                 
                 if ( ! running || ! TunnelManager.isConnected() ) {
-                    logger.trace( "Break requested or TunnelManager is not connected, breaking host ping" );
+                    logger.trace( "Break requested or TunnelManager is not connected, breaking host ping for profile " + profile.getName() );
                     break;
+                }
+                
+                if ( ! profile.getErrors().isEmpty() ) {
+                    logger.trace( "Skipping host pings for profile " + profile.getName() + " because it has errors" );
+                    continue;
                 }
                 
                 for ( Tunnel tunnel : profile.getTunnels() ) {

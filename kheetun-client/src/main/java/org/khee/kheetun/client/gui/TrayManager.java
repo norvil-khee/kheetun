@@ -2,14 +2,16 @@ package org.khee.kheetun.client.gui;
 
 import java.awt.Component;
 import java.awt.Point;
+import java.util.HashMap;
 
 public class TrayManager {
 
     private static TrayManager  instance;
     
-    private Tray                tray;
-    private TrayMenu            menu;
-    private Component           configDialog;
+    private Tray                    tray;
+    private TrayMenu                menu;
+    private Component               configDialog;
+    private HashMap<String, String> messages = new HashMap<String, String>();
     
     protected TrayManager() {
         
@@ -50,6 +52,28 @@ public class TrayManager {
     public static void unblink() {
         
         instance.tray.unblink();
+    }
+    
+    public static void clearMessage( String id ) {
+        
+        instance.messages.remove( id );
+        
+        if ( instance.messages.isEmpty() ) {
+       
+            TrayManager.setIcon( Imx.KHEETUN_ON );
+        }
+    }
+    
+    public static void clearMessages() {
+        
+        instance.messages.clear();
+    }
+    
+    public static void setMessage( String id, String message ) {
+        
+        instance.messages.put( id, message );
+        
+        TrayManager.setIcon( Imx.KHEETUN_WARNING );
     }
     
     public static void showConfigDialog() {

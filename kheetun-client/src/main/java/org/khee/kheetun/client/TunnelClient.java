@@ -51,27 +51,20 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
     }
     
     @Override
-    public void configManagerConfigChanged( Config config ) {
-    }
-    
-    @Override
-    public void configManagerConfigInvalid( Config config, ArrayList<String> errorStack ) {
-        
-        this.send( new Protocol( Protocol.DISCONNECT ) );
-    }
-    
-    @Override
-    public void configManagerConfigValid(Config config) {
-        
-        logger.info( "Connecting to port " + config.getPort() + " after config change" );
-        
-        this.port = config.getPort();
-        
-        this.send( new Protocol( Protocol.DISCONNECT ) );
-        
-        if ( this.client == null ) {
-            this.client = new Thread( this, "kheetun-client-thread" );
-            this.client.start();
+    public void configManagerConfigChanged( Config config, boolean valid ) {
+
+        if ( valid ) {
+
+            logger.info( "Connecting to port " + config.getPort() + " after config change" );
+            
+            this.port = config.getPort();
+            
+            this.send( new Protocol( Protocol.DISCONNECT ) );
+            
+            if ( this.client == null ) {
+                this.client = new Thread( this, "kheetun-client-thread" );
+                this.client.start();
+            }
         }
     }
     

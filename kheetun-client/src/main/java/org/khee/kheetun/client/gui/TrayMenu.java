@@ -10,9 +10,10 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.awt.Window.Type;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.util.ArrayList;
 
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -67,12 +68,16 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
         labelKheetun.setStatus( kheetun.VERSION, Color.GRAY );
         
         labelConnected  = new KTMenuItem( Imx.NONE, "Daemon:" );
-        labelConfig     = new KTMenuItem( Imx.NONE, "Config:" );
+        labelConnected.setStatus( "disconnected", Color.RED );
+        labelConnected.setActive( false );
+        
+        labelConfig     = new KTMenuItem( Imx.NONE, "Global config:" );
+        labelConfig.setStatus( "none", Color.LIGHT_GRAY );
         
         itemExit = new KTMenuItem( Imx.EXIT, "Exit" ) {
             
             @Override
-            public void mouseClicked(MouseEvent e) {
+            public void leftClick(MouseEvent e) {
 
                 TunnelManager.quit();
             }
@@ -81,7 +86,7 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
         itemStopAll = new KTMenuItem( Imx.STOP, "Stop all" ) {
         
             @Override
-            public void mouseClicked(MouseEvent e) {
+            public void leftClick(MouseEvent e) {
 
                 TunnelManager.stopAllTunnels();
             }
@@ -90,7 +95,7 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
         itemAutostartAll = new KTMenuItem( Imx.START, "Autostart all" ) {
             
             @Override
-            public void mouseClicked(MouseEvent e) {
+            public void leftClick(MouseEvent e) {
                 
                 TunnelManager.resetAllFailures();
                 TunnelManager.enableAutostartAll();
@@ -100,7 +105,7 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
         itemQuery = new KTMenuItem( Imx.RELOAD, "Requery" ) {
             
             @Override
-            public void mouseClicked(MouseEvent e) {
+            public void leftClick(MouseEvent e) {
 
                 TunnelClient.sendQueryTunnels();
             }
@@ -123,6 +128,8 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
     
     public void buildMenu( Config config ) {
         
+        TrayManager.clearMessages();
+        
         panel.removeAll();
         
         panel.add( labelKheetun );
@@ -139,12 +146,36 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
             for ( Profile profile : config.getProfiles() ) {
                 
                 KTMenuItem itemProfile = new KTMenuItem( Imx.PROFILE, profile.getName() );
+                itemProfile.setStatus( "[" + profile.getConfigFile() + "]", new Color( 0, 100, 0 ) );
+                
+                if ( ! profile.getErrors().isEmpty() ) {
+                    
+                    String message = "<html><body>Configuration errors:";
+                    
+                    for ( String error : profile.getErrors() ) {
+                        
+                        message += "<br>    * " + error;
+                    }
+                    
+                    message += "</body></html>";
+                    
+                    itemProfile.setMessage( message );
+                    itemProfile.setStatus( "[" + profile.getConfigFile() + "]", Color.RED );
+                    
+                    TrayManager.blink();
+                }
                 
                 panel.add( itemProfile );
                 
                 for ( Tunnel tunnel : profile.getTunnels() ) {
                     
                     TunnelMenuItem itemTunnel = new TunnelMenuItem( tunnel );
+                    
+                    if ( ! profile.getErrors().isEmpty() ) {
+                        
+                        itemTunnel.setActive( false );
+                    }
+                    
                     panel.add( itemTunnel );
                 }
                 panel.add( new KTSeperator() );
@@ -163,36 +194,33 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
     }
     
     @Override
-    public void configManagerConfigChanged(Config config) {
+    public void configManagerConfigChanged( Config config, boolean valid ) {
 
         buildMenu( config );
-    }
-    
-    @Override
-    public void configManagerConfigInvalid(Config config, ArrayList<String> errorStack) {
         
-        String message = "<html><body>Configuration errors:";
-        
-        for ( String error : errorStack ) {
+        if ( valid ) {
             
-            message += "<br>    * " + error;
+            labelConfig.setMessage( null );
+            labelConfig.setStatus( "valid", new Color( 0, 100, 0 ) );
+            
+        } else {
+            
+            String message = "<html><body>Configuration errors:";
+            
+            for ( String error : config.getErrors() ) {
+                
+                message += "<br>    * " + error;
+            }
+            
+            message += "</body></html>";
+            
+            labelConfig.setMessage( message );
+            labelConfig.setStatus( "error", Color.RED );
+            
+            TrayManager.blink();
         }
-        
-        message += "</body></html>";
-        
-        labelConfig.setMessage( message );
-        labelConfig.setStatus( "error", Color.RED );
-        
-        TrayManager.blink();
     }
-    
-    @Override
-    public void configManagerConfigValid(Config config) {
-        
-        labelConfig.setMessage( null );
-        labelConfig.setStatus( "valid", new Color( 0, 100, 0 ) );
-    }
-    
+
     public void toggle( Point p ) {
         
         if ( isVisible() ) {
@@ -333,18 +361,21 @@ class KTMenuItem extends JPanel implements MouseListener {
 
     private static final long serialVersionUID = 1L;
 
-    protected JLabel    iconLeft            = new JLabel( Imx.NONE );
-    protected JLabel    iconRight           = new JLabel( Imx.NONE );
-    protected JLabel    text                = new JLabel( "" );
-    protected JLabel    status              = new JLabel( "", JLabel.RIGHT );
+    protected JLabel        iconLeft            = new JLabel( Imx.NONE );
+    protected JLabel        iconRight           = new JLabel( Imx.NONE );
+    protected JLabel        text                = new JLabel( "" );
+    protected JLabel        status              = new JLabel( "", JLabel.RIGHT );
     
-    protected AnImx     processingLeft      = new AnImx( "loading.png", 50, 125, 16 );
-    protected AnImx     processingRight     = new AnImx( "loading.png", 50, 125, 16 );
+    protected AnImx         processingLeft      = new AnImx( "loading.png", 50, 125, 16 );
+    protected AnImx         processingRight     = new AnImx( "loading.png", 50, 125, 16 );
     
-    protected Color     colorBackground;
+    protected Color         colorBackground;
 
-    protected JLabel    message             = new JLabel();
-    protected JWindow   window              = new JWindow();
+    protected JLabel        message             = new JLabel( Imx.WARNING );
+    protected JLabel        clipboardHint       = new JLabel( "[Click middle mouse button to copy this message]", Imx.NONE, JLabel.LEFT );
+    protected JWindow       window              = new JWindow();
+    
+    protected boolean       active              = true;
     
     public KTMenuItem() {
     }
@@ -393,15 +424,25 @@ class KTMenuItem extends JPanel implements MouseListener {
         this.iconRight.addMouseListener( this );
         this.iconLeft.addMouseListener( this );
 
-        this.message = new JLabel( Imx.WARNING );
         this.message.setIconTextGap( 8 );
-        this.message.setBorder( new CompoundBorder( new LineBorder( Color.RED ), new EmptyBorder( new Insets( 4, 4, 4, 4 ) ) ) );
         this.message.setForeground( Color.BLACK );
+        this.message.setAlignmentX( Component.LEFT_ALIGNMENT );
+        this.message.setHorizontalAlignment( JLabel.LEFT );
         
-        this.window = new JWindow();
+        this.clipboardHint.setIconTextGap( 8 );
+        this.clipboardHint.setForeground( Color.GRAY );
+        this.clipboardHint.setAlignmentX( Component.LEFT_ALIGNMENT );
+        this.clipboardHint.setHorizontalAlignment( JLabel.LEFT );
+        
+        JPanel panel = new JPanel();
+        panel.setLayout( new BoxLayout( panel, BoxLayout.PAGE_AXIS ) );
+        panel.setBorder( new CompoundBorder( new LineBorder( Color.RED ), new EmptyBorder( new Insets( 4, 4, 4, 4 ) ) ) );
+        panel.add( this.message );
+        panel.add( this.clipboardHint );
+        
         this.window.setLocation( this.getLocation() );
         this.window.getContentPane().setLayout( new BoxLayout( this.window.getContentPane(), BoxLayout.PAGE_AXIS ) );
-        this.window.getContentPane().add( message );
+        this.window.getContentPane().add( panel );
         this.window.setAlwaysOnTop( true );
         this.window.setType( Type.POPUP );
     
@@ -415,6 +456,15 @@ class KTMenuItem extends JPanel implements MouseListener {
         this.add( this.status );
         
         this.addMouseListener( this );
+    }
+    
+    public void setActive( boolean active ) {
+        this.active = active;
+        
+        if ( ! active ) {
+            this.setBackground( null );
+            text.setBackground( null );            
+        }
     }
     
     public void setStatus( String status, Color color ) {
@@ -440,30 +490,41 @@ class KTMenuItem extends JPanel implements MouseListener {
         if ( message == null ) {
             this.message.setText( null );
             this.iconRight.setIcon( Imx.NONE );
+            this.iconRight.setToolTipText( null );
+            TrayManager.clearMessage( this.toString() );
         } else {
             this.message.setText( message );
             this.iconRight.setIcon( Imx.WARNING );
             this.setProcessingRight( false );
+            TrayManager.setMessage( this.toString(), message );
         }
+    }
+    
+    public void leftClick( MouseEvent e ) {
+        
     }
     
     @Override
     public void mouseEntered( MouseEvent e ) {
         
+        if ( ! this.active ) {
+            return;
+        }
+        
         if ( iconRight.isVisible() && ( iconRight.getIcon() == Imx.WARNING || iconRight.getIcon() == Imx.WARNING_DISABLED ) ) {
             
             iconRight.setIcon( Imx.WARNING_DISABLED );
             
-            window.pack();
             
             Point p = this.getLocationOnScreen();
             
             if ( p.x - window.getWidth() < 0 ) {
-                p.setLocation( p.x + this.getWidth(), p.y );
+                p.setLocation( p.x + this.getWidth() - 16, p.y );
             } else {
-                p.setLocation( p.x - window.getWidth(), p.y );
+                p.setLocation( p.x - window.getWidth() + 16, p.y );
             }
             
+            window.pack();
             window.setLocation( p );
             window.setVisible( true );
         }
@@ -475,8 +536,7 @@ class KTMenuItem extends JPanel implements MouseListener {
     @Override
     public void mouseExited(MouseEvent e) {
         
-        if ( window.isVisible() ) {
-
+        if ( window.isVisible() && e.getComponent() != this.window ) {
             window.setVisible( false );
         }
         
@@ -486,14 +546,54 @@ class KTMenuItem extends JPanel implements MouseListener {
     
     @Override
     public void mouseClicked(MouseEvent e) {
+        
+        if ( ! this.active ) {
+            return;
+        }
+        
+        if ( e.getButton() == MouseEvent.BUTTON1 ) {
+            
+            this.leftClick( e );
+        }
+        
+        if ( e.getButton() == MouseEvent.BUTTON2 ) {
+            
+            if ( iconRight.isVisible() && ( iconRight.getIcon() == Imx.WARNING || iconRight.getIcon() == Imx.WARNING_DISABLED ) ) {
+                
+                StringSelection selection = new StringSelection( this.message.getText() );
+                
+                Clipboard clipBoard = Toolkit.getDefaultToolkit().getSystemClipboard();
+                clipBoard.setContents( selection, null );
+                
+                return;
+            }
+        }
     }
     
     @Override
     public void mousePressed(MouseEvent e) {
+        
+        if ( e.getButton() == MouseEvent.BUTTON2 ) {
+            
+            if ( iconRight.isVisible() && ( iconRight.getIcon() == Imx.WARNING || iconRight.getIcon() == Imx.WARNING_DISABLED ) ) {
+                
+                this.clipboardHint.setForeground( Color.BLACK );
+                return;
+            }
+        }
     }
     
     @Override
     public void mouseReleased(MouseEvent e) {
+
+        if ( e.getButton() == MouseEvent.BUTTON2 ) {
+            
+            if ( iconRight.isVisible() && ( iconRight.getIcon() == Imx.WARNING || iconRight.getIcon() == Imx.WARNING_DISABLED ) ) {
+                
+                this.clipboardHint.setForeground( Color.GRAY );
+                return;
+            }
+        }
     }
 }
 
@@ -521,7 +621,7 @@ class TunnelMenuItem extends KTMenuItem implements TunnelManagerListener {
     }
     
     @Override
-    public void mouseClicked(MouseEvent e) {
+    public void leftClick( MouseEvent e ) {
         
         if ( e.getComponent() == iconLeft && this.tunnel.getAutostart() ) {
             
@@ -541,8 +641,6 @@ class TunnelMenuItem extends KTMenuItem implements TunnelManagerListener {
             return;
         }
         
-//        this.setProcessingRight( true );
-        
         if ( TunnelManager.isRunning( tunnel ) ) {
             
             TunnelManager.disableAutostart( tunnel );
@@ -552,7 +650,7 @@ class TunnelMenuItem extends KTMenuItem implements TunnelManagerListener {
             tunnel.setFailures( 0 );
             TunnelManager.enableAutostart( tunnel );
             TunnelManager.startTunnel( tunnel );
-        }        
+        }
     }
     
     @Override

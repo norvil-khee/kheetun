@@ -16,12 +16,13 @@ import org.khee.kheetun.client.gui.TrayMenu;
 public class kheetun {
 
     private static Logger logger = LogManager.getLogger( "kheetun" );
-    public static final String VERSION = "0.10.0";
+    public static final String VERSION = "0.10.1";
     
     public static void main(String[] args) {
         
         Gtk.init( args );
         
+        TrayManager.init();
         ConfigManager.init();
         TunnelManager.init();
         TunnelClient.init();
@@ -45,7 +46,6 @@ public class kheetun {
         Tray        tray            = new GtkTray();
         TrayMenu    menu            = new TrayMenu();
         
-        TrayManager.init();
         TrayManager.setTray( tray );
         TrayManager.setMenu( menu );
         TrayManager.setIcon( Imx.KHEETUN_OFF );

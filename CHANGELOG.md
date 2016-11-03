@@ -1,6 +1,23 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## 0.10.1 - 2016-11-03
+
+### Added
+
+- tray icon turns red if errors are displayed (no matter if read or unread)
+- middle-click copies error message (if present)
+
+### Changed
+
+- internal code refactoring
+- invalid configurations will now be displayed as invalid separately
+- connection to daemon (and therefore handling of tunnels) will be done even if some configurations are invalid
+
+### Fixes
+
+- read only XML files below ``kheetun.d``
+
 ## 0.10.0 - 2016-10-27
 
 ### Added
@@ -9,7 +26,7 @@ All notable changes to this project will be documented in this file.
 - once started, also non-autostart tunnels will be restarted if they failed (e.g. due to a ping timeout)
 - added an "autostart all" button to reenable autostarting of previously failed or manually stopped tunnels
 - added maximum attempts of retries after connection failures of autostarting tunnels - this is configureable in XML files as "maxFailures" property of a ``<tunnel>`` - the default being 3.
-- trigger tray menu on right-click and left-click 
+- trigger tray menu on right-click and left-click
 
 ### Changed
 - switched from "single configuration" file layout to "multiple configuration" file layout
