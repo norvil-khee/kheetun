@@ -729,9 +729,7 @@ class TunnelMenuItem extends KTMenuItem implements TunnelManagerListener {
             
             TrayManager.blink();
             
-            iconRight.setIcon( Imx.WARNING );
-            
-            message.setText( error );
+            this.setMessage( error );
         }
     }
     

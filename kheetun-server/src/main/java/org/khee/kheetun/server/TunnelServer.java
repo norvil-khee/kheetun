@@ -83,7 +83,8 @@ public class TunnelServer implements Runnable {
                 try {
                     
                     receive = (Protocol)commIn.readObject();
-                    this.handle( receive );
+                    
+                    new TunnelServerHandler( this, this.tunnelManager, receive );
                     
                 } catch ( ClassNotFoundException e ) {
                     logger.error( "Class error: " + e.getMessage() );
@@ -125,7 +126,7 @@ public class TunnelServer implements Runnable {
         
     }
     
-    private void createTunnelManager( String user ) {
+    public void createTunnelManager( String user ) {
         
         /*
          * create tunnel manager if not already existant for given user
@@ -143,62 +144,6 @@ public class TunnelServer implements Runnable {
         }
         
         tunnelManager.setServer( this );
-    }
-    
-    private void handle( Protocol receive ) {
-        
-        logger.debug( "Server handling: " + receive );
-        
-        switch ( receive.getCommand() ) {
-        
-        case Protocol.ECHO:
-            logger.info( "Client echo: " + receive.getString() );
-            break;
-
-        case Protocol.CONNECT:
-
-            this.createTunnelManager( receive.getUser() );
-            send( new Protocol( Protocol.ACCEPT ) );
-            break;
-
-        case Protocol.STARTTUNNEL:
-            
-            tunnelManager.startTunnel( receive.getTunnel() );
-                
-            break;
-            
-        case Protocol.STOPTUNNEL:
-            
-            this.tunnelManager.stopTunnel( receive.getTunnel() );
-            
-            break;
-            
-        case Protocol.STOPALLTUNNELS:
-            
-            this.tunnelManager.stopAllTunnels();
-            
-            break;
-        
-        case Protocol.QUERYTUNNELS:
-            
-            this.send( new Protocol( Protocol.ACTIVETUNNELS, tunnelManager.getActiveTunnels() ) );
-            break;
-            
-        case Protocol.QUIT:
-            
-            this.send( new Protocol( Protocol.QUIT ) );
-            break;
-            
-        case Protocol.DISCONNECT:
-            
-            send( new Protocol( Protocol.DISCONNECT ) );
-            break;
-            
-
-        default:
-            break;
-        }
-        
     }
     
     public synchronized void send( Protocol protocol ) {
