@@ -234,6 +234,7 @@ public class TunnelManager implements ConfigManagerListener {
             }
             
             tunnel.setRestart( true );
+            tunnel.setFailures( 0 );
             instance.running.add( tunnel );
             
             for ( TunnelManagerListener listener : instance.listeners ) {
