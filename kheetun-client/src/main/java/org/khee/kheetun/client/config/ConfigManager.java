@@ -15,11 +15,13 @@ public class ConfigManager implements Runnable {
 
     private static ConfigManager instance = null;
     
-    private Config              config;
-    private String              fingerprint     = "";
-    private ArrayList<Tunnel>   tunnels         = new ArrayList<Tunnel>();
-    private File                configDirectory = new File( System.getProperty( "user.home" ) + "/.kheetun/kheetun.d" );
-    private File                globalConfig    = new File( System.getProperty( "user.home" ) + "/.kheetun/kheetun.conf" );
+    private Config              config              = new Config();
+    private GlobalConfig        globalConfig        = new GlobalConfig();
+    private String              fingerprint         = "";
+    private String              fingerprintGlobal   = "";
+    private ArrayList<Tunnel>   tunnels             = new ArrayList<Tunnel>();
+    private File                configDirectory     = new File( System.getProperty( "user.home" ) + "/.kheetun/kheetun.d" );
+    private File                globalConfigFile    = new File( System.getProperty( "user.home" ) + "/.kheetun/kheetun.conf" );
 
     
     private ArrayList<ConfigManagerListener> listeners  = new ArrayList<ConfigManagerListener>();
@@ -42,13 +44,18 @@ public class ConfigManager implements Runnable {
         return instance.config;
     }
     
-    private void stopStaleTunnels( Config newConfig ) {
+    public static GlobalConfig getGlobalConfig() {
         
-        if ( config == null ) {
+        return instance.globalConfig;
+    }
+    
+    private void stopStaleTunnels( Config oldConfig ) {
+        
+        if ( oldConfig == null ) {
             return;
         }
         
-        for ( Profile oldProfile : config.getProfiles() ) {
+        for ( Profile oldProfile : oldConfig.getProfiles() ) {
             
             for ( Tunnel oldTunnel : oldProfile.getTunnels() ) {
                 
@@ -58,7 +65,7 @@ public class ConfigManager implements Runnable {
                 
                 boolean stale = true;
                 
-                for ( Profile newProfile : newConfig.getProfiles() ) {
+                for ( Profile newProfile : this.config.getProfiles() ) {
                     
                     for ( Tunnel newTunnel : newProfile.getTunnels() ) {
                         
@@ -81,20 +88,30 @@ public class ConfigManager implements Runnable {
         }
     }
     
-    private boolean configChanged() {
-        
-        boolean deprecatedConfigExists = new File( System.getProperty( "user.home" ) + "/.kheetun/kheetun.xml" ).exists();
-        
-        if ( deprecatedConfigExists ) {
-            return true;
-        }
-        
+    private boolean globalConfigChanged() {
+    
         String fingerprint = "";
         
-        if ( globalConfig.exists() ) {
+        if ( globalConfigFile.exists() ) {
             
-            fingerprint += globalConfig.lastModified();
+            fingerprint += globalConfigFile.lastModified();
         }
+        
+        logger.debug( "ConfigManager: fingerprintGlobal ( " + fingerprint + "/" + this.fingerprintGlobal + ")" );
+            
+        if ( this.fingerprintGlobal.equals( fingerprint ) ) {
+            return false;
+        }
+        
+        this.fingerprintGlobal = fingerprint;
+
+        return true;
+    }
+  
+    
+    private boolean configChanged() {
+        
+        String fingerprint = "";
         
         if ( configDirectory.exists() ) {
             
@@ -127,33 +144,46 @@ public class ConfigManager implements Runnable {
     public void run() {
         
         while( true ) {
+            
+            if ( this.globalConfigChanged() ) {
+                
+                GlobalConfig oldConfig = this.globalConfig;
+
+                logger.info( "Global configuration changed, updating" );
+                
+                this.globalConfig = GlobalConfig.load();
+                
+                for ( ConfigManagerListener listener : this.listeners ) {
+                    listener.configManagerGlobalConfigChanged( oldConfig, this.globalConfig, this.globalConfig.getErrors().isEmpty() );
+                }
+            }
         
             if ( this.configChanged() ) {
                 
+                Config oldConfig = this.config;
+                
                 logger.info( "Configuration changed, updating" );
                
-                Config newConfig = Config.load();
+                this.config = Config.load();
                 
                 tunnels.clear();
                 
-                for ( Profile profile : newConfig.getProfiles() ) {
+                for ( Profile profile : this.config.getProfiles() ) {
                     for ( Tunnel tunnel : profile.getTunnels() ) {
                         tunnels.add( tunnel );
                     }
                 }
                     
-                this.stopStaleTunnels( newConfig );
+                this.stopStaleTunnels( oldConfig );
                 
-                for ( Profile profile : newConfig.getProfiles() ) {
+                for ( Profile profile : this.config.getProfiles() ) {
                     
                     this.validate( profile );
                 }
                 
                 for ( ConfigManagerListener listener : this.listeners ) {
-                    listener.configManagerConfigChanged( newConfig, newConfig.getErrors().isEmpty() );
+                    listener.configManagerConfigChanged( oldConfig, this.config, this.config.getErrors().isEmpty() );
                 }
-                
-                config = newConfig;
             }
             
             try {

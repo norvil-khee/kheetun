@@ -19,6 +19,7 @@ import org.khee.kheetun.client.comm.Protocol;
 import org.khee.kheetun.client.config.Config;
 import org.khee.kheetun.client.config.ConfigManager;
 import org.khee.kheetun.client.config.ConfigManagerListener;
+import org.khee.kheetun.client.config.GlobalConfig;
 import org.khee.kheetun.client.config.Tunnel;
 
 import com.jcraft.jsch.JSch;
@@ -51,13 +52,13 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
     }
     
     @Override
-    public void configManagerConfigChanged( Config config, boolean valid ) {
+    public void configManagerGlobalConfigChanged( GlobalConfig oldConfig, GlobalConfig newConfig, boolean valid ) {
+        
+        if ( valid && ! this.port.equals( newConfig.getPort() ) ) {
 
-        if ( valid ) {
-
-            logger.info( "Connecting to port " + config.getPort() + " after config change" );
+            logger.info( "Connecting to port " + newConfig.getPort() + " after config change" );
             
-            this.port = config.getPort();
+            this.port = newConfig.getPort();
             
             this.send( new Protocol( Protocol.DISCONNECT ) );
             
@@ -65,7 +66,13 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
                 this.client = new Thread( this, "kheetun-client-thread" );
                 this.client.start();
             }
-        }
+        }        
+    }
+    
+    @Override
+    public void configManagerConfigChanged( Config oldConfig, Config newConfig, boolean valid ) {
+
+
     }
     
     public void run() {
@@ -255,32 +262,27 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
             
             if ( keypair.isEncrypted() ) {
                 
-                Tunnel protectedTunnel = new Tunnel( tunnel );
-                
                 JPasswordField password = new JPasswordField();
                 
                 int answer = JOptionPane.showConfirmDialog( null, password, "Give me the passphrase", JOptionPane.OK_CANCEL_OPTION );
                 
                 if ( answer == JOptionPane.OK_OPTION ) {
                     
-                    protectedTunnel.setPassPhrase( new String( password.getPassword() ) );
+                    tunnel.setPassPhrase( new String( password.getPassword() ) );
                 } else {
-                    protectedTunnel.setPassPhrase( "" );
+                    tunnel.setPassPhrase( "" );
                     return;
                 }
                 
                 if ( ! keypair.decrypt( tunnel.getPassPhrase() ) ) {
                     JOptionPane.showMessageDialog( null , "I'm afraid that passphrase does not compute :]" );
-                    protectedTunnel.setPassPhrase( "" );
+                    tunnel.setPassPhrase( "" );
                     return;
                 }
-                
-                tunnel = protectedTunnel;
             }
         }
         
         instance.send(new Protocol( Protocol.STARTTUNNEL, tunnel,  "" ));
-        
         tunnel.setPassPhrase( "" );
     }
     

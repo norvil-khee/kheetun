@@ -20,21 +20,11 @@ public class Profile {
     private String                  baseBindIp;
     private ArrayList<String>       errors       = new ArrayList<String>();
     private String                  configFile;
+    private Long                    modified;
+    private Boolean                 active;
     
     public Profile() {
         tunnels = new ArrayList<Tunnel>();
-    }
-    
-    public Profile( Profile source ) {
-    
-        this.tunnels    = new ArrayList<Tunnel>();
-        this.name       = source.name;
-        this.baseBindIp = source.baseBindIp;
-        
-        for( Tunnel tunnel : source.getTunnels() ) { 
-            
-            addTunnel( new Tunnel( tunnel ) );
-        }
     }
     
     @XmlAttribute
@@ -79,6 +69,22 @@ public class Profile {
 
     public void setConfigFile(String configFile) {
         this.configFile = configFile;
+    }
+    
+    public Boolean getActive() {
+        return active;
+    }
+
+    public void setActive(Boolean active) {
+        this.active = active;
+    }
+    
+    public Long getModified() {
+        return modified;
+    }
+
+    public void setModified( Long modified ) {
+        this.modified = modified;
     }
 
     public boolean isValid() {

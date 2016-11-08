@@ -49,6 +49,7 @@ public class Imx extends ImageIcon {
     public static final Imx RELOAD              = loadImx( "reload.png" );
     public static final Imx AUTO                = loadImx( "favorite.png" );
     public static final Imx AUTO_DISABLED       = loadImx( "favorite_gray.png" );
+    public static final Imx SORT                = loadImx( "download.png" );
     
     public ImageIcon icon;
     public ImageIcon s12;

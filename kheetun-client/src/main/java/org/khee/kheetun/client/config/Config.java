@@ -1,11 +1,7 @@
 package org.khee.kheetun.client.config;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Properties;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -14,30 +10,16 @@ import javax.xml.bind.Unmarshaller;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.khee.kheetun.client.compat.Config_0_9_0;
 
 public class Config {
     
     private static  Logger              logger      = LogManager.getLogger( "kheetun" );
     
     private         ArrayList<Profile>  profiles    = new ArrayList<Profile>();
-    private         Properties          properties  = new Properties();
     private         ArrayList<String>   errors      = new ArrayList<String>();
 
     
     public Config() { 
-        
-        properties.setProperty( "port", "7779" );
-    }
-    
-    public Config( Config source ) {
-        
-        this.profiles = new ArrayList<Profile>();
-        this.profiles = source.getProfiles();
-        
-        for ( Profile profile : source.getProfiles() ) {
-            addProfile( new Profile( profile ) );
-        }
     }
     
     public ArrayList<Profile> getProfiles() {
@@ -59,24 +41,7 @@ public class Config {
             }
         }
         
-        return this.getPort() != null;
-    }
-    
-    public Integer getPort() {
-        
-        try {
-            
-            return new Integer( this.properties.getProperty( "port" ) );
-            
-        } catch ( NumberFormatException eNumber ) {
-            
-            return null;
-        }
-    }
-    
-    public void setPort(Integer port) {
-        
-        this.properties.setProperty( "port", port.toString() );
+        return true;
     }
     
     public ArrayList<String> getErrors() {
@@ -109,53 +74,17 @@ public class Config {
             }
         }
         
-        return this.getPort().equals( compare.getPort() );
+        return true;
     }
     
     
     public static Config load() {
-        
-        // handle deprecation
-        //
-        File fileConfig_0_9_0 = new File( System.getProperty( "user.home") + "/.kheetun/kheetun.xml" );
-        
-        if ( fileConfig_0_9_0.exists() ) {
-            
-            logger.info( "Deprecation: updating configuration from 0.9.0 to current" );
-            
-            try {
-                Config oldConfig = Config_0_9_0.load( fileConfig_0_9_0 );
-                oldConfig.save();
-                
-                fileConfig_0_9_0.renameTo( new File( System.getProperty( "user.home") + "/.kheetun/kheetun.xml.deprecated" ) );
-                
-            } catch ( JAXBException eJAX ) {
-
-                String error = ( eJAX.getCause() != null ? eJAX.getCause().getLocalizedMessage() : eJAX.getLocalizedMessage() );
-                logger.error( "Error while reading deprecated config: " + error );
-            }
-        }
         
         Config config = new Config();
         
         File configDirectory = new File( System.getProperty( "user.home") + "/.kheetun/kheetun.d" );
         
         if ( configDirectory.exists() ) {
-            
-            try {
-                
-                config.properties.load( new FileInputStream( new File ( System.getProperty( "user.home") + "/.kheetun/kheetun.conf" ) ) );
-                
-                if ( config.getPort() == null ) {
-                    config.addError( "Port is undefined" );
-                }
-            
-            } catch ( IOException eIO ) {
-                
-                logger.error( "IO Error while loading general config: " + eIO.getLocalizedMessage() ) ;
-                config.addError( "IO exception: " + eIO.getLocalizedMessage() );
-            }
-            
             
             try {
 
@@ -185,6 +114,7 @@ public class Config {
                     }
                     
                     profile.setConfigFile( profileFile.getName() );
+                    profile.setModified( profileFile.lastModified() );
                     config.profiles.add( profile );
                 }
                 
@@ -211,8 +141,6 @@ public class Config {
         
         try {
             
-            properties.store( new FileOutputStream( new File( System.getProperty( "user.home") + "/.kheetun/kheetun.conf" ) ), "global settings for kheetun client" );
-            
             JAXBContext context = JAXBContext.newInstance( Profile.class );
             Marshaller m = context.createMarshaller();
             
@@ -228,10 +156,7 @@ public class Config {
 
             logger.error( e.getMessage() );
             
-        } catch ( IOException eIO ) {
-            
-            logger.error( eIO.getMessage() );
-        }
+        } 
     }
     
 }

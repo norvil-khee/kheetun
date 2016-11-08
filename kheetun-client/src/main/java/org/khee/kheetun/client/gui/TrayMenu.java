@@ -3,6 +3,7 @@ package org.khee.kheetun.client.gui;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Insets;
@@ -14,6 +15,9 @@ import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -34,6 +38,7 @@ import org.khee.kheetun.client.kheetun;
 import org.khee.kheetun.client.config.Config;
 import org.khee.kheetun.client.config.ConfigManager;
 import org.khee.kheetun.client.config.ConfigManagerListener;
+import org.khee.kheetun.client.config.GlobalConfig;
 import org.khee.kheetun.client.config.Profile;
 import org.khee.kheetun.client.config.Tunnel;
 
@@ -44,11 +49,13 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
     private KTMenuItem  labelKheetun;
     private KTMenuItem  labelConnected;
     private KTMenuItem  labelConfig;
+    private KTMenuItem  itemProfiles;
     private KTMenuItem  itemExit;
     private KTMenuItem  itemQuery;
     private KTMenuItem  itemStopAll;
     private KTMenuItem  itemAutostartAll;
-    private JPanel      panel;
+    private JPanel      panelProfiles;
+    private JPanel      panelMain;
     
     @SuppressWarnings("serial")
     public TrayMenu() {
@@ -56,13 +63,13 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
         setName( "kheetun" );
         setIconImage( Imx.CONFIG.getImage() );
         
-        panel = new JPanel();
-        panel.setDoubleBuffered( true );
-        panel.setLayout( new BoxLayout( panel, BoxLayout.PAGE_AXIS ) );
-        panel.setBorder( new LineBorder( Color.GRAY ) );
+        panelMain = new JPanel();
+        panelMain.setDoubleBuffered( true );
+        panelMain.setLayout( new BoxLayout( panelMain, BoxLayout.PAGE_AXIS ) );
+        panelMain.setBorder( new LineBorder( Color.GRAY ) );
         
         this.getContentPane().setLayout( new BoxLayout( this.getContentPane(), BoxLayout.PAGE_AXIS ) );
-        this.getContentPane().add( panel );
+        this.getContentPane().add( panelMain );
 
         labelKheetun    = new KTMenuItem( Imx.KHEETUN.icon, "" );
         labelKheetun.setStatus( kheetun.VERSION, Color.GRAY );
@@ -74,12 +81,47 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
         labelConfig     = new KTMenuItem( Imx.NONE, "Global config:" );
         labelConfig.setStatus( "none", Color.LIGHT_GRAY );
         
+        itemProfiles    = new KTMenuItem( Imx.SORT, "Sort Profiles" ) {
+            
+            @Override
+            public void leftClick(MouseEvent e) {
+                
+                if ( ConfigManager.getGlobalConfig() != null ) {
+                    
+                    switch( ConfigManager.getGlobalConfig().getSortOrder() ) {
+                        
+                    case GlobalConfig.SORT_ALPHABETICAL_DESC:
+                        ConfigManager.getGlobalConfig().setSortOrder( GlobalConfig.SORT_MODIFIED_ASC );
+                        break;
+
+                    case GlobalConfig.SORT_MODIFIED_ASC:
+                        ConfigManager.getGlobalConfig().setSortOrder( GlobalConfig.SORT_MODIFIED_DESC );
+                        break;
+
+                    case GlobalConfig.SORT_MODIFIED_DESC:
+                        ConfigManager.getGlobalConfig().setSortOrder( GlobalConfig.SORT_ALPHABETICAL_ASC );
+                        break;
+
+                    default:
+                        ConfigManager.getGlobalConfig().setSortOrder( GlobalConfig.SORT_ALPHABETICAL_DESC );
+                        break;
+                    }
+                    
+                    TrayManager.buildMenu();
+                    ConfigManager.getGlobalConfig().save();
+                }
+                
+            };
+        };
+        
+        itemProfiles.setStatus( "A...Z", Color.DARK_GRAY );
+        
         itemExit = new KTMenuItem( Imx.EXIT, "Exit" ) {
             
             @Override
             public void leftClick(MouseEvent e) {
-
-                TunnelManager.quit();
+                
+                System.exit( 0 );
             }
         };
         
@@ -114,36 +156,89 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
         this.setAlwaysOnTop( true );
         this.setType( Type.POPUP );
         
-        this.buildMenu( null );
+        this.buildMenu();
         
         this.addMouseListener( this );
-        panel.addMouseListener( this );
+        panelMain.addMouseListener( this );
             
         this.setFocusableWindowState( true );
         this.setFocusable( true );
         
         TunnelManager.addTunnelManagerListener( this );
         ConfigManager.addConfigManagerListener( this );
+        
+        panelMain.add( labelKheetun );
+        panelMain.add( new KTSeperator() );
+        panelMain.add( labelConnected );
+        panelMain.add( labelConfig );
+        panelMain.add( new KTSeperator() );
+        panelMain.add( itemStopAll );
+        panelMain.add( itemAutostartAll );
+        panelMain.add( itemQuery );
+        panelMain.add( itemProfiles );
+        panelMain.add( new KTSeperator() );
+        panelMain.add( itemExit );
     }
     
-    public void buildMenu( Config config ) {
+    public void buildMenu() {
         
         TrayManager.clearMessages();
         
-        panel.removeAll();
+        if ( panelProfiles != null ) {
+            panelMain.remove( panelProfiles );
+        }
         
-        panel.add( labelKheetun );
-        panel.add( new KTSeperator() );
-        panel.add( labelConnected );
-        panel.add( labelConfig );
-        panel.add( new KTSeperator() );
-        panel.add( itemStopAll );
-        panel.add( itemAutostartAll );
-        panel.add( itemQuery );
-        panel.add( new KTSeperator() );
+        panelProfiles = new JPanel();
+        panelProfiles.setLayout( new BoxLayout( panelProfiles, BoxLayout.PAGE_AXIS ) );
         
-        if ( config != null ) {
-            for ( Profile profile : config.getProfiles() ) {
+        if ( ConfigManager.getConfig() != null ) {
+            
+            ArrayList<Profile> profiles = new ArrayList<Profile>( ConfigManager.getConfig().getProfiles() );
+            
+            switch( ConfigManager.getGlobalConfig().getSortOrder() ) {
+            
+            case GlobalConfig.SORT_ALPHABETICAL_DESC:
+                itemProfiles.setStatus( "Z...A", Color.DARK_GRAY );
+                Collections.sort( profiles, new Comparator<Profile>() {
+                    
+                    public int compare( Profile p1, Profile p2 ) {
+                        return p2.getName().compareTo( p1.getName() );
+                    };
+                } );
+                break;
+                
+            case GlobalConfig.SORT_MODIFIED_ASC:
+                itemProfiles.setStatus( "DATE ASC", Color.DARK_GRAY );
+                Collections.sort( profiles, new Comparator<Profile>() {
+                    
+                    public int compare( Profile p1, Profile p2 ) {
+                        return p1.getModified().compareTo( p2.getModified() );
+                    };
+                } );
+                break;
+                
+            case GlobalConfig.SORT_MODIFIED_DESC:
+                itemProfiles.setStatus( "DATE DESC", Color.DARK_GRAY );
+                Collections.sort( profiles, new Comparator<Profile>() {
+                    
+                    public int compare( Profile p1, Profile p2 ) {
+                        return p2.getModified().compareTo( p1.getModified() );
+                    };
+                } );
+                break;
+                
+            default:
+                itemProfiles.setStatus( "A...Z", Color.DARK_GRAY );
+                Collections.sort( profiles, new Comparator<Profile>() {
+                    
+                    public int compare( Profile p1, Profile p2 ) {
+                        return p1.getName().compareTo( p2.getName() );
+                    };
+                } );
+                break;
+            };
+            
+            for ( Profile profile : profiles ) {
                 
                 KTMenuItem itemProfile = new KTMenuItem( Imx.PROFILE, profile.getName() );
                 itemProfile.setStatus( "[" + profile.getConfigFile() + "]", new Color( 0, 100, 0 ) );
@@ -165,7 +260,7 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
                     TrayManager.blink();
                 }
                 
-                panel.add( itemProfile );
+                panelProfiles.add( itemProfile );
                 
                 for ( Tunnel tunnel : profile.getTunnels() ) {
                     
@@ -176,17 +271,18 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
                         itemTunnel.setActive( false );
                     }
                     
-                    panel.add( itemTunnel );
+                    panelProfiles.add( itemTunnel );
                 }
-                panel.add( new KTSeperator() );
+                panelProfiles.add( new KTSeperator() );
             }
         }
         
-        panel.add( itemExit );
         
-        for ( Component c : panel.getComponents() ) {
+        for ( Component c : panelMain.getComponents() ) {
             c.addMouseListener( this );
         }
+        
+        panelMain.add( panelProfiles, panelMain.getComponentCount() - 1 );
         
         this.revalidate();
         this.pack();
@@ -194,9 +290,17 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
     }
     
     @Override
-    public void configManagerConfigChanged( Config config, boolean valid ) {
-
-        buildMenu( config );
+    public void configManagerGlobalConfigChanged( GlobalConfig oldConfig, GlobalConfig newConfig, boolean valid ) {
+        
+        if ( valid && ! oldConfig.getSortOrder().equals( newConfig.getSortOrder() ) ) {
+            buildMenu();
+        }
+    }
+    
+    @Override
+    public void configManagerConfigChanged( Config oldConfig, Config newConfig, boolean valid ) {
+        
+        buildMenu();
         
         if ( valid ) {
             
@@ -207,7 +311,7 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
             
             String message = "<html><body>Configuration errors:";
             
-            for ( String error : config.getErrors() ) {
+            for ( String error : newConfig.getErrors() ) {
                 
                 message += "<br>    * " + error;
             }
@@ -330,9 +434,9 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
 
     public void mouseExited(MouseEvent e) {
         
-        if ( panel.isShowing() ) {
-            Rectangle rect = new Rectangle( panel.getLocationOnScreen() );
-            rect.setSize( panel.getSize() );
+        if ( panelMain.isShowing() ) {
+            Rectangle rect = new Rectangle( panelMain.getLocationOnScreen() );
+            rect.setSize( panelMain.getSize() );
             
             if ( ! rect.contains( e.getLocationOnScreen() ) ) {
                 setVisible( false );
@@ -363,11 +467,11 @@ class KTMenuItem extends JPanel implements MouseListener {
 
     protected JLabel        iconLeft            = new JLabel( Imx.NONE );
     protected JLabel        iconRight           = new JLabel( Imx.NONE );
+    protected JLabel        iconControl         = new JLabel( Imx.NONE );
     protected JLabel        text                = new JLabel( "" );
     protected JLabel        status              = new JLabel( "", JLabel.RIGHT );
     
-    protected AnImx         processingLeft      = new AnImx( "loading.png", 50, 125, 16 );
-    protected AnImx         processingRight     = new AnImx( "loading.png", 50, 125, 16 );
+    protected AnImx         processing          = new AnImx( "loading.png", 50, 125, 16 );
     
     protected Color         colorBackground;
 
@@ -409,7 +513,10 @@ class KTMenuItem extends JPanel implements MouseListener {
         this.setAlignmentX( Container.LEFT_ALIGNMENT );
         
         this.iconLeft.setBorder( new EmptyBorder( new Insets( 0, 0, 0, 4 ) ) );
-        
+        this.iconLeft.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
+
+        this.iconRight.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
+
         this.status.setForeground( Color.LIGHT_GRAY );
         this.status.setBorder( new EmptyBorder( new Insets( 0, 8, 0, 4 ) ) );
         this.status.setAlignmentX( Component.RIGHT_ALIGNMENT );
@@ -418,11 +525,11 @@ class KTMenuItem extends JPanel implements MouseListener {
         this.text.setOpaque( true );
         this.text.setBorder( new EmptyBorder( new Insets( 4, 8, 4, 0 ) ) );
         
-        this.processingLeft.setVisible( false );
-        this.processingRight.setVisible( false );
+        this.processing.setVisible( false );
         
         this.iconRight.addMouseListener( this );
         this.iconLeft.addMouseListener( this );
+        this.iconControl.addMouseListener( this );
 
         this.message.setIconTextGap( 8 );
         this.message.setForeground( Color.BLACK );
@@ -445,15 +552,16 @@ class KTMenuItem extends JPanel implements MouseListener {
         this.window.getContentPane().add( panel );
         this.window.setAlwaysOnTop( true );
         this.window.setType( Type.POPUP );
-    
+     
         this.add( this.iconLeft );
-        this.add( this.processingLeft );
+        this.add( this.processing );
         this.add( this.iconRight );
-        this.add( this.processingRight );
         this.add( this.text );
         this.add( Box.createHorizontalGlue() );
         this.add( Box.createHorizontalStrut( 32 ) );
         this.add( this.status );
+        this.add( Box.createHorizontalStrut( 4 ) );
+        this.add( this.iconControl );
         
         this.addMouseListener( this );
     }
@@ -473,15 +581,9 @@ class KTMenuItem extends JPanel implements MouseListener {
         this.status.setForeground( color );
     }
     
-    public void setProcessingLeft( boolean state ) {
+    public void setProcessing( boolean state ) {
         
-        processingLeft.setVisible( state );
-        iconLeft.setVisible( ! state );
-    }
-    
-    public void setProcessingRight( boolean state ) {
-        
-        processingRight.setVisible( state );
+        processing.setVisible( state );
         iconRight.setVisible( ! state );
     }
     
@@ -495,7 +597,7 @@ class KTMenuItem extends JPanel implements MouseListener {
         } else {
             this.message.setText( message );
             this.iconRight.setIcon( Imx.WARNING );
-            this.setProcessingRight( false );
+            this.setProcessing( false );
             TrayManager.setMessage( this.toString(), message );
         }
     }
@@ -679,7 +781,7 @@ class TunnelMenuItem extends KTMenuItem implements TunnelManagerListener {
             
             iconRight.setIcon( Imx.ACTIVE );
             
-            this.setProcessingRight( false );
+            this.setProcessing( false );
             
             this.setStatus( "connected", Color.GRAY );
         }
@@ -694,7 +796,7 @@ class TunnelMenuItem extends KTMenuItem implements TunnelManagerListener {
                 iconRight.setIcon( Imx.INACTIVE );
             }
             
-            this.setProcessingRight( false );
+            this.setProcessing( false );
             
             this.setStatus( "inactive", Color.LIGHT_GRAY );
         }
@@ -756,7 +858,7 @@ class TunnelMenuItem extends KTMenuItem implements TunnelManagerListener {
         
         if ( tunnel.equals( this.tunnel ) ) {
             
-            this.setProcessingRight( true );
+            this.setProcessing( true );
         }
     }
     
@@ -765,7 +867,7 @@ class TunnelMenuItem extends KTMenuItem implements TunnelManagerListener {
 
         if ( tunnel.equals( this.tunnel ) ) {
             
-            this.setProcessingRight( true );
+            this.setProcessing( true );
         }
     }
     

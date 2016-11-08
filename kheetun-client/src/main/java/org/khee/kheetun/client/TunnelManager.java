@@ -7,6 +7,7 @@ import org.apache.logging.log4j.Logger;
 import org.khee.kheetun.client.config.Config;
 import org.khee.kheetun.client.config.ConfigManager;
 import org.khee.kheetun.client.config.ConfigManagerListener;
+import org.khee.kheetun.client.config.GlobalConfig;
 import org.khee.kheetun.client.config.Tunnel;
 
 public class TunnelManager implements ConfigManagerListener {
@@ -433,7 +434,14 @@ public class TunnelManager implements ConfigManagerListener {
     }
     
     @Override
-    public void configManagerConfigChanged( Config config, boolean valid ) {
+    public void configManagerGlobalConfigChanged(GlobalConfig oldConfig,
+            GlobalConfig newConfig, boolean valid) {
+        // TODO Auto-generated method stub
+        
+    }
+    
+    @Override
+    public void configManagerConfigChanged( Config oldConfig, Config newConfig, boolean valid ) {
         
         if ( valid ) {
 

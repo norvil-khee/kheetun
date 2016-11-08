@@ -45,22 +45,6 @@ public class Tunnel implements Serializable {
         restart         = false;
     }
     
-    public Tunnel( Tunnel source ) {
-        
-        this.forwards   = new ArrayList<Forward>();
-        
-        this.alias          = source.alias;
-        this.user           = source.user;
-        this.hostname       = source.hostname;
-        this.autostart      = source.autostart;
-        this.restart        = source.restart;
-        this.sshKeyString   = source.sshKeyString;
-        
-        for( Forward forward : source.getForwards() ) {
-            addForward( new Forward( forward ) );
-        }
-    }
-    
     @XmlAttribute
     public String getAlias() {
         return alias;
