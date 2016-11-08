@@ -180,7 +180,6 @@ public class TunnelManager implements PingDaemonListener {
             
             if ( session != null && session.isConnected() ) {
                 
-                server.send( new Protocol( Protocol.ERROR, tunnel, "Tunnel already active" ) );
                 return false;
             }
         }

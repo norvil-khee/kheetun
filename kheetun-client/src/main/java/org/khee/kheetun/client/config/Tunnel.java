@@ -33,6 +33,8 @@ public class Tunnel implements Serializable {
     private boolean             restart         = false;
     private int                 failures        = 0;
     private int                 maxFailures     = 3;
+    private String              info            = null;
+    
     
     public Tunnel() {
         forwards    = new ArrayList<Forward>();
@@ -154,6 +156,14 @@ public class Tunnel implements Serializable {
 
     public void setMaxFailures(int maxFailures) {
         this.maxFailures = maxFailures;
+    }
+    
+    public String getInfo() {
+        return info;
+    }
+
+    public void setInfo(String info) {
+        this.info = info;
     }
 
     public String getConnectionString() {

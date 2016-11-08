@@ -67,12 +67,15 @@ public class ConfigManager implements Runnable {
                 
                 for ( Profile newProfile : this.config.getProfiles() ) {
                     
-                    for ( Tunnel newTunnel : newProfile.getTunnels() ) {
-                        
-                        if ( newTunnel.equals( oldTunnel ) ) {
+                    if ( newProfile.isActive() ) {
+                    
+                        for ( Tunnel newTunnel : newProfile.getTunnels() ) {
                             
-                            stale = false;
-                            break;
+                            if ( newTunnel.equals( oldTunnel ) ) {
+                                
+                                stale = false;
+                                break;
+                            }
                         }
                     }
                     
@@ -169,6 +172,11 @@ public class ConfigManager implements Runnable {
                 tunnels.clear();
                 
                 for ( Profile profile : this.config.getProfiles() ) {
+                    
+                    if ( ! profile.isActive() ) {
+                        continue;
+                    }
+                    
                     for ( Tunnel tunnel : profile.getTunnels() ) {
                         tunnels.add( tunnel );
                     }

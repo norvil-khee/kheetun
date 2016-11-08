@@ -113,7 +113,7 @@ public class Config {
                         profile.addError( error );
                     }
                     
-                    profile.setConfigFile( profileFile.getName() );
+                    profile.setConfigFile( profileFile );
                     profile.setModified( profileFile.lastModified() );
                     config.profiles.add( profile );
                 }
@@ -146,7 +146,9 @@ public class Config {
             
             for ( Profile profile : this.profiles ) {
                 
-                File file = new File( System.getProperty( "user.home") + "/.kheetun/kheetun.d/" + profile.getName().toLowerCase() + ".xml" );
+                String filename = profile.getConfigFile() != null ? profile.getConfigFile().getName() : profile.getName().toLowerCase() + ".xml";
+                
+                File file = new File( System.getProperty( "user.home") + "/.kheetun/kheetun.d/" + filename );
             
                 m.setProperty( Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE );
                 m.marshal( profile, file );

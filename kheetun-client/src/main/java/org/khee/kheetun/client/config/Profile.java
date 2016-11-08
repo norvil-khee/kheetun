@@ -1,5 +1,6 @@
 package org.khee.kheetun.client.config;
 
+import java.io.File;
 import java.util.ArrayList;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -19,9 +20,9 @@ public class Profile {
     private ArrayList<Tunnel>       tunnels;
     private String                  baseBindIp;
     private ArrayList<String>       errors       = new ArrayList<String>();
-    private String                  configFile;
+    private File                    configFile;
     private Long                    modified;
-    private Boolean                 active;
+    private Boolean                 active       = true;
     
     public Profile() {
         tunnels = new ArrayList<Tunnel>();
@@ -63,15 +64,16 @@ public class Profile {
         this.errors.add( error );
     }
 
-    public String getConfigFile() {
+    public File getConfigFile() {
         return configFile;
     }
 
-    public void setConfigFile(String configFile) {
+    public void setConfigFile( File configFile ) {
         this.configFile = configFile;
     }
     
-    public Boolean getActive() {
+    @XmlAttribute
+    public Boolean isActive() {
         return active;
     }
 

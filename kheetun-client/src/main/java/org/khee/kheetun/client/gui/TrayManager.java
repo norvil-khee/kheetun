@@ -4,14 +4,19 @@ import java.awt.Component;
 import java.awt.Point;
 import java.util.HashMap;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class TrayManager {
 
-    private static TrayManager  instance;
+    private static Logger logger = LogManager.getLogger( "kheetun" );
+
+    private static TrayManager          instance;
     
-    private Tray                    tray;
-    private TrayMenu                menu;
-    private Component               configDialog;
-    private HashMap<String, String> messages = new HashMap<String, String>();
+    private Tray                        tray;
+    private TrayMenu                    menu;
+    private Component                   configDialog;
+    private HashMap<Integer, String>    messages = new HashMap<Integer, String>();
     
     protected TrayManager() {
         
@@ -54,8 +59,10 @@ public class TrayManager {
         instance.tray.unblink();
     }
     
-    public static void clearMessage( String id ) {
+    public static void clearMessage( int id ) {
         
+        logger.debug( "TrayManager remove message: " + id );
+
         instance.messages.remove( id );
         
         if ( instance.messages.isEmpty() ) {
@@ -69,7 +76,9 @@ public class TrayManager {
         instance.messages.clear();
     }
     
-    public static void setMessage( String id, String message ) {
+    public static void setMessage( int id, String message ) {
+        
+        logger.debug( "TrayManager adding message: " + id + "/" + message );
         
         instance.messages.put( id, message );
         

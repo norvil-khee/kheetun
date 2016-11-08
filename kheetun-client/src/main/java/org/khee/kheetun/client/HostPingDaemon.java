@@ -79,6 +79,10 @@ public class HostPingDaemon implements Runnable, ConfigManagerListener {
             
             for ( Profile profile : config.getProfiles() ) {
                 
+                if ( ! profile.isActive() ) {
+                    continue;
+                }
+                
                 if ( ! running || ! TunnelManager.isConnected() ) {
                     logger.trace( "Break requested or TunnelManager is not connected, breaking host ping for profile " + profile.getName() );
                     break;
@@ -121,11 +125,13 @@ public class HostPingDaemon implements Runnable, ConfigManagerListener {
                             
                             logger.debug( "Host " + tunnel.getHostname() + " is reachable" );
                             
+                            tunnel.setInfo( null );
                             TunnelManager.autostartHostAvailable( tunnel );
                         } else {
                             
                             logger.trace( "Host " + tunnel.getHostname() + " is not reachable" );
                             
+                            tunnel.setInfo( tunnel.getHostname() + ": not reachable" );
                             TunnelManager.autostartHostUnavailable( tunnel );
                         }
                         
@@ -134,11 +140,13 @@ public class HostPingDaemon implements Runnable, ConfigManagerListener {
                     } catch ( UnknownHostException e ) {
                         
                         logger.trace( "Host " + tunnel.getHostname() + " is not reachable (unknown host)" );
+                        tunnel.setInfo( tunnel.getHostname() + ": unknown host" );
                         TunnelManager.autostartHostUnavailable( tunnel );
                         
                     } catch ( IOException eIO ) {
                         
                         logger.trace( "Host " + tunnel.getHostname() + " is not reachable (IO error: " + eIO.getMessage() + ")" );
+                        tunnel.setInfo( tunnel.getHostname() + ": IO error: " + eIO.getLocalizedMessage() );
                         TunnelManager.autostartHostUnavailable( tunnel );
                     }
                 }
