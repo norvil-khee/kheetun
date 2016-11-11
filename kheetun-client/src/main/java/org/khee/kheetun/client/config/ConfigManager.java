@@ -6,7 +6,7 @@ import java.util.Arrays;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.khee.kheetun.client.TunnelManager;
+import org.khee.kheetun.client.TunnelClient;
 import org.khee.kheetun.client.verify.VerifierFactory;
 
 public class ConfigManager implements Runnable {
@@ -47,48 +47,6 @@ public class ConfigManager implements Runnable {
     public static GlobalConfig getGlobalConfig() {
         
         return instance.globalConfig;
-    }
-    
-    private void stopStaleTunnels( Config oldConfig ) {
-        
-        if ( oldConfig == null ) {
-            return;
-        }
-        
-        for ( Profile oldProfile : oldConfig.getProfiles() ) {
-            
-            for ( Tunnel oldTunnel : oldProfile.getTunnels() ) {
-                
-                if ( ! TunnelManager.isRunning( oldTunnel ) ) {
-                    continue;
-                }
-                
-                boolean stale = true;
-                
-                for ( Profile newProfile : this.config.getProfiles() ) {
-                    
-                    if ( newProfile.isActive() ) {
-                    
-                        for ( Tunnel newTunnel : newProfile.getTunnels() ) {
-                            
-                            if ( newTunnel.equals( oldTunnel ) ) {
-                                
-                                stale = false;
-                                break;
-                            }
-                        }
-                    }
-                    
-                    if ( ! stale ) {
-                        break;
-                    }
-                }
-                
-                if ( stale ) {
-                    TunnelManager.setStale( oldTunnel );
-                }
-            }
-        }
     }
     
     private boolean globalConfigChanged() {
@@ -165,7 +123,7 @@ public class ConfigManager implements Runnable {
                 
                 Config oldConfig = this.config;
                 
-                logger.info( "Configuration changed, updating" );
+                logger.info( "Configuration directory changed" );
                
                 this.config = Config.load();
                 
@@ -182,8 +140,6 @@ public class ConfigManager implements Runnable {
                     }
                 }
                     
-                this.stopStaleTunnels( oldConfig );
-                
                 for ( Profile profile : this.config.getProfiles() ) {
                     
                     this.validate( profile );
@@ -192,6 +148,8 @@ public class ConfigManager implements Runnable {
                 for ( ConfigManagerListener listener : this.listeners ) {
                     listener.configManagerConfigChanged( oldConfig, this.config, this.config.getErrors().isEmpty() );
                 }
+                
+                TunnelClient.sendConfig( this.config );
             }
             
             try {

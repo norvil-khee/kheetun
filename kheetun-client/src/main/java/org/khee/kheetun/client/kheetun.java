@@ -24,9 +24,7 @@ public class kheetun {
         
         TrayManager.init();
         ConfigManager.init();
-        TunnelManager.init();
         TunnelClient.init();
-        HostPingDaemon.init();
         
         // disable DNS caching
         //

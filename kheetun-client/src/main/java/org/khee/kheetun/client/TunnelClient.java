@@ -15,7 +15,7 @@ import javax.swing.JPasswordField;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.khee.kheetun.client.comm.Protocol;
+import org.khee.kheetun.server.comm.Protocol;
 import org.khee.kheetun.client.config.Config;
 import org.khee.kheetun.client.config.ConfigManager;
 import org.khee.kheetun.client.config.ConfigManagerListener;
@@ -38,6 +38,7 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
     private static TunnelClient             instance;
     private Thread                          client;
     private boolean                         clientRunning;
+    private ArrayList<TunnelClientListener> listeners       = new ArrayList<>();
     private Integer                         port            = -1;
     private Semaphore                       sender          = new Semaphore( 1 );
     
@@ -129,6 +130,10 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
                 if ( clientSocket != null ) {
                     clientSocket.close();
                     logger.info( "Disconnected from kheetun server" );
+                    
+                    for( TunnelClientListener listener : this.listeners ) {
+                        listener.TunnelClientConnection( false );
+                    }
                 }
             
             } catch ( IOException e ) {
@@ -136,8 +141,6 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
                 logger.warn( e.getMessage() );
             }
 
-            TunnelManager.offline();            
-            
             logger.debug( "Disconnected from kheetun server, retrying in 2 seconds" );
             
             try {
@@ -154,33 +157,33 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
         
         logger.debug( "Client handling " + receive );
         
-        // translate tunnels to tunnels known by configuration
-        // unknown tunnels are stale tunnels
-        //
-        if ( receive.getTunnel() != null ) {
-            
-            if ( ConfigManager.getTunnel( receive.getTunnel() ) != null ) {
-                receive.setTunnel( ConfigManager.getTunnel( receive.getTunnel() ) );
-            } else {
-                logger.info( "Stale tunnel: " + receive.getTunnel() );
-            }
-        }
-        
-        if ( receive.getTunnels().size() > 0 ) {
-            
-            ArrayList<Tunnel> tunnels = new ArrayList<Tunnel>();
-            
-            for ( Tunnel tunnel : receive.getTunnels() ) {
-                
-                if ( ConfigManager.getTunnel( tunnel ) != null ) {
-                    tunnels.add( ConfigManager.getTunnel( tunnel ) );
-                } else {
-                    logger.info( "Stale tunnel: " + tunnel );
-                }
-            }
-            
-            receive.setTunnels( tunnels );
-        }
+//        // translate tunnels to tunnels known by configuration
+//        // unknown tunnels are stale tunnels
+//        //
+//        if ( receive.getTunnel() != null ) {
+//            
+//            if ( ConfigManager.getTunnel( receive.getTunnel() ) != null ) {
+//                receive.setTunnel( ConfigManager.getTunnel( receive.getTunnel() ) );
+//            } else {
+//                logger.info( "Stale tunnel: " + receive.getTunnel() );
+//            }
+//        }
+//        
+//        if ( receive.getTunnels().size() > 0 ) {
+//            
+//            ArrayList<Tunnel> tunnels = new ArrayList<Tunnel>();
+//            
+//            for ( Tunnel tunnel : receive.getTunnels() ) {
+//                
+//                if ( ConfigManager.getTunnel( tunnel ) != null ) {
+//                    tunnels.add( ConfigManager.getTunnel( tunnel ) );
+//                } else {
+//                    logger.info( "Stale tunnel: " + tunnel );
+//                }
+//            }
+//            
+//            receive.setTunnels( tunnels );
+//        }
         
         switch ( receive.getCommand() ) {
 
@@ -192,42 +195,24 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
             
             logger.info( "Connected to kheetun server" );
             
-            send( new Protocol( Protocol.ECHO, "Its cool you accepted me!" ) );
+            for( TunnelClientListener listener : this.listeners ) {
+                listener.TunnelClientConnection( true );
+            }
             
-            TunnelClient.sendQueryTunnels();
-            TunnelManager.online();
-            break;
-            
-        case Protocol.TUNNELSTARTED:
-            
-            TunnelManager.started( receive.getTunnel() );
-            break;
-            
-        case Protocol.TUNNELSTOPPED:
-            
-            TunnelManager.stopped( receive.getTunnel() );
-            break;
-
-        case Protocol.ERROR:
-            logger.error( "Error on server: " + receive.getString() );
-            
-            TunnelManager.raiseError( receive.getTunnel(), receive.getString() );
-            break;
-            
-        case Protocol.ACTIVETUNNELS:
-            
-            TunnelManager.refreshActivated( receive.getTunnels() );
-            break;
-        
-        case Protocol.PING:
-            
-            TunnelManager.updatePing( receive.getTunnel(), receive.getNumber() );
+            TunnelClient.sendConfig( ConfigManager.getConfig() );
             break;
             
         case Protocol.QUIT:
             
             logger.info( "Received QUIT command, bye!" );
             System.exit( 0 );
+            break;
+            
+        case Protocol.TUNNEL:
+            
+            for( TunnelClientListener listener : this.listeners ) {
+                listener.TunnelClientTunnelStatus( receive.getTunnel() );
+            }
             break;
             
         default:
@@ -238,11 +223,6 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
     public static void sendQuit() {
         
         instance.send( new Protocol( Protocol.QUIT ) );
-    }
-    
-    public static void sendQueryTunnels() {
-        
-        instance.send( new Protocol( Protocol.QUERYTUNNELS ) );
     }
     
     public static void sendStartTunnel( Tunnel tunnel ) {
@@ -256,7 +236,6 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
                 
                 logger.error( e.getMessage() );
                 logger.debug( "", e );
-                TunnelManager.raiseError( tunnel, e.getMessage() );
                 return;
             }
             
@@ -282,18 +261,33 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
             }
         }
         
-        instance.send(new Protocol( Protocol.STARTTUNNEL, tunnel,  "" ));
+        instance.send(new Protocol( Protocol.START, tunnel,  "" ));
         tunnel.setPassPhrase( "" );
     }
     
-    public static void sendStopTunnel( Tunnel tunnel ) {
+    public static void sendStop( Tunnel tunnel ) {
         
-        instance.send( new Protocol( Protocol.STOPTUNNEL, tunnel ) );
+        instance.send( new Protocol( Protocol.STOP, tunnel ) );
     }
     
-    public static void sendStopAllTunnels() {
+    public static void sendStopAll() {
         
-        instance.send( new Protocol( Protocol.STOPALLTUNNELS ) );
+        instance.send( new Protocol( Protocol.STOPALL ) );
+    }
+    
+    public static void sendToggle( Tunnel tunnel ) {
+        
+        instance.send( new Protocol( Protocol.TOGGLE, tunnel ) );
+    }
+    
+    public static void sendAutoAll() {
+        
+        instance.send( new Protocol( Protocol.AUTOALL ) );
+    }
+    
+    public static void sendConfig( Config config ) {
+        
+        instance.send( new Protocol( Protocol.CONFIG, config ) );
     }
     
     private void send( Protocol protocol ) {
@@ -320,6 +314,11 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
             
             logger.error( "Error during send: " + e.getMessage() );
         }
+    }
+    
+    public static void addTunnelClientListener( TunnelClientListener listener ) {
+        
+        instance.listeners.add( listener );
     }
 
 }

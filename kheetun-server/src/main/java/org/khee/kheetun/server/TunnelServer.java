@@ -10,11 +10,10 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.HashMap;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.khee.kheetun.client.comm.Protocol;
+import org.khee.kheetun.server.comm.Protocol;
 import org.khee.kheetun.server.manager.TunnelManager;
 
 public class TunnelServer implements Runnable {
@@ -22,16 +21,11 @@ public class TunnelServer implements Runnable {
     private static Logger logger = LogManager.getLogger( "kheetund" );
     
     private ServerSocket                    serverSocket;
-    private Socket                          clientSocket;
+    private Socket                          clientSocket        = null;
     private ObjectInputStream               commIn;
     private ObjectOutputStream              commOut;
-    private HashMap<String, TunnelManager>  tunnelManagers;
-    private TunnelManager                   tunnelManager;
-    private TunnelServer                    parent;
     
     public TunnelServer( int port ) {
-
-        tunnelManagers = new HashMap<String, TunnelManager>();
             
         try {
             serverSocket = new ServerSocket( port, 99, InetAddress.getLocalHost() );
@@ -41,7 +35,7 @@ public class TunnelServer implements Runnable {
                 
                 Socket client = serverSocket.accept();
                 
-                new TunnelServer( client, this );
+                new TunnelServer( client );
             }
         } catch ( BindException eBind ) {
             
@@ -59,13 +53,16 @@ public class TunnelServer implements Runnable {
         }
     }
     
-    public TunnelServer( Socket clientSocket, TunnelServer parent ) {
+    public TunnelServer( Socket clientSocket ) {
         
         this.clientSocket   = clientSocket;
-        this.parent         = parent;
         
         Thread server = new Thread( this, "kheetun-server-thread-" + clientSocket.getInetAddress().toString() + "/" + clientSocket.getLocalPort() );
         server.start();
+    }
+    
+    public TunnelServer() {
+        
     }
 
     public void run() {
@@ -84,7 +81,7 @@ public class TunnelServer implements Runnable {
                     
                     receive = (Protocol)commIn.readObject();
                     
-                    new TunnelServerHandler( this, this.tunnelManager, receive );
+                    this.handle( receive );
                     
                 } catch ( ClassNotFoundException e ) {
                     logger.error( "Class error: " + e.getMessage() );
@@ -122,28 +119,80 @@ public class TunnelServer implements Runnable {
             e.printStackTrace();
             logger.error( e.getMessage() );
         }
-        
-        
     }
     
-    public void createTunnelManager( String user ) {
+    private void handle( Protocol receive ) {
         
-        /*
-         * create tunnel manager if not already existant for given user
-         */
-        if ( ! parent.tunnelManagers.containsKey( user ) ) {
+        logger.debug( "Server handling: " + receive );
+        
+        if ( receive.getTunnel() != null ) {
             
-            tunnelManager = new TunnelManager();
-            parent.tunnelManagers.put( user, tunnelManager );
-            
-            logger.info( "Created a tunnel manager for user " + user );
-        } else {
-
-            logger.info( "There already is a tunnel manager for user " + user + ", using this one" );
-            tunnelManager = parent.tunnelManagers.get( user );
+            int indexTunnel = TunnelManager.get( receive.getUser() ).getKnownTunnels().indexOf( receive.getTunnel() );
+            if ( indexTunnel != -1 ) {
+                receive.setTunnel( TunnelManager.get( receive.getUser() ).getKnownTunnels().get( indexTunnel ) );
+            }
         }
         
-        tunnelManager.setServer( this );
+        switch ( receive.getCommand() ) {
+        
+        case Protocol.ECHO:
+            
+            logger.info( "Client echo: " + receive.getString() );
+            break;
+
+        case Protocol.CONNECT:
+            
+            TunnelManager.get( receive.getUser() ).setServer( this );
+
+            this.send( new Protocol( Protocol.ACCEPT ) );
+            break;
+            
+        case Protocol.CONFIG:
+            
+            TunnelManager.get( receive.getUser() ).setConfig( receive.getConfig() );
+            logger.trace( "Received config: " + receive.getConfig() );
+            break;
+
+        case Protocol.START:
+            
+            TunnelManager.get( receive.getUser() ).startTunnel( receive.getTunnel(), true );
+            break;
+            
+        case Protocol.STOP:
+            
+            TunnelManager.get( receive.getUser() ).stopTunnel( receive.getTunnel(), true );
+            break;
+            
+        case Protocol.STOPALL:
+            
+            TunnelManager.get( receive.getUser() ).stopAllTunnels();
+            break;
+            
+        case Protocol.TOGGLE:
+            
+            
+            TunnelManager.get( receive.getUser() ).toggleTunnel( receive.getTunnel() );
+            break;
+        
+        case Protocol.QUIT:
+            
+            this.send( new Protocol( Protocol.QUIT ) );
+            break;
+            
+        case Protocol.DISCONNECT:
+            
+            this.send( new Protocol( Protocol.DISCONNECT ) );
+            break;
+            
+
+        default:
+            break;
+        }
+    }
+    
+    public boolean isConnected() {
+        
+        return this.clientSocket.isConnected();
     }
     
     public synchronized void send( Protocol protocol ) {
@@ -164,7 +213,5 @@ public class TunnelServer implements Runnable {
             logger.error( "Error during send: " + e.getMessage() );
         }
     }
-    
-
     
 }

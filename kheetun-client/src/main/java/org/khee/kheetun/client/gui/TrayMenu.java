@@ -32,8 +32,7 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 
 import org.khee.kheetun.client.TunnelClient;
-import org.khee.kheetun.client.TunnelManager;
-import org.khee.kheetun.client.TunnelManagerListener;
+import org.khee.kheetun.client.TunnelClientListener;
 import org.khee.kheetun.client.kheetun;
 import org.khee.kheetun.client.config.Config;
 import org.khee.kheetun.client.config.ConfigManager;
@@ -42,7 +41,7 @@ import org.khee.kheetun.client.config.GlobalConfig;
 import org.khee.kheetun.client.config.Profile;
 import org.khee.kheetun.client.config.Tunnel;
 
-public class TrayMenu extends JWindow implements MouseListener, ConfigManagerListener, TunnelManagerListener {
+public class TrayMenu extends JWindow implements MouseListener, ConfigManagerListener, TunnelClientListener {
     
     public static final long serialVersionUID = 42;
     
@@ -51,7 +50,6 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
     private KTMenuItem  labelConfig;
     private KTMenuItem  itemProfiles;
     private KTMenuItem  itemExit;
-    private KTMenuItem  itemQuery;
     private KTMenuItem  itemStopAll;
     private KTMenuItem  itemAutostartAll;
     private JPanel      panelProfiles;
@@ -133,7 +131,7 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
             @Override
             public void leftClick(MouseEvent e) {
 
-                TunnelManager.stopAllTunnels();
+                TunnelClient.sendStopAll();
             }
         };
         
@@ -142,17 +140,7 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
             @Override
             public void leftClick(MouseEvent e) {
                 
-                TunnelManager.resetAllFailures();
-                TunnelManager.enableAutostartAll();
-            }
-        };
-        
-        itemQuery = new KTMenuItem( Imx.RELOAD, "Requery" ) {
-            
-            @Override
-            public void leftClick(MouseEvent e) {
-
-                TunnelClient.sendQueryTunnels();
+                TunnelClient.sendAutoAll();
             }
         };
         
@@ -167,7 +155,7 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
         this.setFocusableWindowState( true );
         this.setFocusable( true );
         
-        TunnelManager.addTunnelManagerListener( this );
+        TunnelClient.addTunnelClientListener( this );
         ConfigManager.addConfigManagerListener( this );
         
         panelMain.add( labelKheetun );
@@ -177,7 +165,6 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
         panelMain.add( new KTSeperator() );
         panelMain.add( itemStopAll );
         panelMain.add( itemAutostartAll );
-        panelMain.add( itemQuery );
         panelMain.add( itemProfiles );
         panelMain.add( new KTSeperator() );
         panelMain.add( itemExit );
@@ -370,71 +357,19 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
     }
     
     @Override
-    public void tunnelManagerOnline() {
+    public void TunnelClientConnection(boolean connected) {
         
-        labelConnected.setStatus( "connected", new Color( 0, 100, 0 ) );
+        if ( connected ) {
+            
+            labelConnected.setStatus( "connected", new Color( 0, 100, 0 ) );
+        } else {
+            
+            labelConnected.setStatus( "disconnected", Color.RED );
+        }
     }
     
     @Override
-    public void tunnelManagerOffline() {
-        
-        labelConnected.setStatus( "disconnected", Color.RED );
-    }
-    
-    @Override
-    public void tunnelManagerTunnelActivated( Tunnel tunnel ) {
-        // TODO Auto-generated method stub
-        
-    }
-    @Override
-    public void tunnelManagerTunnelActivating( Tunnel tunnel ) {
-        // TODO Auto-generated method stub
-        
-    }
-    @Override
-    public void tunnelManagerTunnelDeactivated( Tunnel tunnel ) {
-        // TODO Auto-generated method stub
-        
-    }
-    
-    @Override
-    public void tunnelManagerTunnelDeactivating( Tunnel tunnel ) {
-        // TODO Auto-generated method stub
-        
-    }
-    
-    @Override
-    public void tunnelManagerAutostartHostAvailable( Tunnel tunnel ) {
-        // TODO Auto-generated method stub
-        
-    }
-    
-    @Override
-    public void tunnelManagerAutostartHostUnavailable( Tunnel tunnel ) {
-        // TODO Auto-generated method stub
-        
-    }
-    
-    @Override
-    public void tunnelManagerTunnelError( Tunnel tunnel, String error ) {
-        // TODO Auto-generated method stub
-        
-    }
-    
-    @Override
-    public void tunnelManagerTunnelPing( Tunnel tunnel, long ping ) {
-        // TODO Auto-generated method stub
-        
-    }
-    
-    @Override
-    public void tunnelManagerAutostartDisabled(Tunnel tunnel) {
-        // TODO Auto-generated method stub
-        
-    }
-    
-    @Override
-    public void tunnelManagerAutostartEnabled(Tunnel tunnel) {
+    public void TunnelClientTunnelStatus(Tunnel tunnel) {
         // TODO Auto-generated method stub
         
     }
@@ -464,6 +399,8 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
         }
     }
 }
+
+
 class KTSeperator extends JComponent {
     
     private static final long serialVersionUID = 1L;
@@ -642,6 +579,7 @@ class KTMenuItem extends JPanel implements MouseListener {
             this.message.setText( message );
             this.iconCenter.setIcon( Imx.WARNING );
             TrayManager.setMessage( id, message );
+            TrayManager.blink();
         }
     }
     
@@ -776,7 +714,7 @@ class KTMenuItem extends JPanel implements MouseListener {
 }
 
 
-class TunnelMenuItem extends KTMenuItem implements TunnelManagerListener {
+class TunnelMenuItem extends KTMenuItem implements TunnelClientListener {
     
     private static final long serialVersionUID = 1L;
     
@@ -789,191 +727,119 @@ class TunnelMenuItem extends KTMenuItem implements TunnelManagerListener {
         
         this.tunnel = tunnel;
         
-        this.iconLeft.setIcon( tunnel.getAutostart() ? Imx.AUTO : Imx.NONE );
+        this.iconLeft.setIcon( Imx.NONE );
         this.iconRight.setIcon( Imx.NONE );
         this.text.setText( tunnel.getAlias() );
         
         this.setStatus( "inactive", Color.LIGHT_GRAY );
         
-        TunnelManager.addTunnelManagerListener( this );
+        TunnelClient.addTunnelClientListener( this );
     }
     
     @Override
     public void leftClick( MouseEvent e ) {
         
-        if ( e.getComponent() == iconLeft && this.tunnel.getAutostart() ) {
-            
-            if ( iconLeft.getIcon() == Imx.AUTO ) {
+        TunnelClient.sendToggle( this.tunnel );
+    }
+    
+    @Override
+    public void TunnelClientConnection(boolean connected) {
+        
+        if ( connected ) {
 
-                TunnelManager.disableAutostart( this.tunnel );
-                
-            } else {
-                
-                tunnel.setFailures( 0 );
-                TunnelManager.enableAutostart( this.tunnel );
-            }
-            return;
-        }
-        
-        if ( ! TunnelManager.isConnected() || TunnelManager.isBusy( tunnel ) ) {
-            return;
-        }
-        
-        if ( TunnelManager.isRunning( tunnel ) ) {
-            
-            TunnelManager.disableAutostart( tunnel );
-            TunnelManager.stopTunnel( tunnel );
+            text.setForeground( Color.BLACK );
+            this.setActive( true );
         } else {
             
-            tunnel.setFailures( 0 );
-            TunnelManager.enableAutostart( tunnel );
-            TunnelManager.startTunnel( tunnel );
-        }
-    }
-    
-    @Override
-    public void tunnelManagerOnline() {
-        
-        text.setForeground( Color.BLACK );
-        
-        if ( tunnel.getAutostart() && ! TunnelManager.isAutostartDisabled( this.tunnel ) ) {
-            
-            this.tunnelManagerAutostartHostUnavailable( tunnel );
-        }
-    }
-    
-    @Override
-    public void tunnelManagerOffline() {
-        
-        text.setForeground( Color.LIGHT_GRAY );
-        
-        tunnelManagerTunnelDeactivated( tunnel );
-    }
-    
-    @Override
-    public void tunnelManagerTunnelActivated( Tunnel tunnel ) {
-
-        if ( tunnel.equals( this.tunnel ) ) {
-            
-            iconRight.setIcon( Imx.ACTIVE );
-            
+            text.setForeground( Color.LIGHT_GRAY );
+            this.iconRight.setIcon( Imx.NONE );
+            this.setProcessing( false );
             this.setMessage( null );
-            
-            this.setProcessing( false );
-            
-            this.setStatus( "connected", Color.GRAY );
+            this.setActive( false );
         }
     }
     
     @Override
-    public void tunnelManagerTunnelDeactivated( Tunnel tunnel ) {
-
+    public void TunnelClientTunnelStatus(Tunnel tunnel) {
+        
         if ( tunnel.equals( this.tunnel ) ) {
             
-            if ( iconRight.getIcon() != Imx.WARNING ) {
+            if ( tunnel.getError() != null ) {
+                
+                this.setMessage( tunnel.getError() );
+            }
+            
+            switch ( tunnel.getState() ) {
+            
+            case Tunnel.STATE_STARTING:
+                this.setProcessing( true );
+                this.setStatus( "starting[" + ( tunnel.getFailures() + 1 ) + "/" + tunnel.getMaxFailures() + "]", Color.GRAY );
+                break;
+            
+//            case Tunnel.STATE_STARTED:
+//                
+//                iconRight.setIcon( Imx.ACTIVE );
+//                this.setMessage( null );
+//                this.setProcessing( false );
+//                this.setStatus( "started", Color.GRAY );
+//                break;
+                
+            case Tunnel.STATE_RUNNING:
+                
+                iconRight.setIcon( Imx.ACTIVE );
+                this.setProcessing( false );
+
+                if ( tunnel.getPingFailures() > 0 ) {
+                    this.setStatus( "failing (" + tunnel.getPingFailures() + "/3)", Color.RED );
+                } else {
+                    this.setStatus( String.valueOf( tunnel.getPing() ) + " ms", Color.GRAY );
+                }
+                break;
+                
+            case Tunnel.STATE_STOPPING:
+                this.setProcessing( true );
+                this.setStatus( "stopping", Color.GRAY );
+                break;
+                
+            case Tunnel.STATE_STOPPED:
+                
                 iconRight.setIcon( Imx.INACTIVE );
+                this.setProcessing( false );
+                this.setStatus( "inactive", Color.LIGHT_GRAY );
+                break;
             }
             
-            this.setProcessing( false );
+            switch ( tunnel.getAutoState() ) {
             
-            this.setStatus( "inactive", Color.LIGHT_GRAY );
-        }
-    }
-    
-    
-    @Override
-    public void tunnelManagerTunnelPing( Tunnel tunnel, long ping) {
-
-        if ( tunnel.equals( this.tunnel ) ) {
-
-            iconRight.setIcon( Imx.ACTIVE );
-            iconRight.setVisible( true );
-
-            if ( ping < 0 ) {
+            case Tunnel.STATE_AUTO_WAIT:
                 
-                this.setStatus( "failing (" + String.valueOf( -ping ) + "/3)", Color.RED );
-
-            } else {
+                if ( this.tunnel.getAutostart() ) {
+                    this.iconLeft.setIcon( Imx.AUTO );
+                }
                 
-                this.setStatus( String.valueOf( ping ) + " ms", Color.GRAY );
+                this.setStatus( "waiting",  Color.GRAY );
+                this.setInfo( tunnel.getInfo() );
+                break;
+                
+            case Tunnel.STATE_AUTO_ON:
+                
+                if ( this.tunnel.getAutostart() ) {
+                    iconLeft.setIcon( Imx.AUTO );
+                }
+                break;
+
+            case Tunnel.STATE_AUTO_OFF:
+
+                if ( this.tunnel.getAutostart() ) {
+                    iconLeft.setIcon( Imx.AUTO_DISABLED );
+                }
+                break;
+            
+            case Tunnel.STATE_AUTO_AVAIL:
+                break;
             }
         }
     }
-    
-    @Override
-    public void tunnelManagerTunnelError( Tunnel tunnel, String error ) {
-        
-        if ( tunnel.equals( this.tunnel ) ) {
-            
-            tunnelManagerTunnelDeactivated( tunnel );
-            
-            TrayManager.blink();
-            
-            this.setMessage( error );
-        }
-    }
-    
-    @Override
-    public void tunnelManagerAutostartHostAvailable( Tunnel tunnel ) {
-
-        if ( tunnel.equals( this.tunnel ) ) {
-            
-            this.setStatus( "autostart " + (tunnel.getFailures() + 1) + "/" + tunnel.getMaxFailures() , Color.GRAY );
-            this.setInfo( null );
-        }
-    }
-    
-    @Override
-    public void tunnelManagerAutostartHostUnavailable( Tunnel tunnel ) {
-        
-        if ( tunnel.equals( this.tunnel ) ) {
-            
-            this.setStatus( "waiting",  Color.GRAY );
-            this.setInfo( tunnel.getInfo() );
-        }
-    }
-    
-    @Override
-    public void tunnelManagerTunnelActivating( Tunnel tunnel ) {
-        
-        if ( tunnel.equals( this.tunnel ) ) {
-            
-            this.setProcessing( true );
-        }
-    }
-    
-    @Override
-    public void tunnelManagerTunnelDeactivating( Tunnel tunnel ) {
-
-        if ( tunnel.equals( this.tunnel ) ) {
-            
-            this.setProcessing( true );
-        }
-    }
-    
-    @Override
-    public void tunnelManagerAutostartDisabled( Tunnel tunnel ) {
-        
-        if ( tunnel.equals( this.tunnel ) ) {
-            
-            iconLeft.setIcon( Imx.AUTO_DISABLED );
-            
-            if ( ! TunnelManager.isRunning( this.tunnel ) ) {
-                tunnelManagerTunnelDeactivated( this.tunnel );
-            }
-        }
-    }
-    
-    @Override
-    public void tunnelManagerAutostartEnabled(Tunnel tunnel) {
-
-        if ( tunnel.equals( this.tunnel ) ) {
-            
-            iconLeft.setIcon( Imx.AUTO );
-        }
-    }
-    
-    
 }
 
 

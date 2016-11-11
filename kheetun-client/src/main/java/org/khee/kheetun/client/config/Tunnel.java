@@ -13,28 +13,52 @@ import javax.xml.bind.annotation.XmlType;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.khee.kheetun.client.verify.VerifierFactory;
+import org.khee.kheetun.server.daemon.AutostartDaemon;
+import org.khee.kheetun.server.daemon.PingChecker;
+
+import com.jcraft.jsch.Session;
 
 @XmlAccessorType(XmlAccessType.NONE)
 @XmlRootElement
 @XmlType( propOrder={"alias","user","hostname","sshKeyString","autostart","forwards"} )
 public class Tunnel implements Serializable {
     
-    public static final long serialVersionUID = 42;
+    public static final long serialVersionUID = 77L;
+    
+    public static final int     STATE_STARTING      = 100;
+//    public static final int     STATE_STARTED       = 200;
+    public static final int     STATE_RUNNING       = 250;
+    public static final int     STATE_STOPPING      = 300;
+    public static final int     STATE_STOPPED       = 400;
+    
+    public static final int     STATE_AUTO_OFF      = 950;
+    public static final int     STATE_AUTO_ON       = 900;
+    public static final int     STATE_AUTO_WAIT     = 500;
+    public static final int     STATE_AUTO_AVAIL    = 600;
     
     private String              alias;
     private String              user;
     private String              hostname;
+    private int                 port                = 22;
     private File                sshKey;
     private String              sshKeyString;
     private String              passPhrase;
-    private String              sshAgentSocket  = System.getenv( "SSH_AUTH_SOCK" );
+    private String              sshAgentSocket      = System.getenv( "SSH_AUTH_SOCK" );
     private ArrayList<Forward>  forwards;
-    private Boolean             autostart       = false;
-    private boolean             restart         = false;
-    private int                 failures        = 0;
-    private int                 maxFailures     = 3;
-    private String              info            = null;
+    private Boolean             autostart           = false;
+    private boolean             restart             = false;
+    private int                 state               = Tunnel.STATE_STOPPED;
+    private int                 autoState           = Tunnel.STATE_AUTO_OFF;
+    private String              error               = null;
+    private int                 failures            = 0;
+    private int                 maxFailures         = 3;
+    private int                 ping                = 0;
+    private int                 pingFailures        = 0;
+    private String              info                = null;
     
+    private transient Session             session             = null;
+    private transient PingChecker         pingChecker         = null;
+    private transient AutostartDaemon     autostartDaemon     = null;
     
     public Tunnel() {
         forwards    = new ArrayList<Forward>();
@@ -71,6 +95,15 @@ public class Tunnel implements Serializable {
         this.hostname = hostname;
     }
     
+    @XmlAttribute
+    public int getPort() {
+        return port;
+    }
+
+    public void setPort(int port) {
+        this.port = port;
+    }
+
     public File getSshKey() {
         return sshKey;
     }
@@ -149,6 +182,10 @@ public class Tunnel implements Serializable {
         this.failures = failures;
     }
     
+    public  void increaseFailures() {
+        this.failures++;
+    }
+    
     @XmlAttribute(required=false)
     public int getMaxFailures() {
         return maxFailures;
@@ -170,6 +207,74 @@ public class Tunnel implements Serializable {
         return this.getUser() + "@" + this.getHostname();
     }
     
+    public int getState() {
+        return state;
+    }
+
+    public void setState(int state) {
+        this.state = state;
+    }
+    
+    public int getAutoState() {
+        return autoState;
+    }
+
+    public void setAutoState(int autoState) {
+        this.autoState = autoState;
+    }
+
+    public String getError() {
+        return error;
+    }
+
+    public void setError(String error) {
+        this.error = error;
+    }
+
+    public int getPing() {
+        return ping;
+    }
+
+    public void setPing(int ping) {
+        this.ping = ping;
+    }
+    
+    public int getPingFailures() {
+        return pingFailures;
+    }
+
+    public void setPingFailures(int pingFailures) {
+        this.pingFailures = pingFailures;
+    }
+    
+    public void increasePingFailures() {
+        this.pingFailures++;
+    }
+    
+    public Session getSession() {
+        return session;
+    }
+
+    public void setSession(Session session) {
+        this.session = session;
+    }
+    
+    public PingChecker getPingChecker() {
+        return pingChecker;
+    }
+
+    public void setPingChecker(PingChecker pingChecker) {
+        this.pingChecker = pingChecker;
+    }
+
+    public AutostartDaemon getAutostartDaemon() {
+        return autostartDaemon;
+    }
+
+    public void setAutostartDaemon(AutostartDaemon autostartDaemon) {
+        this.autostartDaemon = autostartDaemon;
+    }
+
     public boolean isValid() {
         
         if ( this.getForwards().size() == 0 ) {
@@ -195,6 +300,7 @@ public class Tunnel implements Serializable {
         return new HashCodeBuilder( 13, 37 )
             .append( this.getUser() )
             .append( this.getHostname() )
+            .append( this.getPort() )
             .append( this.getForwards().hashCode() )
             .hashCode();
     }
@@ -213,6 +319,13 @@ public class Tunnel implements Serializable {
     
     @Override
     public String toString() {
+        
+        String s = "Tunnel[Alias=" + this.alias + ", State=" + this.state + ", Error=" + this.error + ", Ping=" + this.ping + "]";
+        
+        return s;
+    }
+    
+    public String toDebugString() {
         
         String s = "Tunnel[Alias=" + this.alias + " Autostart=" + this.autostart + " Restart=" + this.restart + " ";
         

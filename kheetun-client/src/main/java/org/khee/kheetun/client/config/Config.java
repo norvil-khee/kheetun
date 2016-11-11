@@ -1,6 +1,7 @@
 package org.khee.kheetun.client.config;
 
 import java.io.File;
+import java.io.Serializable;
 import java.util.ArrayList;
 
 import javax.xml.bind.JAXBContext;
@@ -11,13 +12,19 @@ import javax.xml.bind.Unmarshaller;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class Config {
+public class Config implements Serializable {
+    
+    public static final long serialVersionUID = 77L;
     
     private static  Logger              logger      = LogManager.getLogger( "kheetun" );
     
     private         ArrayList<Profile>  profiles    = new ArrayList<Profile>();
     private         ArrayList<String>   errors      = new ArrayList<String>();
 
+    public class TunnelLoop {
+        
+        public void execute( Tunnel tunnel ) { };
+    }
     
     public Config() { 
     }
@@ -161,4 +168,40 @@ public class Config {
         } 
     }
     
+    public void loopTunnels( boolean activeOnly, TunnelLoop loop ) {
+        
+        for ( Profile profile : this.profiles ) {
+            
+            if ( activeOnly && ! profile.isActive() ) {
+                
+                continue;
+            }
+            
+            for ( Tunnel tunnel : profile.getTunnels() ) {
+                
+                loop.execute( tunnel );
+            }
+        }
+    }
+    
+    @Override
+    public String toString() {
+        
+        String s = "Config[";
+        
+        StringBuilder sb = new StringBuilder();
+        
+        for ( Profile profile : this.profiles ) {
+            sb.append( profile );
+            sb.append( "," );
+        }
+        
+        s += "Profiles=" + sb.toString();
+        s += "]";
+        
+        return s;
+    }
+    
 }
+
+

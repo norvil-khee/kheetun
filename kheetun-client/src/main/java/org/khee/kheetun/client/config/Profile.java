@@ -1,6 +1,7 @@
 package org.khee.kheetun.client.config;
 
 import java.io.File;
+import java.io.Serializable;
 import java.util.ArrayList;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -14,7 +15,9 @@ import javax.xml.bind.annotation.XmlType;
 @XmlAccessorType(XmlAccessType.NONE)
 @XmlType( propOrder={"name","baseBindIp","tunnels"} )
 @XmlRootElement
-public class Profile {
+public class Profile implements Serializable {
+    
+    public static final long serialVersionUID = 42;
     
     private String                  name;
     private ArrayList<Tunnel>       tunnels;

@@ -27,6 +27,6 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry combineaccessrules="false" kind="src" path="/kheetun-client"/>
+	<classpathentry kind="lib" path="/kheetun-client/target/classes"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>
