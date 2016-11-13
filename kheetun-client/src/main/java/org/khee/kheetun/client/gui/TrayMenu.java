@@ -553,8 +553,10 @@ class KTMenuItem extends JPanel implements MouseListener {
         
         if ( ! active ) {
             this.setBackground( null );
-            text.setBackground( null );            
+            text.setBackground( null );
         }
+        
+        text.setForeground( active ? Color.BLACK : Color.LIGHT_GRAY );
     }
     
     public void setStatus( String status, Color color ) {
@@ -767,6 +769,8 @@ class TunnelMenuItem extends KTMenuItem implements TunnelClientListener {
             if ( tunnel.getError() != null ) {
                 
                 this.setMessage( tunnel.getError() );
+            } else { 
+                this.setMessage( null );
             }
             
             switch ( tunnel.getState() ) {
@@ -776,14 +780,6 @@ class TunnelMenuItem extends KTMenuItem implements TunnelClientListener {
                 this.setStatus( "starting[" + ( tunnel.getFailures() + 1 ) + "/" + tunnel.getMaxFailures() + "]", Color.GRAY );
                 break;
             
-//            case Tunnel.STATE_STARTED:
-//                
-//                iconRight.setIcon( Imx.ACTIVE );
-//                this.setMessage( null );
-//                this.setProcessing( false );
-//                this.setStatus( "started", Color.GRAY );
-//                break;
-                
             case Tunnel.STATE_RUNNING:
                 
                 iconRight.setIcon( Imx.ACTIVE );
@@ -825,6 +821,7 @@ class TunnelMenuItem extends KTMenuItem implements TunnelClientListener {
                 
                 if ( this.tunnel.getAutostart() ) {
                     iconLeft.setIcon( Imx.AUTO );
+                    this.setInfo( null );
                 }
                 break;
 
@@ -832,10 +829,16 @@ class TunnelMenuItem extends KTMenuItem implements TunnelClientListener {
 
                 if ( this.tunnel.getAutostart() ) {
                     iconLeft.setIcon( Imx.AUTO_DISABLED );
+                    this.setInfo( null );
                 }
                 break;
             
             case Tunnel.STATE_AUTO_AVAIL:
+
+                if ( this.tunnel.getAutostart() ) {
+                    iconLeft.setIcon( Imx.AUTO );
+                    this.setInfo( null );
+                }
                 break;
             }
         }

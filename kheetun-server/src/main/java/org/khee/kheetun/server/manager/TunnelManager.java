@@ -62,6 +62,16 @@ public class TunnelManager {
     
     public void setConfig( Config config ) {
         
+        if ( config == null ) {
+            logger.info( "Got null config - ignoring" );
+            return;
+        }
+        
+        if ( this.config.equals( config ) ) {
+            logger.info( "Got same config as before - ignoring" );
+            return;
+        }
+        
         // merge configurations:
         //
         // run through current config and memorize all tunnels
@@ -82,7 +92,7 @@ public class TunnelManager {
         
         knownTunnels.clear();
         
-        config.loopTunnels( false, config.new TunnelLoop() {
+        config.loopTunnels( true, config.new TunnelLoop() {
             
             @Override
             public void execute(Tunnel tunnel) {
@@ -209,25 +219,26 @@ public class TunnelManager {
     
     public void toggleTunnel( Tunnel tunnel ) {
         
-        if ( tunnel.getSession() == null ) {
+        logger.info( "Toggling tunnel " + tunnel.getAlias() + ", current state=" + tunnel.getState() );
+        
+        if ( tunnel.getState() == Tunnel.STATE_STOPPED ) {
             
             this.startTunnel( tunnel, true );
-        } else {
+        
+        } else if ( tunnel.getState() == Tunnel.STATE_RUNNING ) {
             
             this.stopTunnel( tunnel, true );
+        
+        } else {
+            
+            logger.info( "Tunnel " + tunnel.getAlias() + " is in transition, will not toggle" );
         }
     }
     
     public void stopTunnel( Tunnel tunnel, boolean manually ) {
         
-        if ( tunnel.getSession() == null ) {
-
-            logger.debug( "Tunnel " + tunnel.getAlias() + " already stopped" );
-            return;
-        }
-        
         if ( tunnel.getState() != Tunnel.STATE_RUNNING ) {
-            logger.info( "Tunnel " + tunnel.getAlias() + " is not started, will not stop" );
+            logger.info( "Tunnel " + tunnel.getAlias() + " is not started (state=" + tunnel.getState() + "), will not stop" );
             return;
         }
         
@@ -264,6 +275,7 @@ public class TunnelManager {
         }
         
         tunnel.setSession( null );
+        tunnel.setState( Tunnel.STATE_STOPPED );
         
         if ( ! manually && ( tunnel.getAutostart() || tunnel.getRestart() ) ) {
             
@@ -273,20 +285,13 @@ public class TunnelManager {
         
         logger.info( "Stopped tunnel: " + tunnel.getAlias() );
         
-        tunnel.setState( Tunnel.STATE_STOPPED );
         server.send( new Protocol( Protocol.TUNNEL, tunnel ) );
     }
     
     public void startTunnel( Tunnel tunnel, boolean manually ) {
 
-        if ( tunnel.getSession() != null && tunnel.getSession().isConnected() ) {
-            
-            logger.debug( "Tunnel " + tunnel.getAlias() + " already started" );
-            return;
-        }
-        
         if ( tunnel.getState() != Tunnel.STATE_STOPPED ) {
-            logger.info( "Tunnel " + tunnel.getAlias() + " is not stopped, will not start" );
+            logger.info( "Tunnel " + tunnel.getAlias() + " is not stopped (state=" + tunnel.getState() + "), will not start" );
             return;
         }
         
@@ -370,6 +375,7 @@ public class TunnelManager {
         }
         
         tunnel.setSession( session );
+        tunnel.setState( Tunnel.STATE_RUNNING );
         
         if ( tunnel.getPingChecker() == null ) {
             PingChecker pingChecker = new PingChecker( this, tunnel );
@@ -379,7 +385,6 @@ public class TunnelManager {
         logger.info( "Started tunnel: " + tunnel.getAlias() );
         
         tunnel.setError( null );
-        tunnel.setState( Tunnel.STATE_RUNNING );
         this.server.send( new Protocol( Protocol.TUNNEL, tunnel ) );
     }
     

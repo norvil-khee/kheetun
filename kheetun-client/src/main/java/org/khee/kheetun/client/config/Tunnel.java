@@ -3,6 +3,8 @@ package org.khee.kheetun.client.config;
 import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -12,7 +14,6 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlType;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
-import org.khee.kheetun.client.verify.VerifierFactory;
 import org.khee.kheetun.server.daemon.AutostartDaemon;
 import org.khee.kheetun.server.daemon.PingChecker;
 
@@ -274,28 +275,16 @@ public class Tunnel implements Serializable {
     public void setAutostartDaemon(AutostartDaemon autostartDaemon) {
         this.autostartDaemon = autostartDaemon;
     }
-
-    public boolean isValid() {
-        
-        if ( this.getForwards().size() == 0 ) {
-            return false;
-        }
-        
-        for ( Forward forward : this.getForwards() ) {
-            if ( ! forward.isValid() ) {
-                return false;
-            }
-        }
-        
-        return
-            VerifierFactory.getAliasVerifier().verify( this.getAlias() )
-         && VerifierFactory.getUserVerifier().verify( this.getUser() )
-         && VerifierFactory.getHostnameVerifier().verify( this.getHostname() )
-         && VerifierFactory.getSshKeyVerifier().verify( this.getSshKeyString() );
-       
-    }
     
     public int hashCode() {
+        
+        Collections.sort( this.getForwards(), new Comparator<Forward>() {
+            @Override
+            public int compare(Forward o1, Forward o2) {
+                
+                return o1.hashCode() > o2.hashCode() ? +1 : o1.hashCode() < o2.hashCode() ? -1 : 0;
+            }
+        });
         
         return new HashCodeBuilder( 13, 37 )
             .append( this.getUser() )

@@ -7,7 +7,6 @@ import java.util.Arrays;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.khee.kheetun.client.TunnelClient;
-import org.khee.kheetun.client.verify.VerifierFactory;
 
 public class ConfigManager implements Runnable {
     
@@ -15,11 +14,10 @@ public class ConfigManager implements Runnable {
 
     private static ConfigManager instance = null;
     
-    private Config              config              = new Config();
+    private Config              config              = null;
     private GlobalConfig        globalConfig        = new GlobalConfig();
     private String              fingerprint         = "";
     private String              fingerprintGlobal   = "";
-    private ArrayList<Tunnel>   tunnels             = new ArrayList<Tunnel>();
     private File                configDirectory     = new File( System.getProperty( "user.home" ) + "/.kheetun/kheetun.d" );
     private File                globalConfigFile    = new File( System.getProperty( "user.home" ) + "/.kheetun/kheetun.conf" );
 
@@ -118,38 +116,21 @@ public class ConfigManager implements Runnable {
                     listener.configManagerGlobalConfigChanged( oldConfig, this.globalConfig, this.globalConfig.getErrors().isEmpty() );
                 }
             }
+            
+            if ( TunnelClient.isConnected() ) {
         
-            if ( this.configChanged() ) {
-                
-                Config oldConfig = this.config;
-                
-                logger.info( "Configuration directory changed" );
-               
-                this.config = Config.load();
-                
-                tunnels.clear();
-                
-                for ( Profile profile : this.config.getProfiles() ) {
+                if ( this.configChanged() ) {
                     
-                    if ( ! profile.isActive() ) {
-                        continue;
-                    }
+                    Config oldConfig = this.config;
                     
-                    for ( Tunnel tunnel : profile.getTunnels() ) {
-                        tunnels.add( tunnel );
+                    logger.info( "Configuration directory changed" );
+                   
+                    this.config = Config.load();
+                    
+                    for ( ConfigManagerListener listener : this.listeners ) {
+                        listener.configManagerConfigChanged( oldConfig, this.config, this.config.getErrors().isEmpty() );
                     }
                 }
-                    
-                for ( Profile profile : this.config.getProfiles() ) {
-                    
-                    this.validate( profile );
-                }
-                
-                for ( ConfigManagerListener listener : this.listeners ) {
-                    listener.configManagerConfigChanged( oldConfig, this.config, this.config.getErrors().isEmpty() );
-                }
-                
-                TunnelClient.sendConfig( this.config );
             }
             
             try {
@@ -158,87 +139,6 @@ public class ConfigManager implements Runnable {
                 logger.error( "Interrupted while sleeping in ConfigManager watcher" );
             }
         }
-    }
-    
-    public synchronized boolean validate( Profile profile ) {
-        
-        ArrayList<String> binds = new ArrayList<String>();
-        
-        for ( Tunnel tunnel : profile.getTunnels() ) {
-            
-            binds.clear();
-            
-            if ( ! VerifierFactory.getAliasVerifier().verify( tunnel.getAlias() ) ) {
-                
-                profile.addError( "Tunnel '" + tunnel.getAlias() +"': invalid alias '" + tunnel.getAlias() + "'" );
-            }
-            
-            if ( ! VerifierFactory.getHostnameVerifier().verify( tunnel.getHostname() ) ) {
-                
-                profile.addError( "Tunnel '" + tunnel.getAlias() +"': invalid hostname '" + tunnel.getHostname() + "'" );
-            }
-            
-            if ( tunnel.getSshKey() != null ) {
-                if ( ! VerifierFactory.getSshKeyVerifier().verify( tunnel.getSshKey().getAbsolutePath() ) ) {
-                    
-                    profile.addError( "Tunnel '" + tunnel.getAlias() +"': invalid SSH key '" + tunnel.getSshKey().getAbsolutePath() + "'" );
-                }
-            }
-            
-            if ( ! VerifierFactory.getUserVerifier().verify( tunnel.getUser() ) ) {
-                
-                profile.addError( "Tunnel '" + tunnel.getAlias() +"': invalid user '" + tunnel.getUser() + "'" );
-            }
-            
-            int f = 0;
-            
-            for ( Forward forward : tunnel.getForwards() ) {
-                
-                f++;
-                
-                if ( ! VerifierFactory.getPortVerifier().verify( forward.getBindPort() ) ) {
-                    profile.addError( "Tunnel '" + tunnel.getAlias() +"', Forward " + f + ": invalid bind port '" + forward.getBindPort() + "'" );
-                }
-
-                if ( ! VerifierFactory.getPortVerifier().verify( forward.getForwardedPort() ) ) {
-                    profile.addError( "Tunnel '" + tunnel.getAlias() +"', Forward " + f + ": invalid forwarded port '" + forward.getBindPort() + "'" );
-                }
-                
-                if ( ! VerifierFactory.getHostnameVerifier().verify( forward.getForwardedHost() ) ) {
-                    profile.addError( "Tunnel '" + tunnel.getAlias() +"', Forward " + f + ": invalid forwarded host '" + forward.getForwardedHost() + "'" );
-                }
-
-                if ( binds.contains( forward.getBindIp() + ":" + forward.getBindPort() ) ) {
-                    
-                    profile.addError( "Tunnel '" + tunnel.getAlias() +"', Forward " + f + ": duplicate bind IP '" + forward.getBindIp() + "'" );
-                    
-                } else {
-
-                    binds.add( forward.getBindIp() + ":" + forward.getBindPort() );
-                }
-                
-                if ( ! VerifierFactory.getIpAddressVerifier().verify( forward.getBindIp() ) ) {
-                    
-                    profile.addError( "Tunnel '" + tunnel.getAlias() +"', Forward " + f + ": invalid bind IP '" + forward.getBindIp() + "'" );
-                }
-            }
-        }
-        
-        return profile.getErrors().isEmpty();
-    }
-    
-    public static Tunnel getTunnel( Tunnel tunnel ) {
-        
-        if ( instance.tunnels.contains( tunnel ) ) {
-            return instance.tunnels.get( instance.tunnels.indexOf( tunnel ) );
-        }
-        
-        return null;
-    }
-    
-    public static ArrayList<Tunnel> getTunnels() {
-        
-        return instance.tunnels;
     }
     
     public static void addConfigManagerListener( ConfigManagerListener listener ) {

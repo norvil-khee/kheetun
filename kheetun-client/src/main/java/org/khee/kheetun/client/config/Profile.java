@@ -3,6 +3,8 @@ package org.khee.kheetun.client.config;
 import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -10,6 +12,8 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlType;
+
+import org.apache.commons.lang.builder.HashCodeBuilder;
 
 
 @XmlAccessorType(XmlAccessType.NONE)
@@ -92,48 +96,30 @@ public class Profile implements Serializable {
         this.modified = modified;
     }
 
-    public boolean isValid() {
+    public int hashCode() {
         
-        for( Tunnel tunnel : getTunnels() ) {
-            
-            if ( ! tunnel.isValid() ) {
-                return false;
+        Collections.sort( this.getTunnels(), new Comparator<Tunnel>() {
+            @Override
+            public int compare(Tunnel o1, Tunnel o2) {
+                
+                return o1.hashCode() > o2.hashCode() ? +1 : o1.hashCode() < o2.hashCode() ? -1 : 0;
             }
-        }
-        return true; 
+        });
+        
+        return new HashCodeBuilder( 13, 37 )
+            .append( this.getTunnels().hashCode() )
+            .hashCode();
     }
     
     @Override
     public boolean equals(Object obj) {
         
-        if ( obj == null ) {
+        if ( ! ( obj instanceof Profile ) ) {
             return false;
         }
         
         Profile compare = (Profile)obj;
         
-        ArrayList<Tunnel> tunnels = this.getTunnels();
-        ArrayList<Tunnel> tunnelsCompare = compare.getTunnels();
-        
-        // not the same amount of tunnels? not equal!
-        //
-        if ( tunnels.size() != tunnelsCompare.size() ) {
-            return false;
-        }
-        
-        // tunnels differ? not equal!
-        //
-        for ( int index = 0 ; index < tunnels.size() ; index++ ) {
-            
-            if ( ! tunnels.get( index ).equals( tunnelsCompare.get( index )) ) {
-                return false;
-            }
-        }
-        
-        return ( 
-                this.getName().equals( compare.getName() )
-           && ( ( this.getBaseBindIp() == null && compare.getBaseBindIp() == null ) || this.getBaseBindIp().equals( compare.getBaseBindIp() ) ) 
-        );
-    }
-
+        return this.hashCode() == compare.hashCode();
+    }    
 }

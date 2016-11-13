@@ -52,6 +52,11 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
         instance = new TunnelClient();
     }
     
+    public static boolean isConnected() {
+        
+        return ( instance.clientSocket != null && instance.clientSocket.isConnected() );
+    }
+    
     @Override
     public void configManagerGlobalConfigChanged( GlobalConfig oldConfig, GlobalConfig newConfig, boolean valid ) {
         
@@ -73,7 +78,7 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
     @Override
     public void configManagerConfigChanged( Config oldConfig, Config newConfig, boolean valid ) {
 
-
+            TunnelClient.sendConfig( newConfig );
     }
     
     public void run() {
@@ -156,34 +161,6 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
     private void handle( Protocol receive ) {
         
         logger.debug( "Client handling " + receive );
-        
-//        // translate tunnels to tunnels known by configuration
-//        // unknown tunnels are stale tunnels
-//        //
-//        if ( receive.getTunnel() != null ) {
-//            
-//            if ( ConfigManager.getTunnel( receive.getTunnel() ) != null ) {
-//                receive.setTunnel( ConfigManager.getTunnel( receive.getTunnel() ) );
-//            } else {
-//                logger.info( "Stale tunnel: " + receive.getTunnel() );
-//            }
-//        }
-//        
-//        if ( receive.getTunnels().size() > 0 ) {
-//            
-//            ArrayList<Tunnel> tunnels = new ArrayList<Tunnel>();
-//            
-//            for ( Tunnel tunnel : receive.getTunnels() ) {
-//                
-//                if ( ConfigManager.getTunnel( tunnel ) != null ) {
-//                    tunnels.add( ConfigManager.getTunnel( tunnel ) );
-//                } else {
-//                    logger.info( "Stale tunnel: " + tunnel );
-//                }
-//            }
-//            
-//            receive.setTunnels( tunnels );
-//        }
         
         switch ( receive.getCommand() ) {
 

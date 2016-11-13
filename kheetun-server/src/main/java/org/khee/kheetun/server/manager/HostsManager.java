@@ -49,7 +49,6 @@ public class HostsManager {
 
             String line;
             while ( ( line = reader.readLine() ) != null ) {
-                logger.debug( "/etc/hosts: " + line );
                 content.add( line );
             }
             

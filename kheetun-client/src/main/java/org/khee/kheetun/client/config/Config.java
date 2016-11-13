@@ -3,14 +3,19 @@ package org.khee.kheetun.client.config;
 import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 
+import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.khee.kheetun.client.verify.VerifierFactory;
 
 public class Config implements Serializable {
     
@@ -18,8 +23,10 @@ public class Config implements Serializable {
     
     private static  Logger              logger      = LogManager.getLogger( "kheetun" );
     
-    private         ArrayList<Profile>  profiles    = new ArrayList<Profile>();
-    private         ArrayList<String>   errors      = new ArrayList<String>();
+    private         ArrayList<Profile>      profiles        = new ArrayList<Profile>();
+    private         ArrayList<String>       errors          = new ArrayList<String>();
+    private         HashMap<String, String> localBinds      = new HashMap<String, String>(); 
+    private         HashMap<String, String> remoteBinds     = new HashMap<String, String>();
 
     public class TunnelLoop {
         
@@ -39,18 +46,6 @@ public class Config implements Serializable {
         profiles.add( profile );
     }
     
-    public boolean isValid() {
-        
-        for( Profile profile : getProfiles() ) {
-            
-            if ( ! profile.isValid() ) {
-                return false;
-            }
-        }
-        
-        return true;
-    }
-    
     public ArrayList<String> getErrors() {
         return errors;
     }
@@ -58,33 +53,34 @@ public class Config implements Serializable {
     public void addError( String error ) {
         this.errors.add( error );
     }
-
+    
+    public int hashCode() {
+        
+        Collections.sort( this.getProfiles(), new Comparator<Profile>() {
+            @Override
+            public int compare(Profile o1, Profile o2) {
+                
+                return o1.hashCode() > o2.hashCode() ? +1 : o1.hashCode() < o2.hashCode() ? -1 : 0;
+            }
+        });
+        
+        return new HashCodeBuilder( 13, 37 )
+            .append( this.getProfiles().hashCode() )
+            .hashCode();
+    }
+    
+    @Override
     public boolean equals(Object obj) {
         
-        Config compare = (Config)obj;
-        
-        ArrayList<Profile> profiles = this.getProfiles();
-        ArrayList<Profile> profilesCompare = compare.getProfiles();
-        
-        // not the same amount of profiles? not equal!
-        //
-        if ( profiles.size() != profilesCompare.size() ) {
+        if ( ! ( obj instanceof Config ) ) {
             return false;
         }
         
-        // profiles differ? not equal!
-        //
-        for ( int index = 0 ; index < profiles.size() ; index++ ) {
-            
-            if ( ! profiles.get( index ).equals( profilesCompare.get( index )) ) {
-                return false;
-            }
-        }
+        Config compare = (Config)obj;
         
-        return true;
-    }
-    
-    
+        return this.hashCode() == compare.hashCode();
+    }     
+
     public static Config load() {
         
         Config config = new Config();
@@ -118,10 +114,13 @@ public class Config implements Serializable {
                         
                         profile = new Profile();
                         profile.addError( error );
+                        profile.setConfigFile( profileFile );
+                        profile.setModified( profileFile.lastModified() );
                     }
                     
                     profile.setConfigFile( profileFile );
                     profile.setModified( profileFile.lastModified() );
+                    config.validateProfile( profile );
                     config.profiles.add( profile );
                 }
                 
@@ -168,11 +167,93 @@ public class Config implements Serializable {
         } 
     }
     
+    public void validateProfile( Profile profile ) {
+        
+        for ( Tunnel tunnel : profile.getTunnels() ) {
+            
+            if ( ! VerifierFactory.getAliasVerifier().verify( tunnel.getAlias() ) ) {
+                
+                profile.addError( "Tunnel '" + tunnel.getAlias() +"': invalid alias '" + tunnel.getAlias() + "'" );
+            }
+            
+            if ( ! VerifierFactory.getHostnameVerifier().verify( tunnel.getHostname() ) ) {
+                
+                profile.addError( "Tunnel '" + tunnel.getAlias() +"': invalid hostname '" + tunnel.getHostname() + "'" );
+            }
+            
+            if ( tunnel.getSshKey() != null ) {
+                if ( ! VerifierFactory.getSshKeyVerifier().verify( tunnel.getSshKey().getAbsolutePath() ) ) {
+                    
+                    profile.addError( "Tunnel '" + tunnel.getAlias() +"': invalid SSH key '" + tunnel.getSshKey().getAbsolutePath() + "'" );
+                }
+            }
+            
+            if ( ! VerifierFactory.getUserVerifier().verify( tunnel.getUser() ) ) {
+                
+                profile.addError( "Tunnel '" + tunnel.getAlias() +"': invalid user '" + tunnel.getUser() + "'" );
+            }
+            
+            int f = 0;
+            
+            for ( Forward forward : tunnel.getForwards() ) {
+                
+                f++;
+                
+                if ( ! VerifierFactory.getPortVerifier().verify( forward.getBindPort() ) ) {
+                    profile.addError( "Tunnel '" + tunnel.getAlias() +"', Forward " + f + ": invalid bind port '" + forward.getBindPort() + "'" );
+                }
+
+                if ( ! VerifierFactory.getPortVerifier().verify( forward.getForwardedPort() ) ) {
+                    profile.addError( "Tunnel '" + tunnel.getAlias() +"', Forward " + f + ": invalid forwarded port '" + forward.getBindPort() + "'" );
+                }
+                
+                if ( ! VerifierFactory.getHostnameVerifier().verify( forward.getForwardedHost() ) ) {
+                    profile.addError( "Tunnel '" + tunnel.getAlias() +"', Forward " + f + ": invalid forwarded host '" + forward.getForwardedHost() + "'" );
+                }
+                
+                String forwardId = profile.getConfigFile().getName() + ": " + tunnel.getAlias() + ", Forward " + f;
+                        
+                if ( forward.getType().equals( Forward.LOCAL ) ) {
+                    
+                    String localBind = forward.getBindIp() + ":" + forward.getBindPort();
+                    
+                    if ( localBinds.containsKey( localBind ) ) {
+                        
+                        profile.addError( forwardId + ": duplicate bind: " + localBind + ", already used in " + localBinds.get( localBind )  );
+                        
+                    } else {
+    
+                        localBinds.put( localBind, forwardId );
+                    }
+                    
+                } else {
+                    
+                    String remoteBind = tunnel.getHostname() + ":" + forward.getBindIp() + ":" + forward.getBindPort();
+                    
+                    if ( remoteBinds.containsKey( remoteBind ) ) {
+                        
+                        profile.addError( forwardId + ": duplicate bind: '" + remoteBind + ", already used in " + remoteBinds.get( remoteBind ) );
+                        
+                    } else {
+    
+                        remoteBinds.put( remoteBind, forwardId );
+                    }
+                }
+                
+                if ( ! VerifierFactory.getIpAddressVerifier().verify( forward.getBindIp() ) ) {
+                    
+                    profile.addError( "Tunnel '" + tunnel.getAlias() +"', Forward " + f + ": invalid bind IP '" + forward.getBindIp() + "'" );
+                }
+            }
+        }
+        
+    }
+    
     public void loopTunnels( boolean activeOnly, TunnelLoop loop ) {
         
         for ( Profile profile : this.profiles ) {
             
-            if ( activeOnly && ! profile.isActive() ) {
+            if ( activeOnly && ( ! profile.isActive() || ! profile.getErrors().isEmpty() ) ) {
                 
                 continue;
             }

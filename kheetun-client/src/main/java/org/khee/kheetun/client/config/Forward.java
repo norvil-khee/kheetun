@@ -10,7 +10,6 @@ import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlType;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
-import org.khee.kheetun.client.verify.VerifierFactory;
 
 
 @XmlAccessorType(XmlAccessType.NONE)
@@ -153,15 +152,6 @@ public class Forward implements Serializable {
         this.delete = delete;
     }
     
-    public boolean isValid() {
-        
-        return
-            VerifierFactory.getIpAddressVerifier().verify( this.getBindIp() )
-         && VerifierFactory.getPortVerifier().verify( this.getBindPort() )
-         && VerifierFactory.getHostnameVerifier().verify( this.getForwardedHost() )
-         && VerifierFactory.getPortVerifier().verify( this.getForwardedPort() );
-    }
-    
     @Override
     public int hashCode() {
         
@@ -177,13 +167,14 @@ public class Forward implements Serializable {
     @Override
     public boolean equals(Object obj) {
         
-        return 
-            this.getType().equals(          ((Forward)obj).getType()            ) &&
-            this.getBindIp().equals(        ((Forward)obj).getBindIp()          ) &&
-            this.getBindPort().equals(      ((Forward)obj).getBindPort()        ) &&
-            this.getForwardedHost().equals( ((Forward)obj).getForwardedHost()   ) &&
-            this.getForwardedPort().equals( ((Forward)obj).getForwardedPort()   );
-    };
+        if ( ! ( obj instanceof Forward ) ) {
+            return false;
+        }
+        
+        Forward compare = (Forward)obj;
+        
+        return this.hashCode() == compare.hashCode();
+    }    
     
     @Override
     public String toString() {
