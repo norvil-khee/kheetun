@@ -159,7 +159,7 @@ public class Tunnel implements Serializable {
     
     @XmlAttribute
     public Boolean getAutostart() {
-        return autostart;
+        return this.autostart == null ? false : this.autostart;
     }
     public void setAutostart(Boolean autostart) {
         this.autostart = autostart;
