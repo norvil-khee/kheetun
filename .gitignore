@@ -1,5 +1,7 @@
 .gitignore
 .project
+.classpath
+.settings
 kheetun/**
 *.deb
 */.project
@@ -8,3 +10,4 @@ kheetun/**
 */.settings/**
 **/*.log
 /**/.classpath
+/target/
