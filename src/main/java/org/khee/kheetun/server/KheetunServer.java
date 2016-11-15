@@ -9,6 +9,7 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.khee.kheetun.Kheetun;
 import org.khee.kheetun.server.manager.HostsManager;
 
 import sun.misc.Signal;
@@ -17,8 +18,10 @@ import sun.misc.SignalHandler;
 @SuppressWarnings("restriction")
 public class KheetunServer {
     
-    private static Logger logger = LogManager.getLogger( "kheetund" );
-    private static final String VERSION = "0.10.1";
+    static {
+        System.setProperty( "log4j.configurationFile", "log4j2.client.xml" );
+    }
+    private static Logger logger = LogManager.getLogger( KheetunServer.class );
 
     @SuppressWarnings("static-access")
     public static void main(String[] args) {
@@ -33,7 +36,7 @@ public class KheetunServer {
         
             CommandLine cmd = parser.parse( options, args );
 
-            logger.info( "Started kheetun daemon " + VERSION );
+            logger.info( "Started kheetun daemon " + Kheetun.VERSION );
 
             Signal.handle( new Signal( "INT" ), new SignalHandler() {
                 

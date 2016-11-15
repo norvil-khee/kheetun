@@ -31,9 +31,9 @@ import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 
+import org.khee.kheetun.Kheetun;
 import org.khee.kheetun.client.TunnelClient;
 import org.khee.kheetun.client.TunnelClientListener;
-import org.khee.kheetun.client.KheetunClient;
 import org.khee.kheetun.client.config.Config;
 import org.khee.kheetun.client.config.ConfigManager;
 import org.khee.kheetun.client.config.ConfigManagerListener;
@@ -60,8 +60,8 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
         
         ToolTipManager.sharedInstance().setInitialDelay( 0 );
         
-        setName( "kheetun" );
-        setIconImage( Imx.CONFIG.getImage() );
+        this.setName( "kheetun" );
+        this.setIconImage( Imx.CONFIG.getImage() );
         
         panelMain = new JPanel();
         panelMain.setDoubleBuffered( true );
@@ -72,7 +72,7 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
         this.getContentPane().add( panelMain );
 
         labelKheetun    = new KTMenuItem( Imx.KHEETUN.icon, "" );
-        labelKheetun.setStatus( KheetunClient.VERSION, Color.GRAY );
+        labelKheetun.setStatus( Kheetun.VERSION, Color.GRAY );
         
         labelConnected  = new KTMenuItem( Imx.NONE, "Daemon:" );
         labelConnected.setStatus( "disconnected", Color.RED );

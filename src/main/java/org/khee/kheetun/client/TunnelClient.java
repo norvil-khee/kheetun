@@ -276,7 +276,6 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
         
         if ( clientSocket == null || ! clientSocket.isConnected() ) {
             
-            logger.warn( "Client not connected while trying to send" );
             return;
         }
         

@@ -6,6 +6,7 @@ import java.security.Security;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.gnome.gtk.Gtk;
+import org.khee.kheetun.Kheetun;
 import org.khee.kheetun.client.config.ConfigManager;
 import org.khee.kheetun.client.gui.GtkTray;
 import org.khee.kheetun.client.gui.Imx;
@@ -14,9 +15,11 @@ import org.khee.kheetun.client.gui.TrayManager;
 import org.khee.kheetun.client.gui.TrayMenu;
 
 public class KheetunClient {
-
-    private static Logger logger = LogManager.getLogger( "kheetun" );
-    public static final String VERSION = "0.10.1";
+    
+    static {
+        System.setProperty( "log4j.configurationFile", "log4j2.client.xml" );
+    }
+    private static Logger logger = LogManager.getLogger( KheetunClient.class );
     
     public static void main(String[] args) {
         
@@ -36,7 +39,7 @@ public class KheetunClient {
         //
         System.setProperty( "sun.java2d.xrender", "false" );
         
-        logger.info( "Starting kheetun " + VERSION );
+        logger.info( "Starting kheetun " + Kheetun.VERSION );
         
         new File( System.getProperty( "user.home" ) + "/.kheetun" ).mkdir();
         new File( System.getProperty( "user.home" ) + "/.kheetun/kheetun.d" ).mkdir();
