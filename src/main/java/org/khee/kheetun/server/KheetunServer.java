@@ -15,7 +15,7 @@ import sun.misc.Signal;
 import sun.misc.SignalHandler;
 
 @SuppressWarnings("restriction")
-public class kheetund {
+public class KheetunServer {
     
     private static Logger logger = LogManager.getLogger( "kheetund" );
     private static final String VERSION = "0.10.1";

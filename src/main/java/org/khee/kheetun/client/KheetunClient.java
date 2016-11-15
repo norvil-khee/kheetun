@@ -13,7 +13,7 @@ import org.khee.kheetun.client.gui.Tray;
 import org.khee.kheetun.client.gui.TrayManager;
 import org.khee.kheetun.client.gui.TrayMenu;
 
-public class kheetun {
+public class KheetunClient {
 
     private static Logger logger = LogManager.getLogger( "kheetun" );
     public static final String VERSION = "0.10.1";

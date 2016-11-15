@@ -8,7 +8,7 @@ import javax.swing.ImageIcon;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.khee.kheetun.client.kheetun;
+import org.khee.kheetun.client.KheetunClient;
 
 
 public class Imx extends ImageIcon {
@@ -69,7 +69,7 @@ public class Imx extends ImageIcon {
     protected static Imx loadImx( String file ) {
         
         try {
-            BufferedImage tmp = ImageIO.read( kheetun.class.getResource( "/images/icons/" + file ) );
+            BufferedImage tmp = ImageIO.read( KheetunClient.class.getResource( "/images/icons/" + file ) );
             
             BufferedImage rgba = new BufferedImage( tmp.getWidth(), tmp.getHeight(), BufferedImage.TYPE_INT_ARGB );
             rgba.createGraphics().drawImage( tmp, 0, 0, null );

@@ -11,7 +11,7 @@ import java.util.TimerTask;
 import javax.imageio.ImageIO;
 import javax.swing.JPanel;
 
-import org.khee.kheetun.client.kheetun;
+import org.khee.kheetun.client.KheetunClient;
 
 public class AnImx extends JPanel {
     
@@ -34,7 +34,7 @@ public class AnImx extends JPanel {
         setOpaque( false );
         
         try {
-            board = ImageIO.read( kheetun.class.getResource( "/images/icons/" + file ) );
+            board = ImageIO.read( KheetunClient.class.getResource( "/images/icons/" + file ) );
             
             animation = new ArrayList<BufferedImage>();
             

@@ -33,7 +33,7 @@ import javax.swing.border.LineBorder;
 
 import org.khee.kheetun.client.TunnelClient;
 import org.khee.kheetun.client.TunnelClientListener;
-import org.khee.kheetun.client.kheetun;
+import org.khee.kheetun.client.KheetunClient;
 import org.khee.kheetun.client.config.Config;
 import org.khee.kheetun.client.config.ConfigManager;
 import org.khee.kheetun.client.config.ConfigManagerListener;
@@ -72,7 +72,7 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
         this.getContentPane().add( panelMain );
 
         labelKheetun    = new KTMenuItem( Imx.KHEETUN.icon, "" );
-        labelKheetun.setStatus( kheetun.VERSION, Color.GRAY );
+        labelKheetun.setStatus( KheetunClient.VERSION, Color.GRAY );
         
         labelConnected  = new KTMenuItem( Imx.NONE, "Daemon:" );
         labelConnected.setStatus( "disconnected", Color.RED );
