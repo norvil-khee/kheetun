@@ -97,9 +97,4 @@ public class TrayManager {
         instance.tray.unblink();
     }
     
-    public static void buildMenu() {
-        
-        instance.menu.buildMenu();
-    }
-    
 }

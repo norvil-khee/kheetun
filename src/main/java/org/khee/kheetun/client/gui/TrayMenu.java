@@ -5,6 +5,7 @@ import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.Point;
 import java.awt.Rectangle;
@@ -17,6 +18,7 @@ import java.awt.event.MouseListener;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -44,15 +46,14 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
     
     public static final long serialVersionUID = 42;
     
-    private KTMenuItem  labelKheetun;
-    private KTMenuItem  labelConnected;
-    private KTMenuItem  labelConfig;
-    private KTMenuItem  itemProfiles;
-    private KTMenuItem  itemExit;
-    private KTMenuItem  itemStopAll;
-    private KTMenuItem  itemAutostartAll;
-    private JPanel      panelProfiles;
-    private JPanel      panelMain;
+    private KTMenuItem      labelKheetun;
+    private KTMenuItem      labelConnected;
+    private KTMenuItem      labelConfig;
+    private KTMenuItem      itemExit;
+    private KTMenuItem      itemStopAll;
+    private KTMenuItem      itemAutostartAll;
+    private KTProfilesPanel panelProfiles       = new KTProfilesPanel();
+    private JPanel          panelMain;
     
     @SuppressWarnings("serial")
     public TrayMenu() {
@@ -76,41 +77,6 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
         
         labelConfig     = new KTMenuItem( Imx.NONE, "Global config:" );
         labelConfig.setStatus( "none", Color.LIGHT_GRAY );
-        
-        itemProfiles    = new KTMenuItem( Imx.SORT, "Sort Profiles" ) {
-            
-            @Override
-            public void leftClick(MouseEvent e) {
-                
-                if ( ConfigManager.getGlobalConfig() != null ) {
-                    
-                    switch( ConfigManager.getGlobalConfig().getSortOrder() ) {
-                        
-                    case GlobalConfig.SORT_ALPHABETICAL_DESC:
-                        ConfigManager.getGlobalConfig().setSortOrder( GlobalConfig.SORT_MODIFIED_ASC );
-                        break;
-
-                    case GlobalConfig.SORT_MODIFIED_ASC:
-                        ConfigManager.getGlobalConfig().setSortOrder( GlobalConfig.SORT_MODIFIED_DESC );
-                        break;
-
-                    case GlobalConfig.SORT_MODIFIED_DESC:
-                        ConfigManager.getGlobalConfig().setSortOrder( GlobalConfig.SORT_ALPHABETICAL_ASC );
-                        break;
-
-                    default:
-                        ConfigManager.getGlobalConfig().setSortOrder( GlobalConfig.SORT_ALPHABETICAL_DESC );
-                        break;
-                    }
-                    
-                    TrayManager.buildMenu();
-                    ConfigManager.getGlobalConfig().save();
-                }
-                
-            };
-        };
-        
-        itemProfiles.setStatus( "A...Z", Color.DARK_GRAY );
         
         itemExit = new KTMenuItem( Imx.EXIT, "Exit" ) {
             
@@ -142,8 +108,6 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
         this.setAlwaysOnTop( true );
         this.setType( Type.POPUP );
         
-        this.buildMenu();
-        
         this.addMouseListener( this );
         panelMain.addMouseListener( this );
             
@@ -160,141 +124,25 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
         panelMain.add( new KTSeperator() );
         panelMain.add( itemStopAll );
         panelMain.add( itemAutostartAll );
-        panelMain.add( itemProfiles );
-        panelMain.add( new KTSeperator() );
+        panelMain.add( panelProfiles );
         panelMain.add( itemExit );
-    }
-    
-    public void buildMenu() {
         
-        TrayManager.clearMessages();
-        
-        if ( panelProfiles != null ) {
-            panelMain.remove( panelProfiles );
-        }
-        
-        panelProfiles = new JPanel();
-        panelProfiles.setLayout( new BoxLayout( panelProfiles, BoxLayout.PAGE_AXIS ) );
-        
-        if ( ConfigManager.getConfig() != null ) {
-            
-            ArrayList<Profile> profiles = new ArrayList<Profile>( ConfigManager.getConfig().getProfiles() );
-            
-            switch( ConfigManager.getGlobalConfig().getSortOrder() ) {
-            
-            case GlobalConfig.SORT_ALPHABETICAL_DESC:
-                itemProfiles.setStatus( "Z...A", Color.DARK_GRAY );
-                Collections.sort( profiles, new Comparator<Profile>() {
-                    
-                    public int compare( Profile p1, Profile p2 ) {
-                        return p2.getName().compareTo( p1.getName() );
-                    };
-                } );
-                break;
-                
-            case GlobalConfig.SORT_MODIFIED_ASC:
-                itemProfiles.setStatus( "DATE ASC", Color.DARK_GRAY );
-                Collections.sort( profiles, new Comparator<Profile>() {
-                    
-                    public int compare( Profile p1, Profile p2 ) {
-                        return p1.getModified().compareTo( p2.getModified() );
-                    };
-                } );
-                break;
-                
-            case GlobalConfig.SORT_MODIFIED_DESC:
-                itemProfiles.setStatus( "DATE DESC", Color.DARK_GRAY );
-                Collections.sort( profiles, new Comparator<Profile>() {
-                    
-                    public int compare( Profile p1, Profile p2 ) {
-                        return p2.getModified().compareTo( p1.getModified() );
-                    };
-                } );
-                break;
-                
-            default:
-                itemProfiles.setStatus( "A...Z", Color.DARK_GRAY );
-                Collections.sort( profiles, new Comparator<Profile>() {
-                    
-                    public int compare( Profile p1, Profile p2 ) {
-                        return p1.getName().compareTo( p2.getName() );
-                    };
-                } );
-                break;
-            };
-            
-            for ( Profile profile : profiles ) {
-                
-                KTMenuItem itemProfile = new KTMenuItem( Imx.PROFILE, profile.getName() );
-                
-                itemProfile.setStatus( "[" + profile.getConfigFile().getName() + "]", new Color( 0, 100, 0 ) );
-                
-                if ( ! profile.isActive() ) {
-                    itemProfile.getTextLabel().setText( "<html><body><span style='text-decoration: line-through;'>" + profile.getName() + "</span></body></html>" );
-                }
-                
-                if ( ! profile.getErrors().isEmpty() ) {
-                    
-                    String message = "<html><body>Configuration errors:";
-                    
-                    for ( String error : profile.getErrors() ) {
-                        
-                        message += "<br>    * " + error;
-                    }
-                    
-                    message += "</body></html>";
-                    
-                    itemProfile.setMessage( message );
-                    itemProfile.setStatus( "[" + profile.getConfigFile().getName() + "]", Color.RED );
-                    
-                    TrayManager.blink();
-                }
-                
-                panelProfiles.add( itemProfile );
-                
-                if ( profile.isActive() ) {
-                
-                    for ( Tunnel tunnel : profile.getTunnels() ) {
-                        
-                        TunnelMenuItem itemTunnel = new TunnelMenuItem( tunnel );
-                        
-                        if ( ! profile.getErrors().isEmpty() ) {
-                            
-                            itemTunnel.setActive( false );
-                        } 
-                        
-                        panelProfiles.add( itemTunnel );
-                    }
-                }
-                
-                panelProfiles.add( new KTSeperator() );
-            }
-        }
-        
-        
-        for ( Component c : panelMain.getComponents() ) {
-            c.addMouseListener( this );
-        }
-        
-        panelMain.add( panelProfiles, panelMain.getComponentCount() - 1 );
-        
-        this.revalidate();
         this.pack();
-        this.repaint();
     }
     
     @Override
     public void configManagerGlobalConfigChanged( GlobalConfig oldConfig, GlobalConfig newConfig, boolean valid ) {
         
         if ( valid && ! oldConfig.getSortOrder().equals( newConfig.getSortOrder() ) ) {
-            buildMenu();
+            
+            panelProfiles.sort();
         }
     }
     
     @Override
     public void configManagerConfigChanged( Config oldConfig, Config newConfig, boolean valid ) {
         
-        buildMenu();
+        panelProfiles.setProfiles( newConfig.getProfiles() );
         
         if ( valid ) {
             
@@ -382,6 +230,202 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
                 setVisible( false );
             }
         }
+    }
+}
+
+@SuppressWarnings("serial")
+class KTProfilesPanel extends JPanel {
+    
+    private static final long serialVersionUID = 2L;
+    
+    private JPanel                  panelLoading;
+    private JPanel                  panelProfiles;
+    private KTMenuItem              itemSort;
+    private HashMap<Profile,JPanel> profilePanels   = new HashMap<Profile,JPanel>();
+    private ArrayList<Profile>      profiles        = new ArrayList<Profile>();
+    
+    public KTProfilesPanel() {
+        
+        this.setDoubleBuffered( true );
+        
+        this.setLayout( new BoxLayout( this, BoxLayout.PAGE_AXIS ) );
+        
+        this.panelLoading = new JPanel();
+        this.panelLoading.setLayout( new GridBagLayout() );
+        this.panelLoading.setAlignmentX( Component.LEFT_ALIGNMENT );
+        
+        AnImx loading = new AnImx( "loading.png", 50, 125, 50 );
+        
+        this.panelLoading.add( loading );
+        this.panelLoading.setVisible( false );
+        
+        
+        itemSort    = new KTMenuItem( Imx.SORT, "Sort Profiles" ) {
+            
+            @Override
+            public void leftClick(MouseEvent e) {
+                
+                if ( ConfigManager.getGlobalConfig() != null ) {
+                    
+                    switch( ConfigManager.getGlobalConfig().getSortOrder() ) {
+                        
+                    case GlobalConfig.SORT_ALPHABETICAL_DESC:
+                        ConfigManager.getGlobalConfig().setSortOrder( GlobalConfig.SORT_MODIFIED_ASC );
+                        break;
+
+                    case GlobalConfig.SORT_MODIFIED_ASC:
+                        ConfigManager.getGlobalConfig().setSortOrder( GlobalConfig.SORT_MODIFIED_DESC );
+                        break;
+
+                    case GlobalConfig.SORT_MODIFIED_DESC:
+                        ConfigManager.getGlobalConfig().setSortOrder( GlobalConfig.SORT_ALPHABETICAL_ASC );
+                        break;
+
+                    default:
+                        ConfigManager.getGlobalConfig().setSortOrder( GlobalConfig.SORT_ALPHABETICAL_DESC );
+                        break;
+                    }
+                    
+                    KTProfilesPanel.this.sort();
+                    ConfigManager.getGlobalConfig().save();
+                }
+            };
+        };
+        
+        itemSort.setStatus( "A...Z", Color.DARK_GRAY );
+        
+        panelProfiles = new JPanel();
+        panelProfiles.setLayout( new BoxLayout( panelProfiles, BoxLayout.PAGE_AXIS ) );
+        
+        this.add( itemSort );
+        this.add( new KTSeperator() );
+        this.add( this.panelLoading );
+        this.add( this.panelProfiles );
+    }
+    
+    public void setProfiles( ArrayList<Profile> profiles ) {
+        
+        this.profiles = profiles;
+        
+        panelLoading.setVisible( true );
+        panelProfiles.setVisible( false );       
+        
+        ((JWindow)this.getTopLevelAncestor()).pack();
+        
+        profilePanels.clear();
+        
+        for ( Profile profile : profiles ) {
+            
+            JPanel profilePanel = new JPanel();
+            profilePanel.setLayout( new BoxLayout( profilePanel, BoxLayout.PAGE_AXIS ) );
+            
+            KTMenuItem itemProfile = new KTMenuItem( Imx.PROFILE, profile.getName() );
+            
+            itemProfile.setStatus( "[" + profile.getConfigFile().getName() + "]", new Color( 0, 100, 0 ) );
+            
+            if ( ! profile.isActive() ) {
+                itemProfile.getTextLabel().setText( "<html><body><span style='text-decoration: line-through;'>" + profile.getName() + "</span></body></html>" );
+            }
+            
+            if ( ! profile.getErrors().isEmpty() ) {
+                
+                String message = "<html><body>Configuration errors:";
+                
+                for ( String error : profile.getErrors() ) {
+                    
+                    message += "<br>    * " + error;
+                }
+                
+                message += "</body></html>";
+                
+                itemProfile.setMessage( message );
+                itemProfile.setStatus( "[" + profile.getConfigFile().getName() + "]", Color.RED );
+                
+                TrayManager.blink();
+            }
+            
+            profilePanel.add( itemProfile );
+            
+            if ( profile.isActive() ) {
+            
+                for ( Tunnel tunnel : profile.getTunnels() ) {
+                    
+                    TunnelMenuItem itemTunnel = new TunnelMenuItem( tunnel );
+                    
+                    if ( ! profile.getErrors().isEmpty() ) {
+                        
+                        itemTunnel.setActive( false );
+                    } 
+                    
+                    profilePanel.add( itemTunnel );
+                }
+            }
+            
+            profilePanel.add( new KTSeperator() );
+            
+            this.profilePanels.put( profile, profilePanel );
+        }
+        
+        this.add( panelProfiles );
+        
+        panelLoading.setVisible( false );
+        panelProfiles.setVisible( true );
+        
+        this.sort();
+    }
+    
+    public void sort() {
+        
+        this.panelProfiles.removeAll();
+        
+        switch( ConfigManager.getGlobalConfig().getSortOrder() ) {
+          
+        case GlobalConfig.SORT_ALPHABETICAL_DESC:
+            itemSort.setStatus( "Z...A", Color.DARK_GRAY );
+            Collections.sort( profiles, new Comparator<Profile>() {
+                
+              public int compare( Profile p1, Profile p2 ) {
+                  return p2.getName().compareTo( p1.getName() );
+              };
+            } );
+            break;
+              
+        case GlobalConfig.SORT_MODIFIED_ASC:
+            itemSort.setStatus( "DATE ASC", Color.DARK_GRAY );
+            Collections.sort( profiles, new Comparator<Profile>() {
+                
+                public int compare( Profile p1, Profile p2 ) {
+                    return p1.getModified().compareTo( p2.getModified() );
+                };
+            } );
+            break;
+            
+        case GlobalConfig.SORT_MODIFIED_DESC:
+            itemSort.setStatus( "DATE DESC", Color.DARK_GRAY );
+            Collections.sort( profiles, new Comparator<Profile>() {
+                
+                public int compare( Profile p1, Profile p2 ) {
+                    return p2.getModified().compareTo( p1.getModified() );
+                };
+            } );
+            break;
+              
+        default:
+            itemSort.setStatus( "A...Z", Color.DARK_GRAY );
+            Collections.sort( profiles, new Comparator<Profile>() {
+                
+                public int compare( Profile p1, Profile p2 ) {
+                    return p1.getName().compareTo( p2.getName() );
+                };
+            } );
+            break;
+        };
+        
+        for ( Profile profile : this.profiles ) {
+            this.panelProfiles.add( profilePanels.get( profile ) );
+        }
+
+        ((JWindow)this.getTopLevelAncestor()).pack();
     }
 }
 
