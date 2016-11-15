@@ -80,7 +80,7 @@ public class HostsManager {
     }
     
     
-    public static void addForwards( ArrayList<Forward> forwards ) {
+    public static synchronized void addForwards( ArrayList<Forward> forwards ) {
         
         instance.readHosts();
         for ( Forward forward : forwards ) {
@@ -89,7 +89,7 @@ public class HostsManager {
         instance.writeHosts();
     }
     
-    public static void removeForwards( ArrayList<Forward> forwards ) {
+    public static synchronized void removeForwards( ArrayList<Forward> forwards ) {
         
         instance.readHosts();
         for ( Forward forward : forwards ) {

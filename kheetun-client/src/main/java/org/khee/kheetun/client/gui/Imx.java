@@ -25,9 +25,11 @@ public class Imx extends ImageIcon {
     public static final Imx NEW                 = loadImx( "new.png" );
     public static final Imx LOAD                = loadImx( "load.png" );
     public static final Imx DELETE              = loadImx( "delete.png" );
-    public static final Imx RENAME              = loadImx( "rename.png" );
-    public static final Imx ACTIVE              = loadImx( "tick.png" );
-    public static final Imx INACTIVE            = loadImx( "none.png" );
+    public static final Imx RENAME              = loadImx( "circle-2.png" );
+    public static final Imx ACTIVE              = loadImx( "circle.png" );
+    public static final Imx INACTIVE            = loadImx( "circle-2.png" );
+    public static final Imx RUNNING             = loadImx( "tick.png" );
+    public static final Imx STOPPED             = loadImx( "none.png" );
     public static final Imx PLUS                = loadImx( "plus.png" );
     public static final Imx MINUS               = loadImx( "minus.png" );
     public static final Imx REVERT              = loadImx( "revert.png" );

@@ -3,8 +3,6 @@ package org.khee.kheetun.client.config;
 import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -97,14 +95,6 @@ public class Profile implements Serializable {
     }
 
     public int hashCode() {
-        
-        Collections.sort( this.getTunnels(), new Comparator<Tunnel>() {
-            @Override
-            public int compare(Tunnel o1, Tunnel o2) {
-                
-                return o1.hashCode() > o2.hashCode() ? +1 : o1.hashCode() < o2.hashCode() ? -1 : 0;
-            }
-        });
         
         return new HashCodeBuilder( 13, 37 )
             .append( this.getTunnels().hashCode() )

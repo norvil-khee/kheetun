@@ -29,6 +29,11 @@ public class AutostartDaemon implements Runnable {
         this.tunnel.setAutostartDaemon( this );
     }
     
+    public void setTunnel( Tunnel tunnel ) {
+        
+        this.tunnel = tunnel;
+    }
+    
     public void start() {
         
         Thread daemon = new Thread( this, "kheetund-autostart-daemon-" + this.tunnel.getAlias().toLowerCase() );
@@ -83,7 +88,7 @@ public class AutostartDaemon implements Runnable {
         
         logger.info( "Started autostart daemon for tunnel " + this.tunnel.getAlias() );
         
-        while( this.tunnel.getAutoState() != Tunnel.STATE_AUTO_OFF && this.tunnel.getState() == Tunnel.STATE_STOPPED ) {
+        while( this.tunnel.getAutoState() != Tunnel.STATE_AUTO_OFF && this.tunnel.getState() != Tunnel.STATE_RUNNING ) {
             
             this.checkAutostart();
 
@@ -94,6 +99,11 @@ public class AutostartDaemon implements Runnable {
             } catch ( InterruptedException e ) {
                 e.printStackTrace();
             }
+        }
+        
+        if ( this.tunnel.getAutostartDaemon() != null && this.tunnel.getAutostartDaemon().equals( this ) ) {
+            
+            this.tunnel.setAutostartDaemon( null );
         }
         
         logger.info( "Stopped autostart daemon for tunnel " + this.tunnel.getAlias() );

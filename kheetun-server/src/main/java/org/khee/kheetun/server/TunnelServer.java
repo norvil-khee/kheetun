@@ -94,8 +94,23 @@ public class TunnelServer implements Runnable {
                 
             } while ( ( receive.getCommand() != Protocol.QUIT && receive.getCommand() != Protocol.DISCONNECT ) ); 
             
-            logger.info( "Client at " + clientSocket.getInetAddress().toString() + " disconnected" );
             
+        } catch ( SocketException eSocket ) {
+            
+            logger.info( "Client at " + clientSocket.getInetAddress().toString() + " got disconnected uncleanly: " + eSocket.getMessage() );
+            
+        } catch ( IOException eIO ) {
+            
+            logger.info( "Client at " + clientSocket.getInetAddress().toString() + " got disconnected uncleanly: " + eIO.getMessage() );
+        } catch ( Exception e ) {
+            
+            e.printStackTrace();
+            logger.error( "", e );
+        }
+        
+        logger.info( "Client at " + clientSocket.getInetAddress().toString() + " disconnected" );
+        
+        try {
             if ( commOut != null ) {
                 commOut.close();
             }
@@ -106,19 +121,11 @@ public class TunnelServer implements Runnable {
             if ( clientSocket != null ) {
                 clientSocket.close();
             }
-            
-        } catch ( SocketException eSocket ) {
-            
-            logger.error( "Client at " + clientSocket.getInetAddress().toString() + " got disconnected uncleanly: " + eSocket.getMessage() );
-            
         } catch ( IOException eIO ) {
             
-            logger.error( "Client at " + clientSocket.getInetAddress().toString() + " got disconnected uncleanly: " + eIO.getMessage() );
-        } catch ( Exception e ) {
-            
-            e.printStackTrace();
-            logger.error( e.getMessage() );
+            logger.error( "Error while closing connection: " + eIO.getLocalizedMessage() );
         }
+
     }
     
     private void handle( Protocol receive ) {
@@ -130,6 +137,8 @@ public class TunnelServer implements Runnable {
             int indexTunnel = TunnelManager.get( receive.getUser() ).getKnownTunnels().indexOf( receive.getTunnel() );
             if ( indexTunnel != -1 ) {
                 receive.setTunnel( TunnelManager.get( receive.getUser() ).getKnownTunnels().get( indexTunnel ) );
+            } else {
+                logger.warn( "Got unknown tunnel from Protocol: " + receive.getTunnel().getAlias() + " (" + receive.getTunnel().toDebugString() + ")" );
             }
         }
         
@@ -152,6 +161,11 @@ public class TunnelServer implements Runnable {
             TunnelManager.get( receive.getUser() ).setConfig( receive.getConfig() );
             logger.trace( "Received config: " + receive.getConfig() );
             break;
+            
+        case Protocol.TUNNEL:
+            
+            this.send( new Protocol( Protocol.TUNNEL, receive.getTunnel() ) );
+            break;
 
         case Protocol.START:
             
@@ -166,6 +180,11 @@ public class TunnelServer implements Runnable {
         case Protocol.STOPALL:
             
             TunnelManager.get( receive.getUser() ).stopAllTunnels();
+            break;
+            
+        case Protocol.AUTOALL:
+            
+            TunnelManager.get( receive.getUser() ).autostartAllTunnels();
             break;
             
         case Protocol.TOGGLE:

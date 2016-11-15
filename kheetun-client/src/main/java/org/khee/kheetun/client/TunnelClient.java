@@ -7,7 +7,7 @@ import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.ArrayList;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Semaphore;
 
 import javax.swing.JOptionPane;
@@ -15,12 +15,12 @@ import javax.swing.JPasswordField;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.khee.kheetun.server.comm.Protocol;
 import org.khee.kheetun.client.config.Config;
 import org.khee.kheetun.client.config.ConfigManager;
 import org.khee.kheetun.client.config.ConfigManagerListener;
 import org.khee.kheetun.client.config.GlobalConfig;
 import org.khee.kheetun.client.config.Tunnel;
+import org.khee.kheetun.server.comm.Protocol;
 
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
@@ -38,7 +38,7 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
     private static TunnelClient             instance;
     private Thread                          client;
     private boolean                         clientRunning;
-    private ArrayList<TunnelClientListener> listeners       = new ArrayList<>();
+    private CopyOnWriteArrayList<TunnelClientListener> listeners       = new CopyOnWriteArrayList<TunnelClientListener>();
     private Integer                         port            = -1;
     private Semaphore                       sender          = new Semaphore( 1 );
     
@@ -103,7 +103,7 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
                     try {
                         
                         receive = (Protocol)commIn.readObject();
-                        handle( receive );
+                        this.handle( receive );
                         
                     } catch ( ClassNotFoundException e ) {
                         logger.error( "Class error: " + e.getMessage() );
@@ -122,7 +122,7 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
                 logger.error( "Socket IO error: " + eIO.getMessage() + ", disconnected" );
             } catch ( Exception e ) {
                 
-                logger.warn( e.getMessage() );
+                logger.warn( "", e );
             }
             
             try {
@@ -200,6 +200,11 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
     public static void sendQuit() {
         
         instance.send( new Protocol( Protocol.QUIT ) );
+    }
+    
+    public static void sendQueryTunnel( Tunnel tunnel ) {
+        
+        instance.send( new Protocol( Protocol.TUNNEL, tunnel ) );
     }
     
     public static void sendStartTunnel( Tunnel tunnel ) {

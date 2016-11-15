@@ -3,8 +3,6 @@ package org.khee.kheetun.client.config;
 import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -265,7 +263,12 @@ public class Tunnel implements Serializable {
     }
 
     public void setPingChecker(PingChecker pingChecker) {
+        
         this.pingChecker = pingChecker;
+        
+        if ( pingChecker != null ) {
+            pingChecker.setTunnel( this );
+        }
     }
 
     public AutostartDaemon getAutostartDaemon() {
@@ -273,18 +276,16 @@ public class Tunnel implements Serializable {
     }
 
     public void setAutostartDaemon(AutostartDaemon autostartDaemon) {
+        
         this.autostartDaemon = autostartDaemon;
+        
+        if ( autostartDaemon != null ) {
+            
+            autostartDaemon.setTunnel( this );
+        }
     }
     
     public int hashCode() {
-        
-        Collections.sort( this.getForwards(), new Comparator<Forward>() {
-            @Override
-            public int compare(Forward o1, Forward o2) {
-                
-                return o1.hashCode() > o2.hashCode() ? +1 : o1.hashCode() < o2.hashCode() ? -1 : 0;
-            }
-        });
         
         return new HashCodeBuilder( 13, 37 )
             .append( this.getUser() )

@@ -26,6 +26,12 @@ public class PingChecker implements Runnable {
         this.tunnel         = tunnel;
         
         this.tunnel.setPingChecker( this );
+        this.tunnel.setPingFailures( 0 );
+    }
+    
+    public void setTunnel( Tunnel tunnel ) {
+        
+        this.tunnel = tunnel;
     }
     
     public void start() {
@@ -54,7 +60,7 @@ public class PingChecker implements Runnable {
            
         } catch ( JSchException e ) {
             
-            this.tunnel.setPingFailures( tunnel.getPingFailures() + 1 );
+            this.tunnel.increasePingFailures();
             logger.debug( "PING FAIL (ERROR) ( " + tunnel.getPingFailures() + "/3 ): " + this.tunnel.getAlias() );
         }
         
@@ -65,9 +71,9 @@ public class PingChecker implements Runnable {
     @Override
     public void run() {
         
-        logger.info( "Started ping daemon for tunnel " + this.tunnel.getAlias() );
+        logger.info( "Started ping daemon[" + this + "] for tunnel " + this.tunnel.getAlias() );
         
-        while( this.tunnel.getState() == Tunnel.STATE_RUNNING && this.tunnel.getSession() != null ) {
+        while( this.tunnel.getState() == Tunnel.STATE_RUNNING && this.tunnel.getSession() != null && this.tunnel.getPingFailures() < 3 ) {
             
             this.checkPing();
                 
@@ -81,8 +87,11 @@ public class PingChecker implements Runnable {
 
         }
         
-        this.tunnel.setPingChecker( null );
+        if ( this.tunnel.getPingChecker() != null && this.tunnel.getPingChecker().equals( this ) ) {
+            
+            this.tunnel.setPingChecker( null );
+        }
         
-        logger.info( "Stopped ping daemon for tunnel " + this.tunnel.getAlias() );
+        logger.info( "Stopped ping daemon[ " + this + "] for tunnel " + this.tunnel.getAlias() );
     }
 }

@@ -31,8 +31,6 @@ public class TunnelManager {
     
     private static HashMap<String, TunnelManager> instances = new HashMap<String, TunnelManager>();
     
-    private JSch                        jsch                = new JSch();
-    private IdentityRepository          identities;
     private TunnelServer                server              = new TunnelServer();
     private Config                      config              = new Config();
     private String                      id;
@@ -63,14 +61,16 @@ public class TunnelManager {
     public void setConfig( Config config ) {
         
         if ( config == null ) {
-            logger.info( "Got null config - ignoring" );
+            logger.debug( "Got null config - ignoring" );
             return;
         }
         
-        if ( this.config.equals( config ) ) {
-            logger.info( "Got same config as before - ignoring" );
-            return;
-        }
+//        if ( this.config.equals( config ) ) {
+//            logger.debug( "Got same config as before - ignoring" );
+//            return;
+//        }
+        
+        logger.info( "Updating configuration for " + this.id );
         
         // merge configurations:
         //
@@ -127,21 +127,34 @@ public class TunnelManager {
         
         this.config = config;
         
-        // setup autostarting
+        // setup autostarting, send initial status
         //
         this.config.loopTunnels( true, this.config.new TunnelLoop() {
             
             @Override
             public void execute(Tunnel tunnel) {
                 
-                if ( tunnel.getAutostart() && tunnel.getSession() == null && tunnel.getAutostartDaemon() == null ) { 
+                if ( tunnel.getAutostart() ) { 
                     
-                    logger.info( "Setup autostart checker for tunnel " + tunnel.getAlias() );
-                    TunnelManager.this.enableAutostart( tunnel );
+                    if ( tunnel.getAutostartDaemon() == null ) {
+                        logger.info( "Setup autostart checker for tunnel " + tunnel.getAlias() );
+                        TunnelManager.this.enableAutostart( tunnel );
+                    }
+                    
+                } else {
+                    
+                    if ( tunnel.getAutostartDaemon() != null ) {
+                        
+                        logger.info( "Removing autostart checker for tunnel " + tunnel.getAlias() );
+                        TunnelManager.this.disableAutostart( tunnel );
+                        
+                    } else {
+                        
+                        server.send( new Protocol( Protocol.TUNNEL, tunnel ) );
+                    }
                 }
-            }
+           }
         } );
-        
     }
     
     public Config getConfig() {
@@ -164,11 +177,13 @@ public class TunnelManager {
         return this.server;
     }
     
-    private boolean setupPublickeyAuth( Tunnel tunnel ) {
+    private JSch setupPublickeyAuth( Tunnel tunnel ) {
+        
+        JSch jsch;
         
         try {
             
-            jsch.removeAllIdentity();
+            jsch = new JSch();
             
             if ( tunnel.getPassPhrase() != null ) {
                 
@@ -180,29 +195,48 @@ public class TunnelManager {
         } catch ( JSchException e ) {
             
             this.failTunnel( tunnel, "Failed to setup session using public key auth: " + e.getMessage() );
-            return false;
+            return null;
         }
         
-        return true;
+        return jsch;
     }
 
-    private boolean setupSshAgentAuth( Tunnel tunnel ) {
+    private JSch setupSshAgentAuth( Tunnel tunnel ) {
+        
+        JSch jsch;
         
         try {
+            
+            jsch = new JSch();
+            
             JNAUSocketFactory udsf = new JNAUSocketFactory();
             Connector con = new SSHSocketAgentConnector( udsf, tunnel.getSshAgentSocket() );
 
-            identities = new RemoteIdentityRepository( con );
+            IdentityRepository identities = new RemoteIdentityRepository( con );
 
             jsch.setIdentityRepository( identities );
             
         } catch ( AgentProxyException eAgent ) {
             
             this.failTunnel( tunnel, "Failed to setup session using ssh agent auth: " + eAgent.getMessage() );
-            return false;
+            return null;
         }
         
-        return true;
+        return jsch;
+    }
+    
+    public void autostartAllTunnels() {
+        
+        this.config.loopTunnels( true, this.config.new TunnelLoop() {
+        
+            @Override
+            public void execute(Tunnel tunnel) {
+                
+                if ( tunnel.getAutostart() ) {
+                    TunnelManager.this.enableAutostart( tunnel );
+                }
+            }
+        });
     }
     
     public void stopAllTunnels() {
@@ -295,13 +329,6 @@ public class TunnelManager {
             return;
         }
         
-        // reset fail count if started manually, also reenable autostart
-        //
-        if ( manually ) {
-            
-            tunnel.setFailures( 0 );
-        }
-        
         logger.info( "Starting tunnel: " + tunnel.getAlias() );
         
         tunnel.setError( null );
@@ -314,14 +341,16 @@ public class TunnelManager {
         
         try {
             
+            JSch jsch;
+            
             if ( tunnel.getSshKeyString().length() > 0 ) {
-                if ( ! setupPublickeyAuth( tunnel ) ) {
-                    return;
-                }
+                jsch = setupPublickeyAuth( tunnel );
             } else {
-                if ( ! setupSshAgentAuth( tunnel ) ) {
-                    return;
-                }
+                jsch = setupSshAgentAuth( tunnel );
+            }
+            
+            if ( jsch == null ) {
+                return;
             }
             
             session = jsch.getSession( tunnel.getUser(), tunnel.getHostname(), tunnel.getPort() );
@@ -368,19 +397,18 @@ public class TunnelManager {
             return;
         }
         
+        tunnel.setFailures( 0 );
+        tunnel.setSession( session );
+        tunnel.setState( Tunnel.STATE_RUNNING );
+
         if ( manually ) {
             tunnel.setRestart( true );
             tunnel.setAutoState( Tunnel.STATE_AUTO_ON );
             this.server.send( new Protocol( Protocol.TUNNEL, tunnel ) );
         }
         
-        tunnel.setSession( session );
-        tunnel.setState( Tunnel.STATE_RUNNING );
-        
-        if ( tunnel.getPingChecker() == null ) {
-            PingChecker pingChecker = new PingChecker( this, tunnel );
-            pingChecker.start();
-        }
+        PingChecker pingChecker = new PingChecker( this, tunnel );
+        pingChecker.start();
 
         logger.info( "Started tunnel: " + tunnel.getAlias() );
         
@@ -392,6 +420,7 @@ public class TunnelManager {
         
         tunnel.increaseFailures();
         tunnel.setError( error );
+        logger.error( "Tunnel " + tunnel.getAlias() + " failed: " + error );
         this.server.send( new Protocol( Protocol.TUNNEL, tunnel ) );
         
         if ( tunnel.getFailures() >= tunnel.getMaxFailures() ) {
@@ -407,10 +436,12 @@ public class TunnelManager {
     public void enableAutostart( Tunnel tunnel ) {
         
         tunnel.setRestart( true );
+        tunnel.setFailures( 0 );
+        tunnel.setError( null );
         tunnel.setAutoState( Tunnel.STATE_AUTO_ON );
         this.server.send( new Protocol( Protocol.TUNNEL, tunnel ) );
         
-        if ( tunnel.getAutostartDaemon() == null ) {
+        if ( tunnel.getAutostartDaemon() == null && tunnel.getState() != Tunnel.STATE_RUNNING ) {
             AutostartDaemon autostartDaemon = new AutostartDaemon( this, tunnel );
             autostartDaemon.start();
         }
@@ -430,6 +461,7 @@ public class TunnelManager {
             if ( tunnel.getPingFailures() >= 3 ) {
                 
                 this.failTunnel( tunnel, "Ping failure" );
+                this.stopTunnel( tunnel, false );
                 
             } else {
                 

@@ -3,8 +3,6 @@ package org.khee.kheetun.client.config;
 import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 
 import javax.xml.bind.JAXBContext;
@@ -56,14 +54,6 @@ public class Config implements Serializable {
     
     public int hashCode() {
         
-        Collections.sort( this.getProfiles(), new Comparator<Profile>() {
-            @Override
-            public int compare(Profile o1, Profile o2) {
-                
-                return o1.hashCode() > o2.hashCode() ? +1 : o1.hashCode() < o2.hashCode() ? -1 : 0;
-            }
-        });
-        
         return new HashCodeBuilder( 13, 37 )
             .append( this.getProfiles().hashCode() )
             .hashCode();
@@ -114,8 +104,6 @@ public class Config implements Serializable {
                         
                         profile = new Profile();
                         profile.addError( error );
-                        profile.setConfigFile( profileFile );
-                        profile.setModified( profileFile.lastModified() );
                     }
                     
                     profile.setConfigFile( profileFile );
@@ -152,12 +140,15 @@ public class Config implements Serializable {
             
             for ( Profile profile : this.profiles ) {
                 
-                String filename = profile.getConfigFile() != null ? profile.getConfigFile().getName() : profile.getName().toLowerCase() + ".xml";
+                if ( profile.getErrors().isEmpty() ) {
                 
-                File file = new File( System.getProperty( "user.home") + "/.kheetun/kheetun.d/" + filename );
-            
-                m.setProperty( Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE );
-                m.marshal( profile, file );
+                    String filename = profile.getConfigFile() != null ? profile.getConfigFile().getName() : profile.getName().toLowerCase() + ".xml";
+                    
+                    File file = new File( System.getProperty( "user.home") + "/.kheetun/kheetun.d/" + filename );
+                
+                    m.setProperty( Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE );
+                    m.marshal( profile, file );
+                }
             }
             
         } catch ( JAXBException e ) {

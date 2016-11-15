@@ -3,6 +3,7 @@ package org.khee.kheetun.client.gui;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Insets;
@@ -232,14 +233,21 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
             for ( Profile profile : profiles ) {
                 
                 KTMenuItem itemProfile = new KTMenuItem( Imx.PROFILE, profile.getName() ) {
-                  
+                   
                     @Override
-                    public void leftClick(MouseEvent e) {
+                    public void mouseClicked(MouseEvent e) {
                         
-                        profile.setActive( ! profile.isActive() );
-                        ConfigManager.getConfig().save();
+                        if ( e.getClickCount() == 2 ) {
+
+                            this.setInfo( null );
+                            profile.setActive( ! profile.isActive() );
+                            ConfigManager.getConfig().save();
+                        }
                     }
                 };
+                
+                itemProfile.setInfo( "Doubleclick to " + ( profile.isActive() ? "deactivate" : "activate" ) + "Profile" );
+                
                 itemProfile.setStatus( "[" + profile.getConfigFile().getName() + "]", new Color( 0, 100, 0 ) );
                 
                 if ( ! profile.isActive() ) {
@@ -258,7 +266,7 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
                     message += "</body></html>";
                     
                     itemProfile.setMessage( message );
-                    itemProfile.setStatus( "[" + profile.getConfigFile() + "]", Color.RED );
+                    itemProfile.setStatus( "[" + profile.getConfigFile().getName() + "]", Color.RED );
                     
                     TrayManager.blink();
                 }
@@ -274,7 +282,7 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
                         if ( ! profile.getErrors().isEmpty() ) {
                             
                             itemTunnel.setActive( false );
-                        }
+                        } 
                         
                         panelProfiles.add( itemTunnel );
                     }
@@ -548,6 +556,10 @@ class KTMenuItem extends JPanel implements MouseListener {
         return this.text;
     }
     
+    public JLabel getInfoIcon() {
+        return this.iconInfo;
+    }
+    
     public void setActive( boolean active ) {
         this.active = active;
         
@@ -571,17 +583,26 @@ class KTMenuItem extends JPanel implements MouseListener {
         iconRight.setVisible( ! state );
     }
     
+    public boolean isProcessing() {
+        
+        return processing.isVisible();
+    }
+    
     public void setMessage( String message ) {
         
         if ( message == null ) {
             this.message.setText( null );
             this.iconCenter.setIcon( Imx.NONE );
             TrayManager.clearMessage( id );
+            this.windowInfo.setVisible( false );
         } else {
-            this.message.setText( message );
-            this.iconCenter.setIcon( Imx.WARNING );
-            TrayManager.setMessage( id, message );
-            TrayManager.blink();
+            
+            if ( ! message.equals( this.message.getText() ) ) {
+                this.message.setText( message );
+                this.iconCenter.setIcon( Imx.WARNING );
+                TrayManager.setMessage( id, message );
+                TrayManager.blink();
+            }
         }
     }
     
@@ -590,6 +611,7 @@ class KTMenuItem extends JPanel implements MouseListener {
         if ( info == null ) {
             this.info.setText( null );
             this.iconInfo.setIcon( Imx.NONE );
+            this.windowInfo.setVisible( false );
         } else {
             this.info.setText( info );
             this.iconInfo.setIcon( Imx.INFO );
@@ -733,15 +755,18 @@ class TunnelMenuItem extends KTMenuItem implements TunnelClientListener {
         this.iconRight.setIcon( Imx.NONE );
         this.text.setText( tunnel.getAlias() );
         
-        this.setStatus( "inactive", Color.LIGHT_GRAY );
+        this.setStatus( "unknown", Color.LIGHT_GRAY );
         
         TunnelClient.addTunnelClientListener( this );
+        TunnelClient.sendQueryTunnel( this.tunnel );
     }
     
     @Override
     public void leftClick( MouseEvent e ) {
         
-        TunnelClient.sendToggle( this.tunnel );
+        if ( ! this.isProcessing() ) {
+            TunnelClient.sendToggle( this.tunnel );
+        }
     }
     
     @Override
@@ -751,13 +776,17 @@ class TunnelMenuItem extends KTMenuItem implements TunnelClientListener {
 
             text.setForeground( Color.BLACK );
             this.setActive( true );
+            TunnelClient.sendQueryTunnel( this.tunnel );
+            
         } else {
             
             text.setForeground( Color.LIGHT_GRAY );
             this.iconRight.setIcon( Imx.NONE );
             this.setProcessing( false );
             this.setMessage( null );
+            this.setStatus( "unknown", Color.LIGHT_GRAY );
             this.setActive( false );
+            this.setInfo( null );
         }
     }
     
@@ -768,7 +797,7 @@ class TunnelMenuItem extends KTMenuItem implements TunnelClientListener {
             
             if ( tunnel.getError() != null ) {
                 
-                this.setMessage( tunnel.getError() );
+                this.setMessage( tunnel.getError() + ", failures: " + tunnel.getFailures() );
             } else { 
                 this.setMessage( null );
             }
@@ -782,7 +811,7 @@ class TunnelMenuItem extends KTMenuItem implements TunnelClientListener {
             
             case Tunnel.STATE_RUNNING:
                 
-                iconRight.setIcon( Imx.ACTIVE );
+                iconRight.setIcon( Imx.RUNNING );
                 this.setProcessing( false );
 
                 if ( tunnel.getPingFailures() > 0 ) {
@@ -799,7 +828,7 @@ class TunnelMenuItem extends KTMenuItem implements TunnelClientListener {
                 
             case Tunnel.STATE_STOPPED:
                 
-                iconRight.setIcon( Imx.INACTIVE );
+                iconRight.setIcon( Imx.STOPPED );
                 this.setProcessing( false );
                 this.setStatus( "inactive", Color.LIGHT_GRAY );
                 break;
