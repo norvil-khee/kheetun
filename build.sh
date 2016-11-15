@@ -2,42 +2,32 @@
 #
 # dirty dirty little package script
 #
-mkdir kheetun 2> /dev/null
-sudo rm -rf kheetun/*
-mkdir kheetun/lib
-mkdir kheetun/etc
-mkdir kheetun/log
-mkdir kheetun/bin
+sudo mkdir _build 2> /dev/null
+sudo rm -rf _build/*
+mkdir _build/lib
+mkdir _build/etc
+mkdir _build/log
+mkdir _build/bin
 
-version=`grep public.*VERSION kheetun-client/src/main/java/org/khee/kheetun/client/kheetun.java | perl -p -e 's/^.*(\d+.\d+.\d+).*$/$1/g'`
+version=`grep public.*VERSION src/main/java/org/khee/kheetun/Kheetun.java | perl -p -e 's/^.*(\d+.\d+.\d+).*$/$1/g'`
 
 echo "Building kheetun v$version" 
 
-cd kheetun-client
 mvn clean
 mvn package
-mvn install
-cd ..
 
-cd kheetun-server 
-mvn clean
-mvn package
-cd ..
+cp -r target/lib/* _build/lib
 
-cp -r kheetun-*/target/lib/* kheetun/lib
-cp -r kheetun-*/target/*jar kheetun/bin
+cp src/main/resources/kheetund.rc _build/etc/kheetund.rc
+cp src/main/resources/kheetund.default _build/etc/kheetund.default
+cp src/main/resources/kheetun.desktop _build/etc/kheetun.desktop
+cp src/main/resources/kheetun.png _build/etc/kheetun.png
+cp LICENSE _build/etc
+cp CHANGELOG.md _build/etc
 
-cp kheetun-server/src/main/resources/kheetund.rc kheetun/etc/kheetund.rc
-cp kheetun-server/src/main/resources/kheetund.default kheetun/etc/kheetund.default
-cp kheetun-client/src/main/resources/kheetun.desktop kheetun/etc/kheetun.desktop
-cp kheetun-client/src/main/resources/kheetun.png kheetun/etc/kheetun.png
-cp kheetun-server/LICENSE kheetun/etc
-cp CHANGELOG.md kheetun/etc/CHANGELOG.md
+mv target/kheetun-*.jar _build/bin/kheetun.jar
 
-mv kheetun/bin/client*.jar kheetun/bin/kheetun-client.jar
-mv kheetun/bin/server*.jar kheetun/bin/kheetun-server.jar
-
-cd kheetun
+cd _build
 
 cat << EOF > kheetun.list
 %product kheetun, pretty friendly ssh tunnel manager
@@ -87,7 +77,7 @@ find . -type f | sed 's/^\..//' | grep -v kheetun.list | grep -v kheetund.rc | g
 done
 
 
-cp ../kheetun-client/src/main/resources/kheetun.sh bin/kheetun
+cp ../src/main/resources/kheetun.sh bin/kheetun
 echo "f 755 root root /opt/kheetun/bin/kheetun ./bin/kheetun" >> kheetun.list
 
 sudo epm -f deb -nsm kheetun
