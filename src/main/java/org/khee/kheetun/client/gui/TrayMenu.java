@@ -25,7 +25,6 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JWindow;
-import javax.swing.ToolTipManager;
 import javax.swing.UIDefaults;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
@@ -58,8 +57,6 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
     @SuppressWarnings("serial")
     public TrayMenu() {
         
-        ToolTipManager.sharedInstance().setInitialDelay( 0 );
-        
         this.setName( "kheetun" );
         this.setIconImage( Imx.CONFIG.getImage() );
         
@@ -76,7 +73,6 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
         
         labelConnected  = new KTMenuItem( Imx.NONE, "Daemon:" );
         labelConnected.setStatus( "disconnected", Color.RED );
-        labelConnected.setActive( false );
         
         labelConfig     = new KTMenuItem( Imx.NONE, "Global config:" );
         labelConfig.setStatus( "none", Color.LIGHT_GRAY );
@@ -121,7 +117,6 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
             @Override
             public void leftClick(MouseEvent e) {
                 
-                ConfigManager.getConfig().save();
                 System.exit( 0 );
             }
         };
@@ -170,7 +165,6 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
         panelMain.add( itemExit );
     }
     
-    @SuppressWarnings("serial")
     public void buildMenu() {
         
         TrayManager.clearMessages();
@@ -231,21 +225,7 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
             
             for ( Profile profile : profiles ) {
                 
-                KTMenuItem itemProfile = new KTMenuItem( Imx.PROFILE, profile.getName() ) {
-                   
-                    @Override
-                    public void mouseClicked(MouseEvent e) {
-                        
-                        if ( e.getClickCount() == 2 ) {
-
-                            this.setInfo( null );
-                            profile.setActive( ! profile.isActive() );
-                            ConfigManager.getConfig().save();
-                        }
-                    }
-                };
-                
-                itemProfile.setInfo( "Doubleclick to " + ( profile.isActive() ? "deactivate" : "activate" ) + "Profile" );
+                KTMenuItem itemProfile = new KTMenuItem( Imx.PROFILE, profile.getName() );
                 
                 itemProfile.setStatus( "[" + profile.getConfigFile().getName() + "]", new Color( 0, 100, 0 ) );
                 
@@ -376,9 +356,7 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
     }
     
     @Override
-    public void TunnelClientTunnelStatus(Tunnel tunnel) {
-        // TODO Auto-generated method stub
-        
+    public void TunnelClientTunnelStatus( Tunnel tunnel ) {
     }
     
     @Override
@@ -764,6 +742,7 @@ class TunnelMenuItem extends KTMenuItem implements TunnelClientListener {
     public void leftClick( MouseEvent e ) {
         
         if ( ! this.isProcessing() ) {
+            this.setProcessing( true );
             TunnelClient.sendToggle( this.tunnel );
         }
     }
@@ -805,7 +784,7 @@ class TunnelMenuItem extends KTMenuItem implements TunnelClientListener {
             
             case Tunnel.STATE_STARTING:
                 this.setProcessing( true );
-                this.setStatus( "starting[" + ( tunnel.getFailures() + 1 ) + "/" + tunnel.getMaxFailures() + "]", Color.GRAY );
+                this.setStatus( "starting[" + ( tunnel.getFailures() + 1 ) + "]", Color.GRAY );
                 break;
             
             case Tunnel.STATE_RUNNING:

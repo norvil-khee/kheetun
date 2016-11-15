@@ -16,22 +16,29 @@ public class AutostartDaemon implements Runnable {
     
     private TunnelManager                   tunnelManager;
     private Tunnel                          tunnel;
+    private String                          id;
     
     /**
      * ping live sessions
      * ping autostarting dead sessions 
      */
     public AutostartDaemon( TunnelManager tunnelManager, Tunnel tunnel ) {
+        
+        if ( tunnel.getAutostartDaemon() != null ) {
+            logger.info( "Restarting autostart daemon for tunnel "  +tunnel.getAlias() );
+            tunnel.getAutostartDaemon().stop();
+        }
 
         this.tunnel         = tunnel;
         this.tunnelManager  = tunnelManager;
+        this.id             = tunnel.getAlias();
         
         this.tunnel.setAutostartDaemon( this );
     }
     
-    public void setTunnel( Tunnel tunnel ) {
+    public void stop() {
         
-        this.tunnel = tunnel;
+        this.tunnel = null;
     }
     
     public void start() {
@@ -78,6 +85,8 @@ public class AutostartDaemon implements Runnable {
             logger.trace( "Host " + tunnel.getHostname() + " is not reachable (IO error: " + eIO.getMessage() + ")" );
             tunnel.setAutoState( Tunnel.STATE_AUTO_WAIT );
             tunnel.setInfo( tunnel.getHostname() + ": IO error: " + eIO.getLocalizedMessage() );
+        
+        } catch ( NullPointerException eNull ) {
         }
         
         this.tunnelManager.updateAutostart( this.tunnel );
@@ -86,9 +95,9 @@ public class AutostartDaemon implements Runnable {
     @Override
     public void run() {
         
-        logger.info( "Started autostart daemon for tunnel " + this.tunnel.getAlias() );
+        logger.info( "Started autostart daemon for tunnel " + this.id );
         
-        while( this.tunnel.getAutoState() != Tunnel.STATE_AUTO_OFF && this.tunnel.getState() != Tunnel.STATE_RUNNING ) {
+        while( this.tunnel != null && this.tunnel.getAutoState() != Tunnel.STATE_AUTO_OFF && this.tunnel.getState() != Tunnel.STATE_RUNNING ) {
             
             this.checkAutostart();
 
@@ -106,6 +115,6 @@ public class AutostartDaemon implements Runnable {
             this.tunnel.setAutostartDaemon( null );
         }
         
-        logger.info( "Stopped autostart daemon for tunnel " + this.tunnel.getAlias() );
+        logger.info( "Stopped autostart daemon for tunnel " + this.id );
     }
 }

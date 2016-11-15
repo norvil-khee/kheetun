@@ -265,10 +265,6 @@ public class Tunnel implements Serializable {
     public void setPingChecker(PingChecker pingChecker) {
         
         this.pingChecker = pingChecker;
-        
-        if ( pingChecker != null ) {
-            pingChecker.setTunnel( this );
-        }
     }
 
     public AutostartDaemon getAutostartDaemon() {
@@ -278,11 +274,6 @@ public class Tunnel implements Serializable {
     public void setAutostartDaemon(AutostartDaemon autostartDaemon) {
         
         this.autostartDaemon = autostartDaemon;
-        
-        if ( autostartDaemon != null ) {
-            
-            autostartDaemon.setTunnel( this );
-        }
     }
     
     public int hashCode() {

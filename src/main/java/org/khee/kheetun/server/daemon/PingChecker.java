@@ -15,23 +15,30 @@ public class PingChecker implements Runnable {
     
     private Tunnel          tunnel;
     private TunnelManager   tunnelManager;
+    private String          id;
     
     /**
      * ping live sessions
      * ping autostarting dead sessions 
      */
     public PingChecker( TunnelManager tunnelManager, Tunnel tunnel ) {
-
+        
+        if ( tunnel.getPingChecker() != null ) {
+            logger.info( "Restarting ping checker for tunnel "  +tunnel.getAlias() );
+            tunnel.getPingChecker().stop();
+        }
+        
         this.tunnelManager  = tunnelManager;
         this.tunnel         = tunnel;
+        this.id             = tunnel.getAlias();
         
         this.tunnel.setPingChecker( this );
         this.tunnel.setPingFailures( 0 );
     }
     
-    public void setTunnel( Tunnel tunnel ) {
+    public void stop() {
         
-        this.tunnel = tunnel;
+        this.tunnel = null;
     }
     
     public void start() {
@@ -62,7 +69,9 @@ public class PingChecker implements Runnable {
             
             this.tunnel.increasePingFailures();
             logger.debug( "PING FAIL (ERROR) ( " + tunnel.getPingFailures() + "/3 ): " + this.tunnel.getAlias() );
-        }
+            
+        } catch ( NullPointerException eNull ) {
+        }        
         
         this.tunnelManager.updatePing( this.tunnel );
     }
@@ -71,9 +80,9 @@ public class PingChecker implements Runnable {
     @Override
     public void run() {
         
-        logger.info( "Started ping daemon[" + this + "] for tunnel " + this.tunnel.getAlias() );
+        logger.info( "Started ping daemon[" + this + "] for tunnel " + this.id );
         
-        while( this.tunnel.getState() == Tunnel.STATE_RUNNING && this.tunnel.getSession() != null && this.tunnel.getPingFailures() < 3 ) {
+        while( this.tunnel != null && this.tunnel.getState() == Tunnel.STATE_RUNNING && this.tunnel.getSession() != null && this.tunnel.getPingFailures() < 3 ) {
             
             this.checkPing();
                 
@@ -87,11 +96,6 @@ public class PingChecker implements Runnable {
 
         }
         
-        if ( this.tunnel.getPingChecker() != null && this.tunnel.getPingChecker().equals( this ) ) {
-            
-            this.tunnel.setPingChecker( null );
-        }
-        
-        logger.info( "Stopped ping daemon[ " + this + "] for tunnel " + this.tunnel.getAlias() );
+        logger.info( "Stopped ping daemon[ " + this + "] for tunnel " + this.id );
     }
 }

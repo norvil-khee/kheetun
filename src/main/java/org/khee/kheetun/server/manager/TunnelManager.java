@@ -269,7 +269,7 @@ public class TunnelManager {
         }
     }
     
-    public void stopTunnel( Tunnel tunnel, boolean manually ) {
+    public synchronized void stopTunnel( Tunnel tunnel, boolean manually ) {
         
         if ( tunnel.getState() != Tunnel.STATE_RUNNING ) {
             logger.info( "Tunnel " + tunnel.getAlias() + " is not started (state=" + tunnel.getState() + "), will not stop" );
@@ -322,7 +322,7 @@ public class TunnelManager {
         server.send( new Protocol( Protocol.TUNNEL, tunnel ) );
     }
     
-    public void startTunnel( Tunnel tunnel, boolean manually ) {
+    public synchronized void startTunnel( Tunnel tunnel, boolean manually ) {
 
         if ( tunnel.getState() != Tunnel.STATE_STOPPED ) {
             logger.info( "Tunnel " + tunnel.getAlias() + " is not stopped (state=" + tunnel.getState() + "), will not start" );
@@ -350,6 +350,9 @@ public class TunnelManager {
             }
             
             if ( jsch == null ) {
+                
+                tunnel.setState( Tunnel.STATE_STOPPED );
+                server.send( new Protocol( Protocol.TUNNEL, tunnel ) );
                 return;
             }
             
