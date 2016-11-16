@@ -90,7 +90,7 @@ public class TunnelManager {
             }
         } );
         
-        knownTunnels.clear();
+        this.knownTunnels.clear();
         
         config.loopTunnels( true, config.new TunnelLoop() {
             
@@ -107,10 +107,25 @@ public class TunnelManager {
                     tunnel.setRestart( oldTunnel.getRestart() );
                     tunnel.setPingFailures( oldTunnel.getPingFailures() );
                     tunnel.setFailures( oldTunnel.getFailures() );
-                    tunnel.setPingChecker( oldTunnel.getPingChecker() );
-                    tunnel.setAutostartDaemon( oldTunnel.getAutostartDaemon() );
                     tunnel.setState( oldTunnel.getState() );
                     tunnel.setAutoState( oldTunnel.getAutoState() );
+                    
+                    if ( oldTunnel.getPingChecker() != null ) {
+                        oldTunnel.getPingChecker().stop();
+                    }
+                    if ( tunnel.getState() == Tunnel.STATE_RUNNING ) {
+                        PingChecker pingChecker = new PingChecker( TunnelManager.this,  tunnel );
+                        pingChecker.start();
+                    }
+                    
+                    if ( oldTunnel.getAutostartDaemon() != null ) {
+                        oldTunnel.getAutostartDaemon().stop();
+                    }
+                    
+                    if ( tunnel.getState() == Tunnel.STATE_STOPPED && ( tunnel.getAutostart() || tunnel.getRestart() ) ) {
+                        AutostartDaemon autostartDaemon = new AutostartDaemon( TunnelManager.this, tunnel );
+                        autostartDaemon.start();
+                    }
                     
                     oldTunnels.remove( tunnel );
                 }
