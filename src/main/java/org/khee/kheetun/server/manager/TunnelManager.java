@@ -47,7 +47,6 @@ public class TunnelManager {
             
             logger.info( "Creating new TunnelManager " + id );
             TunnelManager.instances.put( id, new TunnelManager( id ) );
-            
         }
         
         return TunnelManager.instances.get( id );
@@ -64,11 +63,6 @@ public class TunnelManager {
             logger.debug( "Got null config - ignoring" );
             return;
         }
-        
-//        if ( this.config.equals( config ) ) {
-//            logger.debug( "Got same config as before - ignoring" );
-//            return;
-//        }
         
         logger.info( "Updating configuration for " + this.id );
         

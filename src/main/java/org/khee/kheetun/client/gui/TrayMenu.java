@@ -320,11 +320,15 @@ class KTProfilesPanel extends JPanel {
             profilePanel.setLayout( new BoxLayout( profilePanel, BoxLayout.PAGE_AXIS ) );
             
             KTMenuItem itemProfile = new KTMenuItem( Imx.PROFILE, profile.getName() );
+
+            itemProfile.setStyleActive( TextStyle.PROFILE_ACTIVE );
+            itemProfile.setStyleInactive( TextStyle.PROFILE_INACTIVE );
             
             itemProfile.setStatus( "[" + profile.getConfigFile().getName() + "]", new Color( 0, 100, 0 ) );
             
             if ( ! profile.isActive() ) {
-                itemProfile.getTextLabel().setText( "<html><body><span style='text-decoration: line-through;'>" + profile.getName() + "</span></body></html>" );
+                itemProfile.setActive( false );
+                itemProfile.setInfo( "This profile is deactivated." );
             }
             
             if ( ! profile.getErrors().isEmpty() ) {
@@ -459,6 +463,9 @@ class KTMenuItem extends JPanel implements MouseListener {
     protected JLabel        text                = new JLabel( "" );
     protected JLabel        status              = new JLabel( "", JLabel.RIGHT );
     
+    private TextStyle       styleActive         = TextStyle.DEFAULT_ACTIVE;
+    private TextStyle       styleInactive       = TextStyle.DEFAULT_INACTIVE;
+    
     protected AnImx         processing          = new AnImx( "loading.png", 50, 125, 16 );
     
     protected Color         colorBackground;
@@ -515,6 +522,8 @@ class KTMenuItem extends JPanel implements MouseListener {
         
         this.text.setOpaque( true );
         this.text.setBorder( new EmptyBorder( new Insets( 4, 8, 4, 0 ) ) );
+        this.text.setForeground( this.styleActive.getColor() );
+        this.text.setFont( this.styleActive.getFont() );
         
         this.processing.setVisible( false );
         
@@ -573,6 +582,18 @@ class KTMenuItem extends JPanel implements MouseListener {
         this.addMouseListener( this );
     }
     
+    public void setStyleActive(TextStyle styleActive) {
+        
+        this.styleActive = styleActive;
+        this.setActive( this.active );
+    }
+
+    public void setStyleInactive(TextStyle styleInactive) {
+        
+        this.styleInactive = styleInactive;
+        this.setActive( this.active );
+    }
+
     public JLabel getTextLabel() {
         return this.text;
     }
@@ -582,6 +603,7 @@ class KTMenuItem extends JPanel implements MouseListener {
     }
     
     public void setActive( boolean active ) {
+        
         this.active = active;
         
         if ( ! active ) {
@@ -589,7 +611,8 @@ class KTMenuItem extends JPanel implements MouseListener {
             text.setBackground( null );
         }
         
-        text.setForeground( active ? Color.BLACK : Color.LIGHT_GRAY );
+        text.setForeground( active ? this.styleActive.getColor() : this.styleInactive.getColor() );
+        text.setFont( active ? this.styleActive.getFont() : this.styleInactive.getFont() );
     }
     
     public void setStatus( String status, Color color ) {
@@ -645,10 +668,6 @@ class KTMenuItem extends JPanel implements MouseListener {
     
     @Override
     public void mouseEntered( MouseEvent e ) {
-        
-        if ( ! this.active ) {
-            return;
-        }
         
         if ( iconCenter.getIcon() == Imx.WARNING || iconCenter.getIcon() == Imx.WARNING_DISABLED ) {
             
