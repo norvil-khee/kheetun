@@ -7,64 +7,86 @@ import java.util.HashMap;
 
 public class TextStyle {
     
-    public static final TextStyle       DEFAULT_ACTIVE;
-    public static final TextStyle       DEFAULT_INACTIVE;
-    public static final TextStyle       PROFILE_ACTIVE;
-    public static final TextStyle       PROFILE_INACTIVE;
+    public static final TextStyle       DEFAULT;
+    public static final TextStyle       PROFILE;
+    public static final TextStyle       TUNNEL;
     
     static {
         {
-            Font    font    = new Font( "Arial", Font.PLAIN, 12 );
-            Color   color   = Color.BLACK;
+            Font    fontActive    = new Font( Font.DIALOG, Font.PLAIN, 12 );
+            Color   colorActive   = Color.BLACK;
             
-            DEFAULT_ACTIVE = new TextStyle( font, color );
+            Font    fontInactive  = new Font( Font.DIALOG, Font.PLAIN, 12 );
+            Color   colorInactive = Color.LIGHT_GRAY;
+            
+            DEFAULT = new TextStyle( fontActive, colorActive, fontInactive, colorInactive );
         }
         {
-            Font    font    = new Font( "Arial", Font.PLAIN, 12 );
-            Color   color   = Color.LIGHT_GRAY;
+            HashMap<TextAttribute, Object> attributesActive = new HashMap<TextAttribute, Object>();
+            attributesActive.put( TextAttribute.TRACKING, 0.1 );
+            Font    fontActive    = new Font( Font.DIALOG, Font.BOLD, 13 );
+            Color   colorActive   = Color.DARK_GRAY;
+
+            HashMap<TextAttribute, Object> attributesInactive = new HashMap<TextAttribute, Object>();
+            attributesInactive.put( TextAttribute.TRACKING, 0.1 );
+            Font    fontInactive    = new Font( Font.DIALOG, Font.BOLD, 13 );
+            Color   colorInactive   = Color.LIGHT_GRAY;
             
-            DEFAULT_INACTIVE = new TextStyle( font, color );
+            PROFILE = new TextStyle( fontActive.deriveFont( attributesActive ), colorActive, fontInactive.deriveFont( attributesInactive ), colorInactive );
         }
         {
-            HashMap<TextAttribute, Object> attributes = new HashMap<TextAttribute, Object>();
-            attributes.put( TextAttribute.TRACKING, 0.3 );
+            Font    fontActive    = new Font( Font.DIALOG, Font.PLAIN, 12 );
+            Color   colorActive   = Color.BLUE;
             
-            Font    font    = new Font( "Arial", Font.BOLD, 13 );
-            Color   color   = Color.BLACK;
+            Font    fontInactive  = new Font( Font.DIALOG, Font.PLAIN, 12 );
+            Color   colorInactive = Color.LIGHT_GRAY;
             
-            PROFILE_ACTIVE = new TextStyle( font.deriveFont( attributes ), color );
-        }
-        {
-            HashMap<TextAttribute, Object> attributes = new HashMap<TextAttribute, Object>();
-            attributes.put( TextAttribute.TRACKING, 0.3 );
-            
-            Font    font    = new Font( "Arial", Font.BOLD, 13 );
-            Color   color   = Color.LIGHT_GRAY;
-            
-            PROFILE_INACTIVE = new TextStyle( font.deriveFont( attributes ), color );
+            TUNNEL = new TextStyle( fontActive, colorActive, fontInactive, colorInactive );
         }
     }
     
-    private Font    font;
-    private Color   color;
+    private Font    fontActive;
+    private Color   colorActive;
+    private Font    fontInactive;
+    private Color   colorInactive;
     
-    public TextStyle( Font font, Color color ) {
+    public TextStyle( Font fontActive, Color colorActive, Font fontInactive, Color colorInactive ) {
         
-        this.font   = font;
-        this.color  = color;
-    }
-    
-    public Font getFont() {
-        return font;
-    }
-    public void setFont(Font font) {
-        this.font = font;
-    }
-    public Color getColor() {
-        return color;
-    }
-    public void setColor(Color color) {
-        this.color = color;
+        this.fontActive     = fontActive;
+        this.colorActive    = colorActive;
+        this.fontInactive   = fontInactive;
+        this.colorInactive  = colorInactive;
     }
 
+    public Font getFontActive() {
+        return fontActive;
+    }
+
+    public void setFontActive(Font fontActive) {
+        this.fontActive = fontActive;
+    }
+
+    public Color getColorActive() {
+        return colorActive;
+    }
+
+    public void setColorActive(Color colorActive) {
+        this.colorActive = colorActive;
+    }
+
+    public Font getFontInactive() {
+        return fontInactive;
+    }
+
+    public void setFontInactive(Font fontInactive) {
+        this.fontInactive = fontInactive;
+    }
+
+    public Color getColorInactive() {
+        return colorInactive;
+    }
+
+    public void setColorInactive(Color colorInactive) {
+        this.colorInactive = colorInactive;
+    }
 }

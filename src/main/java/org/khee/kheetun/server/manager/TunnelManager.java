@@ -476,7 +476,7 @@ public class TunnelManager {
     
     public void updatePing( Tunnel tunnel ) {
         
-        if ( tunnel.getState() == Tunnel.STATE_RUNNING ) {
+        if ( tunnel != null && tunnel.getState() == Tunnel.STATE_RUNNING ) {
         
             if ( tunnel.getPingFailures() >= 3 ) {
                 

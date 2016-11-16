@@ -321,8 +321,7 @@ class KTProfilesPanel extends JPanel {
             
             KTMenuItem itemProfile = new KTMenuItem( Imx.PROFILE, profile.getName() );
 
-            itemProfile.setStyleActive( TextStyle.PROFILE_ACTIVE );
-            itemProfile.setStyleInactive( TextStyle.PROFILE_INACTIVE );
+            itemProfile.setTextStyle( TextStyle.PROFILE );
             
             itemProfile.setStatus( "[" + profile.getConfigFile().getName() + "]", new Color( 0, 100, 0 ) );
             
@@ -355,6 +354,7 @@ class KTProfilesPanel extends JPanel {
                 for ( Tunnel tunnel : profile.getTunnels() ) {
                     
                     TunnelMenuItem itemTunnel = new TunnelMenuItem( tunnel );
+                    itemTunnel.setTextStyle( TextStyle.TUNNEL );
                     
                     if ( ! profile.getErrors().isEmpty() ) {
                         
@@ -463,8 +463,7 @@ class KTMenuItem extends JPanel implements MouseListener {
     protected JLabel        text                = new JLabel( "" );
     protected JLabel        status              = new JLabel( "", JLabel.RIGHT );
     
-    private TextStyle       styleActive         = TextStyle.DEFAULT_ACTIVE;
-    private TextStyle       styleInactive       = TextStyle.DEFAULT_INACTIVE;
+    private TextStyle       textStyle           = TextStyle.DEFAULT;
     
     protected AnImx         processing          = new AnImx( "loading.png", 50, 125, 16 );
     
@@ -522,8 +521,7 @@ class KTMenuItem extends JPanel implements MouseListener {
         
         this.text.setOpaque( true );
         this.text.setBorder( new EmptyBorder( new Insets( 4, 8, 4, 0 ) ) );
-        this.text.setForeground( this.styleActive.getColor() );
-        this.text.setFont( this.styleActive.getFont() );
+        this.setTextStyle( this.textStyle );
         
         this.processing.setVisible( false );
         
@@ -582,15 +580,9 @@ class KTMenuItem extends JPanel implements MouseListener {
         this.addMouseListener( this );
     }
     
-    public void setStyleActive(TextStyle styleActive) {
+    public void setTextStyle(TextStyle textStyle) {
         
-        this.styleActive = styleActive;
-        this.setActive( this.active );
-    }
-
-    public void setStyleInactive(TextStyle styleInactive) {
-        
-        this.styleInactive = styleInactive;
+        this.textStyle = textStyle;
         this.setActive( this.active );
     }
 
@@ -611,8 +603,8 @@ class KTMenuItem extends JPanel implements MouseListener {
             text.setBackground( null );
         }
         
-        text.setForeground( active ? this.styleActive.getColor() : this.styleInactive.getColor() );
-        text.setFont( active ? this.styleActive.getFont() : this.styleInactive.getFont() );
+        text.setForeground( active ? this.textStyle.getColorActive() : this.textStyle.getColorInactive() );
+        text.setFont( active ? this.textStyle.getFontActive() : this.textStyle.getFontInactive() );
     }
     
     public void setStatus( String status, Color color ) {
