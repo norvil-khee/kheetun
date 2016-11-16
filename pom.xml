@@ -10,7 +10,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.khee</groupId>
   <artifactId>kheetun</artifactId>
-  <version>0.12.1</version>
+  <version>0.12.2</version>
   <name>Kheetun</name>
   <description>Kheetun, your friendly tunnel manager</description>
   <build>
