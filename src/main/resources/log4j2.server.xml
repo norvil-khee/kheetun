@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+  <Appenders>
+    <RollingFile name="FileLogger" fileName="/opt/kheetun/log/kheetund.log" filePattern="/opt/kheetun/log/kheetund.log.%i.gz">
+      <PatternLayout pattern="%d %t %-5p - %m%n"/>
+      <Policies>
+          <SizeBasedTriggeringPolicy size="10 MB"/>
+      </Policies>
+      <DefaultRolloverStrategy max="10"/>
+    </RollingFile>
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="%d %t %-5p - %m%n"/>
+    </Console>
+  </Appenders>
+  
+  <Loggers>
+    <Root level="info">
+      <AppenderRef ref="FileLogger"/>
+      <AppenderRef ref="Console"/>
+    </Root>
+  </Loggers>
+</Configuration>

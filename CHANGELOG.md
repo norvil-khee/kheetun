@@ -1,6 +1,29 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## 0.12.1 - 2016-11-20
+
+### Added
+
+- Sorting of profiles (currently alphabetical and by config file modification time).
+- Tunnel configuration: port can now be specified.
+- Profiles may be deactivated in config files by setting the ``active`` property of the ``<profile>`` tag (``true`` or ``false``).
+- Additional information for autostarted tunnels is added (why the "waiting" status is displayed).
+- Displaying a loading icon when configuration is (re)loaded.
+
+### Removed
+
+- Pre 0.9.0 configuration files will no longer be transformed into new ones. The plan is to handling this in post-install scripts in the future - if still necessary.
+
+### Changed
+
+- Tunnel handling is now done entirely on server side. The client only sends configurations and triggers manual starts and stops of tunnels.
+- A few style changes in tray menu.
+
+### Fixes
+
+- Fixed a few concurrency issues.
+
 ## 0.10.1 - 2016-11-03
 
 ### Added
