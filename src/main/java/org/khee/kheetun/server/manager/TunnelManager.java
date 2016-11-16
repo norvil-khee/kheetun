@@ -108,7 +108,7 @@ public class TunnelManager {
                         oldTunnel.getPingChecker().stop();
                     }
                     if ( tunnel.getState() == Tunnel.STATE_RUNNING ) {
-                        PingChecker pingChecker = new PingChecker( TunnelManager.this,  tunnel );
+                        PingChecker pingChecker = new PingChecker( TunnelManager.this, tunnel );
                         pingChecker.start();
                     }
                     
@@ -127,11 +127,19 @@ public class TunnelManager {
         } );
         
         // stop remaining stale tunnels
+        // also remove stale ping- and autostart daemons
         //
         for ( Tunnel staleTunnel : oldTunnels ) {
             
             logger.info( "Stopping stale tunnel " + staleTunnel.getAlias() );
             this.stopTunnel( staleTunnel, true );
+            
+            if ( staleTunnel.getPingChecker() != null ) {
+                staleTunnel.getPingChecker().stop();
+            }
+            if ( staleTunnel.getAutostartDaemon() != null ) {
+                staleTunnel.getAutostartDaemon().stop();
+            }
         }
         
         this.config = config;
