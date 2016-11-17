@@ -165,14 +165,18 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
     }
     
     @Override
-    public void TunnelClientConnection(boolean connected) {
+    public void TunnelClientConnection( boolean connected, String error ) {
+        
+        String connectionString = ConfigManager.getGlobalConfig().getHost() + ":" + ConfigManager.getGlobalConfig().getPort();
         
         if ( connected ) {
             
-            labelConnected.setStatus( ConfigManager.getGlobalConfig().getHost() + ":" + ConfigManager.getGlobalConfig().getPort(), new Color( 0, 100, 0 ) );
+            labelConnected.setStatus( connectionString, new Color( 0, 100, 0 ) );
+            labelConnected.setMessage( "connection", null );
         } else {
             
             labelConnected.setStatus( "disconnected", Color.RED );
+            labelConnected.setMessage( "connection", connectionString + ": " + error);
         }
     }
     
@@ -282,7 +286,7 @@ class KTProfilesPanel extends JPanel {
     
     public void setProfiles( ArrayList<Profile> profiles ) {
         
-        TrayManager.clearAllErrors();
+        TrayManager.clearErrors( "profile" );
         
         this.profiles = profiles;
         
@@ -320,7 +324,7 @@ class KTProfilesPanel extends JPanel {
                 
                 message += "</body></html>";
                 
-                itemProfile.setMessage( message );
+                itemProfile.setMessage( "profile", message );
                 itemProfile.setStatus( "[" + profile.getConfigFile().getName() + "]", Color.RED );
             }
             
@@ -606,19 +610,19 @@ class KTMenuItem extends JPanel implements MouseListener {
         return processing.isVisible();
     }
     
-    public void setMessage( String message ) {
+    public void setMessage( String scope, String message ) {
         
         if ( message == null ) {
             this.message.setText( null );
             this.iconCenter.setIcon( Imx.NONE );
-            TrayManager.clearError( id );
+            TrayManager.clearError( scope, id );
             this.windowInfo.setVisible( false );
         } else {
             
             if ( ! message.equals( this.message.getText() ) ) {
                 this.message.setText( message );
                 this.iconCenter.setIcon( Imx.WARNING );
-                TrayManager.setError( id, message );
+                TrayManager.setError( scope, id, message );
             }
         }
     }
@@ -784,7 +788,7 @@ class TunnelMenuItem extends KTMenuItem implements TunnelClientListener {
     }
     
     @Override
-    public void TunnelClientConnection(boolean connected) {
+    public void TunnelClientConnection( boolean connected, String error ) {
         
         if ( connected ) {
 
@@ -797,7 +801,7 @@ class TunnelMenuItem extends KTMenuItem implements TunnelClientListener {
             text.setForeground( Color.LIGHT_GRAY );
             this.iconRight.setIcon( Imx.NONE );
             this.setProcessing( false );
-            this.setMessage( null );
+            this.setMessage( "profile", null );
             this.setStatus( "unknown", Color.LIGHT_GRAY );
             this.setActive( false );
             this.setInfo( null );
@@ -811,9 +815,9 @@ class TunnelMenuItem extends KTMenuItem implements TunnelClientListener {
             
             if ( tunnel.getError() != null ) {
                 
-                this.setMessage( tunnel.getError() + ", failures: " + tunnel.getFailures() );
+                this.setMessage( "profile", tunnel.getError() + ", failures: " + tunnel.getFailures() );
             } else { 
-                this.setMessage( null );
+                this.setMessage( "profile", null );
             }
             
             switch ( tunnel.getState() ) {

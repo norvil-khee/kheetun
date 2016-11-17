@@ -23,6 +23,7 @@ All notable changes to this project will be documented in this file.
 ### Fixes
 
 - Fixed a few concurrency issues.
+- Fixed client side reconnection issues.
 
 ## 0.10.1 - 2016-11-03
 

@@ -5,11 +5,12 @@ import java.util.HashMap;
 
 public class TrayManager {
 
-    private static TrayManager          instance;
+    private static TrayManager                          instance;
     
-    private Tray                        tray;
-    private TrayMenu                    menu;
-    private HashMap<Integer, String>    errors = new HashMap<Integer, String>();
+    private Tray                                        tray;
+    private TrayMenu                                    menu;
+    private HashMap<String, HashMap<Integer, String>>   errors = new HashMap<String, HashMap<Integer, String>>();
+     
     
     protected TrayManager() {
         
@@ -47,27 +48,40 @@ public class TrayManager {
         instance.tray.unblink();
     }
     
-    public static void clearError( int id ) {
+    public static void clearError( String scope, int id ) {
         
-        instance.errors.remove( id );
-        
-        if ( instance.errors.isEmpty() ) {
-       
-            TrayManager.setIcon( Imx.TRAY_OK );
-            TrayManager.unblink();
+        if ( instance.errors.containsKey( scope ) ) {
+            
+            instance.errors.get( scope ).remove( id );
+            
+            if ( instance.errors.get( scope ).isEmpty() ) {
+                
+                TrayManager.clearErrors( scope );
+            }
         }
     }
     
-    public static void clearAllErrors() {
+    public static void clearErrors( String scope ) {
         
-        instance.errors.clear();
-        TrayManager.setIcon( Imx.TRAY_OK );
-        TrayManager.unblink();
+        if ( instance.errors.containsKey( scope ) ) {
+        
+            instance.errors.remove( scope );
+            
+            if ( instance.errors.isEmpty() ) {
+                
+                TrayManager.setIcon( Imx.TRAY_OK );
+                TrayManager.unblink();
+            }
+        }
     }
     
-    public static void setError( int id, String message ) {
+    public static void setError( String scope, int id, String message ) {
         
-        instance.errors.put( id, message );
+        if ( ! instance.errors.containsKey( scope ) ) {
+            instance.errors.put( scope, new HashMap<Integer, String>() );
+        }
+        
+        instance.errors.get( scope ).put( id, message );
         
         TrayManager.setIcon( Imx.TRAY_ERROR );
         TrayManager.blink();

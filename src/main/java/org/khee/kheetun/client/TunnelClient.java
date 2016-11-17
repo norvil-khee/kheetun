@@ -40,7 +40,6 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
     private boolean                         clientRunning;
     private CopyOnWriteArrayList<TunnelClientListener> listeners       = new CopyOnWriteArrayList<TunnelClientListener>();
     private Integer                         port            = -1;
-    private Semaphore                       sender          = new Semaphore( 1 );
     
     protected TunnelClient() {
 
@@ -89,6 +88,8 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
         
             logger.info( "Trying to connect to kheetun server at port " + port );
             
+            String connectionError = null;
+            
             try {
                 
                 clientSocket = new Socket( InetAddress.getLocalHost(), port );
@@ -113,16 +114,20 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
             } catch ( ConnectException eConnect ) {
                 
                 logger.error( "Could not connect to kheetun server: " + eConnect.getMessage() );
+                connectionError = eConnect.getLocalizedMessage();
                 
             } catch ( SocketException eSocket ) {
                 
                 logger.error( "Socket error: " + eSocket.getMessage() + ", disconnected" );
+                connectionError = eSocket.getLocalizedMessage();
             } catch ( IOException eIO ) {
                 
                 logger.error( "Socket IO error: " + eIO.getMessage() + ", disconnected" );
+                connectionError = eIO.getLocalizedMessage();
             } catch ( Exception e ) {
                 
                 logger.warn( "", e );
+                connectionError = e.getLocalizedMessage();
             }
             
             try {
@@ -135,10 +140,6 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
                 if ( clientSocket != null ) {
                     clientSocket.close();
                     logger.info( "Disconnected from kheetun server" );
-                    
-                    for( TunnelClientListener listener : this.listeners ) {
-                        listener.TunnelClientConnection( false );
-                    }
                 }
             
             } catch ( IOException e ) {
@@ -146,6 +147,10 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
                 logger.warn( e.getMessage() );
             }
 
+            for( TunnelClientListener listener : this.listeners ) {
+                listener.TunnelClientConnection( false, connectionError );
+            }
+            
             logger.debug( "Disconnected from kheetun server, retrying in 2 seconds" );
             
             try {
@@ -173,7 +178,7 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
             logger.info( "Connected to kheetun server" );
             
             for( TunnelClientListener listener : this.listeners ) {
-                listener.TunnelClientConnection( true );
+                listener.TunnelClientConnection( true, null );
             }
             
             TunnelClient.sendConfig( ConfigManager.getConfig() );
@@ -272,7 +277,7 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
         instance.send( new Protocol( Protocol.CONFIG, config ) );
     }
     
-    private void send( Protocol protocol ) {
+    private synchronized void send( Protocol protocol ) {
         
         if ( clientSocket == null || ! clientSocket.isConnected() ) {
             
@@ -283,13 +288,9 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
         
         try {
             
-            sender.acquire();
-            
             commOut.reset();
             commOut.writeObject( protocol );
             commOut.flush();
-            
-            sender.release();
             
         } catch( Exception e ) {
             
