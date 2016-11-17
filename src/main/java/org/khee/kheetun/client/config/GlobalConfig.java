@@ -16,40 +16,42 @@ public class GlobalConfig {
     
     private         Properties          properties  = new Properties();
     
+    public static final File            CONFIG_FILE             = new File( System.getProperty( "user.home" ) + "/.kheetun/kheetun.conf" );
+
     public static final String          SORT_ALPHABETICAL_ASC   = "alphabetical_asc";
     public static final String          SORT_ALPHABETICAL_DESC  = "alphabetical_desc";
     public static final String          SORT_MODIFIED_ASC       = "modified_asc";
     public static final String          SORT_MODIFIED_DESC      = "modified_desc";
+    
+    public static final String          DEFAULT_HOST            = "127.0.0.1";
+    public static final Integer         DEFAULT_PORT            = 7779;
+    public static final String          DEFAULT_SORTORDER       = SORT_ALPHABETICAL_ASC;
 
     private         ArrayList<String>   errors      = new ArrayList<String>();
 
 
     public GlobalConfig() {
         
-        properties.setProperty( "port", "7779" );
-        properties.setProperty( "sortorder", "alphabetic_asc" );    
+        properties.setProperty( "host",         GlobalConfig.DEFAULT_HOST );  
+        properties.setProperty( "port",         GlobalConfig.DEFAULT_PORT.toString() );
+        properties.setProperty( "sortorder",    GlobalConfig.DEFAULT_SORTORDER );    
     }
     
     public static GlobalConfig load() {
         
         GlobalConfig globalConfig = new GlobalConfig();
         
-        try {
+        if ( GlobalConfig.CONFIG_FILE.exists() ) {
             
-            globalConfig.properties.load( new FileInputStream( new File ( System.getProperty( "user.home") + "/.kheetun/kheetun.conf" ) ) );
-            
-            if ( globalConfig.getPort() == null ) {
-                globalConfig.setPort( 7779 );
+            try {
+                
+                globalConfig.properties.load( new FileInputStream( new File ( System.getProperty( "user.home") + "/.kheetun/kheetun.conf" ) ) );
+                
+            } catch ( IOException eIO ) {
+                
+                logger.error( "IO Error while loading general config: " + eIO.getLocalizedMessage() ) ;
+                globalConfig.addError( "IO exception: " + eIO.getLocalizedMessage() );
             }
-            
-            if ( globalConfig.getSortOrder() == null ) {
-                globalConfig.setSortOrder( GlobalConfig.SORT_ALPHABETICAL_ASC );
-            }
-        
-        } catch ( IOException eIO ) {
-            
-            logger.error( "IO Error while loading general config: " + eIO.getLocalizedMessage() ) ;
-            globalConfig.addError( "IO exception: " + eIO.getLocalizedMessage() );
         }
         
         return globalConfig;
@@ -65,7 +67,7 @@ public class GlobalConfig {
         
         try {
             
-            properties.store( new FileOutputStream( new File( System.getProperty( "user.home") + "/.kheetun/kheetun.conf" ) ), "global settings for kheetun client" );
+            properties.store( new FileOutputStream( GlobalConfig.CONFIG_FILE ), "Global settings for kheetun client" );
             
         } catch ( IOException eIO ) {
             
@@ -80,10 +82,11 @@ public class GlobalConfig {
     public void addError( String error ) {
         this.errors.add( error );
     }
+
     
     public String getSortOrder() {
         
-        return this.properties.getProperty( "sortorder" );
+        return ( this.properties.getProperty( "sortorder" ) != null ? this.properties.getProperty( "sortorder" ) : GlobalConfig.DEFAULT_SORTORDER );
     }
     
     public void setSortOrder( String sortorder ) {
@@ -99,13 +102,24 @@ public class GlobalConfig {
             
         } catch ( NumberFormatException eNumber ) {
             
-            return null;
+            return GlobalConfig.DEFAULT_PORT;
         }
     }
     
-    public void setPort(Integer port) {
+    public void setPort( Integer port ) {
         
         this.properties.setProperty( "port", port.toString() );
     }
+    
+    public String getHost() {
+        
+        return ( this.properties.getProperty( "host" ) != null ? this.properties.getProperty( "host" ) : GlobalConfig.DEFAULT_HOST );
+    }
+    
+    public void setHost( String host ) {
+        
+        this.properties.setProperty( "host", host );
+    }
+    
 
 }

@@ -17,11 +17,8 @@ public class AutostartDaemon implements Runnable {
     private TunnelManager                   tunnelManager;
     private Tunnel                          tunnel;
     private String                          id;
+    private boolean                         running         = true;
     
-    /**
-     * ping live sessions
-     * ping autostarting dead sessions 
-     */
     public AutostartDaemon( TunnelManager tunnelManager, Tunnel tunnel ) {
         
         if ( tunnel.getAutostartDaemon() != null ) {
@@ -38,7 +35,7 @@ public class AutostartDaemon implements Runnable {
     
     public void stop() {
         
-        this.tunnel = null;
+        this.running = false;
     }
     
     public void start() {
@@ -86,7 +83,6 @@ public class AutostartDaemon implements Runnable {
             tunnel.setAutoState( Tunnel.STATE_AUTO_WAIT );
             tunnel.setInfo( tunnel.getHostname() + ": IO error: " + eIO.getLocalizedMessage() );
         
-        } catch ( NullPointerException eNull ) {
         }
         
         this.tunnelManager.updateAutostart( this.tunnel );
@@ -97,7 +93,7 @@ public class AutostartDaemon implements Runnable {
         
         logger.info( "Started autostart daemon for tunnel " + this.id );
         
-        while( this.tunnel != null && this.tunnel.getAutoState() != Tunnel.STATE_AUTO_OFF && this.tunnel.getState() != Tunnel.STATE_RUNNING ) {
+        while( this.running && this.tunnel.getAutoState() != Tunnel.STATE_AUTO_OFF && this.tunnel.getState() != Tunnel.STATE_RUNNING ) {
             
             this.checkAutostart();
 
@@ -106,12 +102,11 @@ public class AutostartDaemon implements Runnable {
             try {
                 Thread.sleep( 2000 );
             } catch ( InterruptedException e ) {
-                e.printStackTrace();
+                logger.warn( "Sleep interrupted" );
             }
         }
         
-        if ( this.tunnel.getAutostartDaemon() != null && this.tunnel.getAutostartDaemon().equals( this ) ) {
-            
+        if ( this.tunnel.getAutostartDaemon() != null && this.tunnel.getAutostartDaemon() == this ) {
             this.tunnel.setAutostartDaemon( null );
         }
         

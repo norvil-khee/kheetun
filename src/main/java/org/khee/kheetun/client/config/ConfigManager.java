@@ -19,7 +19,6 @@ public class ConfigManager implements Runnable {
     private String              fingerprint         = "";
     private String              fingerprintGlobal   = "";
     private File                configDirectory     = new File( System.getProperty( "user.home" ) + "/.kheetun/kheetun.d" );
-    private File                globalConfigFile    = new File( System.getProperty( "user.home" ) + "/.kheetun/kheetun.conf" );
 
     
     private ArrayList<ConfigManagerListener> listeners  = new ArrayList<ConfigManagerListener>();
@@ -49,11 +48,11 @@ public class ConfigManager implements Runnable {
     
     private boolean globalConfigChanged() {
     
-        String fingerprint = "";
+        String fingerprint = "global_config-";
         
-        if ( globalConfigFile.exists() ) {
+        if ( GlobalConfig.CONFIG_FILE.exists() ) {
             
-            fingerprint += globalConfigFile.lastModified();
+            fingerprint += GlobalConfig.CONFIG_FILE.lastModified();
         }
         
         logger.debug( "ConfigManager: fingerprintGlobal ( " + fingerprint + "/" + this.fingerprintGlobal + ")" );
@@ -70,7 +69,7 @@ public class ConfigManager implements Runnable {
     
     private boolean configChanged() {
         
-        String fingerprint = "";
+        String fingerprint = "config-";
         
         if ( configDirectory.exists() ) {
             

@@ -108,6 +108,7 @@ public class TunnelManager {
                         oldTunnel.getPingChecker().stop();
                     }
                     if ( tunnel.getState() == Tunnel.STATE_RUNNING ) {
+                        logger.info( "Setting new ping checker for old tunnel " + tunnel.getAlias() );
                         PingChecker pingChecker = new PingChecker( TunnelManager.this, tunnel );
                         pingChecker.start();
                     }
@@ -117,8 +118,8 @@ public class TunnelManager {
                     }
                     
                     if ( tunnel.getState() == Tunnel.STATE_STOPPED && ( tunnel.getAutostart() || tunnel.getRestart() ) ) {
-                        AutostartDaemon autostartDaemon = new AutostartDaemon( TunnelManager.this, tunnel );
-                        autostartDaemon.start();
+                        logger.info( "Setting new autostart daemon for old tunnel " + tunnel.getAlias() );
+                        TunnelManager.this.enableAutostart( tunnel );
                     }
                     
                     oldTunnels.remove( tunnel );

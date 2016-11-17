@@ -16,11 +16,8 @@ public class PingChecker implements Runnable {
     private Tunnel          tunnel;
     private TunnelManager   tunnelManager;
     private String          id;
+    private boolean         running         = true;
     
-    /**
-     * ping live sessions
-     * ping autostarting dead sessions 
-     */
     public PingChecker( TunnelManager tunnelManager, Tunnel tunnel ) {
         
         if ( tunnel.getPingChecker() != null ) {
@@ -38,7 +35,7 @@ public class PingChecker implements Runnable {
     
     public void stop() {
         
-        this.tunnel = null;
+        this.running = false;
     }
     
     public void start() {
@@ -69,9 +66,7 @@ public class PingChecker implements Runnable {
             
             this.tunnel.increasePingFailures();
             logger.debug( "PING FAIL (ERROR) ( " + tunnel.getPingFailures() + "/3 ): " + this.tunnel.getAlias() );
-            
-        } catch ( NullPointerException eNull ) {
-        }        
+        }
         
         this.tunnelManager.updatePing( this.tunnel );
     }
@@ -82,7 +77,7 @@ public class PingChecker implements Runnable {
         
         logger.info( "Started ping daemon[" + this + "] for tunnel " + this.id );
         
-        while( this.tunnel != null && this.tunnel.getState() == Tunnel.STATE_RUNNING && this.tunnel.getSession() != null && this.tunnel.getPingFailures() < 3 ) {
+        while( this.running && this.tunnel.getState() == Tunnel.STATE_RUNNING && this.tunnel.getSession() != null && this.tunnel.getPingFailures() < 3 ) {
             
             this.checkPing();
                 
@@ -91,9 +86,12 @@ public class PingChecker implements Runnable {
             try {
                 Thread.sleep( 2000 );
             } catch ( InterruptedException e ) {
-                e.printStackTrace();
+                logger.warn( "Sleep interrupted" );
             }
-
+        }
+        
+        if ( this.tunnel.getPingChecker() != null && this.tunnel.getPingChecker() == this ) {
+            this.tunnel.setPingChecker( null );
         }
         
         logger.info( "Stopped ping daemon[ " + this + "] for tunnel " + this.id );

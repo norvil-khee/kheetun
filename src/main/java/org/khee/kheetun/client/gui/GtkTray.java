@@ -15,16 +15,10 @@ import org.gnome.gtk.StatusIcon.PopupMenu;
 
 public class GtkTray extends Tray {
     
-    public static Pixbuf OFFLINE;
-    public static Pixbuf ONLINE;
-    public static Pixbuf WARNING;
     public static Pixbuf NONE;
     
     static {
         try {
-            ONLINE      = pixbufFromBufferedImage( Imx.KHEETUN_ON.bs32 );
-            OFFLINE     = pixbufFromBufferedImage( Imx.KHEETUN_OFF.bs32 );
-            WARNING     = pixbufFromBufferedImage( Imx.KHEETUN.bs32 );
             NONE        = pixbufFromBufferedImage( Imx.NONE.bs32 );
             
         } catch ( IOException e ) {

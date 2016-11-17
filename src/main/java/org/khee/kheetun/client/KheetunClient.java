@@ -49,7 +49,7 @@ public class KheetunClient {
         
         TrayManager.setTray( tray );
         TrayManager.setMenu( menu );
-        TrayManager.setIcon( Imx.KHEETUN_OFF );
+        TrayManager.setIcon( Imx.TRAY_OK );
 
         ConfigManager.start();
         

@@ -48,7 +48,6 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
     
     private KTMenuItem      labelKheetun;
     private KTMenuItem      labelConnected;
-    private KTMenuItem      labelConfig;
     private KTMenuItem      itemExit;
     private KTMenuItem      itemStopAll;
     private KTMenuItem      itemAutostartAll;
@@ -59,7 +58,7 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
     public TrayMenu() {
         
         this.setName( "kheetun" );
-        this.setIconImage( Imx.CONFIG.getImage() );
+        this.setIconImage( Imx.KHEETUN.getImage() );
         
         panelMain = new JPanel();
         panelMain.setDoubleBuffered( true );
@@ -74,9 +73,6 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
         
         labelConnected  = new KTMenuItem( Imx.NONE, "Daemon:" );
         labelConnected.setStatus( "disconnected", Color.RED );
-        
-        labelConfig     = new KTMenuItem( Imx.NONE, "Global config:" );
-        labelConfig.setStatus( "none", Color.LIGHT_GRAY );
         
         itemExit = new KTMenuItem( Imx.EXIT, "Exit" ) {
             
@@ -120,7 +116,6 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
         panelMain.add( labelKheetun );
         panelMain.add( new KTSeperator() );
         panelMain.add( labelConnected );
-        panelMain.add( labelConfig );
         panelMain.add( new KTSeperator() );
         panelMain.add( itemStopAll );
         panelMain.add( itemAutostartAll );
@@ -143,28 +138,6 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
     public void configManagerConfigChanged( Config oldConfig, Config newConfig, boolean valid ) {
         
         panelProfiles.setProfiles( newConfig.getProfiles() );
-        
-        if ( valid ) {
-            
-            labelConfig.setMessage( null );
-            labelConfig.setStatus( "valid", new Color( 0, 100, 0 ) );
-            
-        } else {
-            
-            String message = "<html><body>Configuration errors:";
-            
-            for ( String error : newConfig.getErrors() ) {
-                
-                message += "<br>    * " + error;
-            }
-            
-            message += "</body></html>";
-            
-            labelConfig.setMessage( message );
-            labelConfig.setStatus( "error", Color.RED );
-            
-            TrayManager.blink();
-        }
     }
 
     public void toggle( Point p ) {
@@ -196,7 +169,7 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
         
         if ( connected ) {
             
-            labelConnected.setStatus( "connected", new Color( 0, 100, 0 ) );
+            labelConnected.setStatus( ConfigManager.getGlobalConfig().getHost() + ":" + ConfigManager.getGlobalConfig().getPort(), new Color( 0, 100, 0 ) );
         } else {
             
             labelConnected.setStatus( "disconnected", Color.RED );
@@ -240,6 +213,7 @@ class KTProfilesPanel extends JPanel {
     
     private JPanel                  panelLoading;
     private JPanel                  panelProfiles;
+    private KTMenuItem              noProfiles;
     private KTMenuItem              itemSort;
     private HashMap<Profile,JPanel> profilePanels   = new HashMap<Profile,JPanel>();
     private ArrayList<Profile>      profiles        = new ArrayList<Profile>();
@@ -259,8 +233,11 @@ class KTProfilesPanel extends JPanel {
         this.panelLoading.add( loading );
         this.panelLoading.setVisible( false );
         
+        this.noProfiles = new KTMenuItem( Imx.NONE, "No Profiles" );
+        this.noProfiles.setTextStyle( TextStyle.NO_PROFILES );
+        this.noProfiles.setActive( false );
         
-        itemSort    = new KTMenuItem( Imx.SORT, "Sort Profiles" ) {
+        this.itemSort    = new KTMenuItem( Imx.PROFILE_SORT, "Sort Profiles" ) {
             
             @Override
             public void leftClick(MouseEvent e) {
@@ -292,10 +269,10 @@ class KTProfilesPanel extends JPanel {
             };
         };
         
-        itemSort.setStatus( "A...Z", Color.DARK_GRAY );
+        this.itemSort.setStatus( "A...Z", Color.DARK_GRAY );
         
-        panelProfiles = new JPanel();
-        panelProfiles.setLayout( new BoxLayout( panelProfiles, BoxLayout.PAGE_AXIS ) );
+        this.panelProfiles = new JPanel();
+        this.panelProfiles.setLayout( new BoxLayout( this.panelProfiles, BoxLayout.PAGE_AXIS ) );
         
         this.add( itemSort );
         this.add( new KTSeperator() );
@@ -304,6 +281,8 @@ class KTProfilesPanel extends JPanel {
     }
     
     public void setProfiles( ArrayList<Profile> profiles ) {
+        
+        TrayManager.clearAllErrors();
         
         this.profiles = profiles;
         
@@ -343,8 +322,6 @@ class KTProfilesPanel extends JPanel {
                 
                 itemProfile.setMessage( message );
                 itemProfile.setStatus( "[" + profile.getConfigFile().getName() + "]", Color.RED );
-                
-                TrayManager.blink();
             }
             
             profilePanel.add( itemProfile );
@@ -370,8 +347,6 @@ class KTProfilesPanel extends JPanel {
             this.profilePanels.put( profile, profilePanel );
         }
         
-        this.add( panelProfiles );
-        
         panelLoading.setVisible( false );
         panelProfiles.setVisible( true );
         
@@ -382,51 +357,58 @@ class KTProfilesPanel extends JPanel {
         
         this.panelProfiles.removeAll();
         
-        switch( ConfigManager.getGlobalConfig().getSortOrder() ) {
-          
-        case GlobalConfig.SORT_ALPHABETICAL_DESC:
-            itemSort.setStatus( "Z...A", Color.DARK_GRAY );
-            Collections.sort( profiles, new Comparator<Profile>() {
-                
-              public int compare( Profile p1, Profile p2 ) {
-                  return p2.getName().compareTo( p1.getName() );
-              };
-            } );
-            break;
-              
-        case GlobalConfig.SORT_MODIFIED_ASC:
-            itemSort.setStatus( "DATE ASC", Color.DARK_GRAY );
-            Collections.sort( profiles, new Comparator<Profile>() {
-                
-                public int compare( Profile p1, Profile p2 ) {
-                    return p1.getModified().compareTo( p2.getModified() );
-                };
-            } );
-            break;
+        if ( this.profiles.isEmpty() ) {
             
-        case GlobalConfig.SORT_MODIFIED_DESC:
-            itemSort.setStatus( "DATE DESC", Color.DARK_GRAY );
-            Collections.sort( profiles, new Comparator<Profile>() {
-                
-                public int compare( Profile p1, Profile p2 ) {
-                    return p2.getModified().compareTo( p1.getModified() );
-                };
-            } );
-            break;
-              
-        default:
-            itemSort.setStatus( "A...Z", Color.DARK_GRAY );
-            Collections.sort( profiles, new Comparator<Profile>() {
-                
-                public int compare( Profile p1, Profile p2 ) {
-                    return p1.getName().compareTo( p2.getName() );
-                };
-            } );
-            break;
-        };
+            this.panelProfiles.add( this.noProfiles );
+            
+        } else {
         
-        for ( Profile profile : this.profiles ) {
-            this.panelProfiles.add( profilePanels.get( profile ) );
+            switch( ConfigManager.getGlobalConfig().getSortOrder() ) {
+              
+            case GlobalConfig.SORT_ALPHABETICAL_DESC:
+                itemSort.setStatus( "Z...A", Color.DARK_GRAY );
+                Collections.sort( profiles, new Comparator<Profile>() {
+                    
+                  public int compare( Profile p1, Profile p2 ) {
+                      return p2.getName().compareTo( p1.getName() );
+                  };
+                } );
+                break;
+                  
+            case GlobalConfig.SORT_MODIFIED_ASC:
+                itemSort.setStatus( "DATE ASC", Color.DARK_GRAY );
+                Collections.sort( profiles, new Comparator<Profile>() {
+                    
+                    public int compare( Profile p1, Profile p2 ) {
+                        return p1.getModified().compareTo( p2.getModified() );
+                    };
+                } );
+                break;
+                
+            case GlobalConfig.SORT_MODIFIED_DESC:
+                itemSort.setStatus( "DATE DESC", Color.DARK_GRAY );
+                Collections.sort( profiles, new Comparator<Profile>() {
+                    
+                    public int compare( Profile p1, Profile p2 ) {
+                        return p2.getModified().compareTo( p1.getModified() );
+                    };
+                } );
+                break;
+                  
+            default:
+                itemSort.setStatus( "A...Z", Color.DARK_GRAY );
+                Collections.sort( profiles, new Comparator<Profile>() {
+                    
+                    public int compare( Profile p1, Profile p2 ) {
+                        return p1.getName().compareTo( p2.getName() );
+                    };
+                } );
+                break;
+            };
+            
+            for ( Profile profile : this.profiles ) {
+                this.panelProfiles.add( profilePanels.get( profile ) );
+            }
         }
 
         ((JWindow)this.getTopLevelAncestor()).pack();
@@ -629,15 +611,14 @@ class KTMenuItem extends JPanel implements MouseListener {
         if ( message == null ) {
             this.message.setText( null );
             this.iconCenter.setIcon( Imx.NONE );
-            TrayManager.clearMessage( id );
+            TrayManager.clearError( id );
             this.windowInfo.setVisible( false );
         } else {
             
             if ( ! message.equals( this.message.getText() ) ) {
                 this.message.setText( message );
                 this.iconCenter.setIcon( Imx.WARNING );
-                TrayManager.setMessage( id, message );
-                TrayManager.blink();
+                TrayManager.setError( id, message );
             }
         }
     }
@@ -838,14 +819,17 @@ class TunnelMenuItem extends KTMenuItem implements TunnelClientListener {
             switch ( tunnel.getState() ) {
             
             case Tunnel.STATE_STARTING:
+
                 this.setProcessing( true );
                 this.setStatus( "starting[" + ( tunnel.getFailures() + 1 ) + "]", Color.GRAY );
+                this.setTextStyle( TextStyle.TUNNEL );
                 break;
             
             case Tunnel.STATE_RUNNING:
                 
                 iconRight.setIcon( Imx.RUNNING );
                 this.setProcessing( false );
+                this.setTextStyle( TextStyle.TUNNEL_RUNNING );
 
                 if ( tunnel.getPingFailures() > 0 ) {
                     this.setStatus( "failing (" + tunnel.getPingFailures() + "/3)", Color.RED );
@@ -855,6 +839,7 @@ class TunnelMenuItem extends KTMenuItem implements TunnelClientListener {
                 break;
                 
             case Tunnel.STATE_STOPPING:
+
                 this.setProcessing( true );
                 this.setStatus( "stopping", Color.GRAY );
                 break;
@@ -864,6 +849,7 @@ class TunnelMenuItem extends KTMenuItem implements TunnelClientListener {
                 iconRight.setIcon( Imx.STOPPED );
                 this.setProcessing( false );
                 this.setStatus( "inactive", Color.LIGHT_GRAY );
+                this.setTextStyle( TextStyle.TUNNEL );
                 break;
             }
             

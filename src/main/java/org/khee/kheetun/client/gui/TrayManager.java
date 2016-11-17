@@ -1,22 +1,15 @@
 package org.khee.kheetun.client.gui;
 
-import java.awt.Component;
 import java.awt.Point;
 import java.util.HashMap;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 public class TrayManager {
-
-    private static Logger logger = LogManager.getLogger( "kheetun" );
 
     private static TrayManager          instance;
     
     private Tray                        tray;
     private TrayMenu                    menu;
-    private Component                   configDialog;
-    private HashMap<Integer, String>    messages = new HashMap<Integer, String>();
+    private HashMap<Integer, String>    errors = new HashMap<Integer, String>();
     
     protected TrayManager() {
         
@@ -37,11 +30,6 @@ public class TrayManager {
         instance.menu = menu;
     }
     
-    public static void setConfigDialog( Component configDialog ) {
-        
-        instance.configDialog = configDialog;
-    }
-    
     public static void setIcon( Imx icon ) {
         
         instance.tray.setIcon( icon );
@@ -59,36 +47,30 @@ public class TrayManager {
         instance.tray.unblink();
     }
     
-    public static void clearMessage( int id ) {
+    public static void clearError( int id ) {
         
-        logger.debug( "TrayManager remove message: " + id );
-
-        instance.messages.remove( id );
+        instance.errors.remove( id );
         
-        if ( instance.messages.isEmpty() ) {
+        if ( instance.errors.isEmpty() ) {
        
-            TrayManager.setIcon( Imx.KHEETUN_ON );
+            TrayManager.setIcon( Imx.TRAY_OK );
+            TrayManager.unblink();
         }
     }
     
-    public static void clearMessages() {
+    public static void clearAllErrors() {
         
-        instance.messages.clear();
+        instance.errors.clear();
+        TrayManager.setIcon( Imx.TRAY_OK );
+        TrayManager.unblink();
     }
     
-    public static void setMessage( int id, String message ) {
+    public static void setError( int id, String message ) {
         
-        logger.debug( "TrayManager adding message: " + id + "/" + message );
+        instance.errors.put( id, message );
         
-        instance.messages.put( id, message );
-        
-        TrayManager.setIcon( Imx.KHEETUN_WARNING );
-    }
-    
-    public static void showConfigDialog() {
-        
-        instance.configDialog.revalidate();
-        instance.configDialog.setVisible( true );
+        TrayManager.setIcon( Imx.TRAY_ERROR );
+        TrayManager.blink();
     }
     
     public static void toggleMenu( Point p ) {
