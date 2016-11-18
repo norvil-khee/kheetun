@@ -195,7 +195,7 @@ public class TunnelManager {
         return this.server;
     }
     
-    private JSch setupPublickeyAuth( Tunnel tunnel ) {
+    private synchronized JSch setupPublickeyAuth( Tunnel tunnel ) {
         
         JSch jsch;
         
@@ -219,7 +219,7 @@ public class TunnelManager {
         return jsch;
     }
 
-    private JSch setupSshAgentAuth( Tunnel tunnel ) {
+    private synchronized JSch setupSshAgentAuth( Tunnel tunnel ) {
         
         JSch jsch;
         
@@ -287,10 +287,13 @@ public class TunnelManager {
         }
     }
     
-    public synchronized void stopTunnel( Tunnel tunnel, boolean manually ) {
+    public void stopTunnel( Tunnel tunnel, boolean manually ) {
+        
+        tunnel.lock();
         
         if ( tunnel.getState() != Tunnel.STATE_RUNNING ) {
             logger.info( "Tunnel " + tunnel.getAlias() + " is not started (state=" + tunnel.getState() + "), will not stop" );
+            tunnel.unlock();
             return;
         }
         
@@ -338,12 +341,17 @@ public class TunnelManager {
         logger.info( "Stopped tunnel: " + tunnel.getAlias() );
         
         server.send( new Protocol( Protocol.TUNNEL, tunnel ) );
+        
+        tunnel.unlock();
     }
     
-    public synchronized void startTunnel( Tunnel tunnel, boolean manually ) {
+    public void startTunnel( Tunnel tunnel, boolean manually ) {
+        
+        tunnel.lock();
 
         if ( tunnel.getState() != Tunnel.STATE_STOPPED ) {
             logger.info( "Tunnel " + tunnel.getAlias() + " is not stopped (state=" + tunnel.getState() + "), will not start" );
+            tunnel.unlock();
             return;
         }
         
@@ -371,6 +379,7 @@ public class TunnelManager {
                 
                 tunnel.setState( Tunnel.STATE_STOPPED );
                 server.send( new Protocol( Protocol.TUNNEL, tunnel ) );
+                tunnel.unlock();
                 return;
             }
             
@@ -409,7 +418,8 @@ public class TunnelManager {
                 
                 session.disconnect();
             }
-            
+
+            tunnel.unlock();
             this.failTunnel( tunnel, "SSH Session connection failed: " + eJSch.getMessage() );
 
             tunnel.setState( Tunnel.STATE_STOPPED );
@@ -435,6 +445,8 @@ public class TunnelManager {
         
         tunnel.setError( null );
         this.server.send( new Protocol( Protocol.TUNNEL, tunnel ) );
+        
+        tunnel.unlock();
     }
     
     public void failTunnel( Tunnel tunnel, String error ) {

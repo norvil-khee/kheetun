@@ -3,6 +3,7 @@ package org.khee.kheetun.client.config;
 import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.concurrent.Semaphore;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -12,6 +13,8 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlType;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.khee.kheetun.server.daemon.AutostartDaemon;
 import org.khee.kheetun.server.daemon.PingChecker;
 
@@ -23,6 +26,8 @@ import com.jcraft.jsch.Session;
 public class Tunnel implements Serializable {
     
     public static final long serialVersionUID = 77L;
+    
+    private transient static Logger logger = LogManager.getLogger( "kheetun" );
     
     public static final int     STATE_STARTING      = 100;
 //    public static final int     STATE_STARTED       = 200;
@@ -58,6 +63,7 @@ public class Tunnel implements Serializable {
     private transient Session             session             = null;
     private transient PingChecker         pingChecker         = null;
     private transient AutostartDaemon     autostartDaemon     = null;
+    private Semaphore           lock                = new Semaphore(1);
     
     public Tunnel() {
         forwards    = new ArrayList<Forward>();
@@ -68,6 +74,18 @@ public class Tunnel implements Serializable {
         sshKeyString    = "";
         autostart       = false;
         restart         = false;
+    }
+    
+    public void lock() {
+        try {
+            this.lock.acquire();
+        } catch ( InterruptedException eInterrupted ) {
+            logger.error( "Interrupted while trying to lock tunnel " + this.getAlias() );
+        }
+    }
+    
+    public void unlock() {
+        this.lock.release();
     }
     
     @XmlAttribute
