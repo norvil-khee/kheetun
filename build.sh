@@ -4,6 +4,7 @@
 #
 sudo mkdir _build 2> /dev/null
 sudo rm -rf _build/*
+sudo chown ${USER}: _build
 mkdir _build/lib
 mkdir _build/etc
 mkdir _build/log
