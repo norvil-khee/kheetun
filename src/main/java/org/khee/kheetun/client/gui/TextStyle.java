@@ -11,6 +11,8 @@ public class TextStyle {
     public static final TextStyle       TUNNEL_RUNNING;
     public static final TextStyle       NO_PROFILES;
     
+    public static final TextStyle       CONFIG_HEADER;
+    
     static {
         {
             Font    fontActive    = new Font( Font.DIALOG, Font.PLAIN, 13 );
@@ -57,6 +59,17 @@ public class TextStyle {
             
             NO_PROFILES = new TextStyle( fontActive, colorActive, fontInactive, colorInactive );
         }
+        
+        {
+            Font    fontActive    = new Font( Font.MONOSPACED, Font.BOLD, 18 );
+            Color   colorActive   = Color.DARK_GRAY;
+
+            Font    fontInactive    = new Font( Font.MONOSPACED, Font.BOLD, 18 );
+            Color   colorInactive   = Color.DARK_GRAY;
+            
+            CONFIG_HEADER = new TextStyle( fontActive, colorActive, fontInactive, colorInactive );
+        }
+        
     }
     
     private Font    fontActive;

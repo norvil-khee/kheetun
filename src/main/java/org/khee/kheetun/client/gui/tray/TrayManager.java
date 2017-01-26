@@ -1,7 +1,11 @@
-package org.khee.kheetun.client.gui;
+package org.khee.kheetun.client.gui.tray;
 
 import java.awt.Point;
 import java.util.HashMap;
+
+import org.khee.kheetun.client.gui.Imx;
+import org.khee.kheetun.client.gui.Kholor;
+import org.khee.kheetun.client.gui.dialog.Dialog;
 
 public class TrayManager {
 
@@ -9,6 +13,7 @@ public class TrayManager {
     
     private Tray                                        tray;
     private TrayMenu                                    menu;
+    private Dialog                                      dialog;
     private HashMap<String, HashMap<Integer, String>>   errors = new HashMap<String, HashMap<Integer, String>>();
      
     
@@ -29,6 +34,11 @@ public class TrayManager {
     public static void setMenu( TrayMenu menu ) {
         
         instance.menu = menu;
+    }
+    
+    public static void setDialog( Dialog dialog ) {
+        
+        instance.dialog = dialog;
     }
     
     public static void setIcon( Imx icon ) {
@@ -69,7 +79,7 @@ public class TrayManager {
             
             if ( instance.errors.isEmpty() ) {
                 
-                TrayManager.setIcon( Imx.TRAY_OK );
+                TrayManager.setIcon( Imx.TRAY );
                 TrayManager.unblink();
             }
         }
@@ -83,7 +93,7 @@ public class TrayManager {
         
         instance.errors.get( scope ).put( id, message );
         
-        TrayManager.setIcon( Imx.TRAY_ERROR );
+        TrayManager.setIcon( Imx.TRAY.color( Kholor.ERROR ) );
         TrayManager.blink();
     }
     
@@ -91,6 +101,11 @@ public class TrayManager {
         
         instance.menu.toggle( p );
         instance.tray.unblink();
+    }
+    
+    public static void toggleDialog() {
+        
+        instance.dialog.toggle();
     }
     
 }

@@ -23,15 +23,14 @@ import com.jcraft.jsch.Session;
 @XmlAccessorType(XmlAccessType.NONE)
 @XmlRootElement
 @XmlType( propOrder={"alias","user","hostname","sshKeyString","autostart","forwards"} )
-public class Tunnel implements Serializable {
+public class Tunnel extends Base implements Serializable {
     
     public static final long serialVersionUID = 77L;
     
     private transient static Logger logger = LogManager.getLogger( "kheetun" );
     
     public static final int     STATE_STARTING      = 100;
-//    public static final int     STATE_STARTED       = 200;
-    public static final int     STATE_RUNNING       = 250;
+    public static final int     STATE_RUNNING       = 200;
     public static final int     STATE_STOPPING      = 300;
     public static final int     STATE_STOPPED       = 400;
     
@@ -40,16 +39,25 @@ public class Tunnel implements Serializable {
     public static final int     STATE_AUTO_WAIT     = 500;
     public static final int     STATE_AUTO_AVAIL    = 600;
     
-    private String              alias;
+
+    /**
+     * essential Tunnel data (used by equals)
+     */
     private String              user;
     private String              hostname;
-    private int                 port                = 22;
+    private Integer             port                = 22;
+    private ArrayList<Forward>  forwards;
+    
+    /**
+     * meta Tunnel data (used by metaEquals)
+     */
+    private String              alias;
     private File                sshKey;
     private String              sshKeyString;
     private String              passPhrase;
     private String              sshAgentSocket      = System.getenv( "SSH_AUTH_SOCK" );
-    private ArrayList<Forward>  forwards;
     private Boolean             autostart           = false;
+
     private boolean             restart             = false;
     private int                 state               = Tunnel.STATE_STOPPED;
     private int                 autoState           = Tunnel.STATE_AUTO_OFF;
@@ -74,6 +82,26 @@ public class Tunnel implements Serializable {
         sshKeyString    = "";
         autostart       = false;
         restart         = false;
+    }
+    
+    public Tunnel( Tunnel source ) {
+        
+        this.user           = source.user           == null ? null : new String( source.user );
+        this.hostname       = source.hostname       == null ? null : new String( source.hostname );
+        this.port           = source.port           == null ? null : new Integer( source.port );
+        
+        this.forwards       = new ArrayList<Forward>();
+        for ( Forward forward : source.forwards ) {
+            
+            this.forwards.add( new Forward( forward ) );
+        }
+        
+        this.alias          = source.alias          == null ? null : new String( source.alias );
+        this.sshKey         = source.sshKey         == null ? null : new File( source.sshKey.getAbsolutePath() );
+        this.sshKeyString   = source.sshKeyString   == null ? null : new String( source.sshKeyString );
+        this.sshAgentSocket = source.sshAgentSocket == null ? null : new String( source.sshAgentSocket );
+        this.passPhrase     = source.passPhrase     == null ? null : new String( source.passPhrase );
+        this.autostart      = new Boolean( source.autostart );
     }
     
     public void lock() {
@@ -113,11 +141,11 @@ public class Tunnel implements Serializable {
     }
     
     @XmlAttribute
-    public int getPort() {
+    public Integer getPort() {
         return port;
     }
 
-    public void setPort(int port) {
+    public void setPort( Integer port ) {
         this.port = port;
     }
 
@@ -293,6 +321,34 @@ public class Tunnel implements Serializable {
         
         this.autostartDaemon = autostartDaemon;
     }
+    
+    public int hashCodeMeta() {
+        
+        HashCodeBuilder h = new HashCodeBuilder( 13, 33 )
+            .append( this.getAlias() )
+            .append( this.getSshKey() )
+            .append( this.getSshKeyString() )
+            .append( this.getSshAgentSocket() )
+            .append( this.getPassPhrase() )
+            .append( this.getAutostart() );
+        
+        for ( Forward forward : this.getForwards() ) {
+           h.append( forward.hashCodeMeta() );
+        }
+        
+        return h.toHashCode();
+    }
+    
+    public boolean equalsMeta(Object obj) {
+        
+        if ( ! ( obj instanceof Tunnel ) ) {
+            return false;
+        }
+        
+        Tunnel compare = (Tunnel)obj;
+        
+        return this.hashCodeMeta() == compare.hashCodeMeta();
+    }  
     
     public int hashCode() {
         

@@ -1,4 +1,4 @@
-package org.khee.kheetun.client.gui;
+package org.khee.kheetun.client.gui.tray;
 
 import java.awt.Color;
 import java.awt.Component;
@@ -41,6 +41,10 @@ import org.khee.kheetun.client.config.ConfigManagerListener;
 import org.khee.kheetun.client.config.GlobalConfig;
 import org.khee.kheetun.client.config.Profile;
 import org.khee.kheetun.client.config.Tunnel;
+import org.khee.kheetun.client.gui.AnImx;
+import org.khee.kheetun.client.gui.Imx;
+import org.khee.kheetun.client.gui.Kholor;
+import org.khee.kheetun.client.gui.TextStyle;
 
 public class TrayMenu extends JWindow implements MouseListener, ConfigManagerListener, TunnelClientListener {
     
@@ -51,6 +55,7 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
     private KTMenuItem      itemExit;
     private KTMenuItem      itemStopAll;
     private KTMenuItem      itemAutostartAll;
+    private KTMenuItem      itemConfiguration;
     private KTProfilesPanel panelProfiles       = new KTProfilesPanel();
     private JPanel          panelMain;
     
@@ -68,7 +73,7 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
         this.getContentPane().setLayout( new BoxLayout( this.getContentPane(), BoxLayout.PAGE_AXIS ) );
         this.getContentPane().add( panelMain );
 
-        labelKheetun    = new KTMenuItem( Imx.KHEETUN.icon, "" );
+        labelKheetun    = new KTMenuItem( Imx.KHEETUN, "" );
         labelKheetun.setStatus( Kheetun.VERSION, Color.GRAY );
         
         labelConnected  = new KTMenuItem( Imx.NONE, "Daemon:" );
@@ -101,6 +106,16 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
             }
         };
         
+        itemConfiguration = new KTMenuItem( Imx.CONFIGURATION, "Configuration" ) {
+            
+            @Override
+            public void leftClick(MouseEvent e) {
+                
+                TrayManager.toggleDialog();
+            }
+        };
+        
+        
         this.setAlwaysOnTop( true );
         this.setType( Type.POPUP );
         
@@ -117,6 +132,7 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
         panelMain.add( new KTSeperator() );
         panelMain.add( labelConnected );
         panelMain.add( new KTSeperator() );
+        panelMain.add( itemConfiguration );
         panelMain.add( itemStopAll );
         panelMain.add( itemAutostartAll );
         panelMain.add( panelProfiles );
@@ -313,20 +329,20 @@ class KTProfilesPanel extends JPanel {
                 itemProfile.setInfo( "This profile is deactivated." );
             }
             
-            if ( ! profile.getErrors().isEmpty() ) {
-                
-                String message = "<html><body>Configuration errors:";
-                
-                for ( String error : profile.getErrors() ) {
-                    
-                    message += "<br>    * " + error;
-                }
-                
-                message += "</body></html>";
-                
-                itemProfile.setMessage( "profile", message );
-                itemProfile.setStatus( "[" + profile.getConfigFile().getName() + "]", Color.RED );
-            }
+//            if ( ! profile.getErrors().isEmpty() ) {
+//                
+//                String message = "<html><body>Configuration errors:";
+//                
+//                for ( String error : profile.getErrors() ) {
+//                    
+//                    message += "<br>    * " + error;
+//                }
+//                
+//                message += "</body></html>";
+//                
+//                itemProfile.setMessage( "profile", message );
+//                itemProfile.setStatus( "[" + profile.getConfigFile().getName() + "]", Color.RED );
+//            }
             
             profilePanel.add( itemProfile );
             
@@ -384,7 +400,7 @@ class KTProfilesPanel extends JPanel {
                 Collections.sort( profiles, new Comparator<Profile>() {
                     
                     public int compare( Profile p1, Profile p2 ) {
-                        return p1.getModified().compareTo( p2.getModified() );
+                        return p1.getConfigFile().lastModified() > p2.getConfigFile().lastModified() ? 1 : -1;
                     };
                 } );
                 break;
@@ -394,7 +410,7 @@ class KTProfilesPanel extends JPanel {
                 Collections.sort( profiles, new Comparator<Profile>() {
                     
                     public int compare( Profile p1, Profile p2 ) {
-                        return p2.getModified().compareTo( p1.getModified() );
+                        return p1.getConfigFile().lastModified() < p2.getConfigFile().lastModified() ? 1 : -1;
                     };
                 } );
                 break;
@@ -880,7 +896,7 @@ class TunnelMenuItem extends KTMenuItem implements TunnelClientListener {
             case Tunnel.STATE_AUTO_OFF:
 
                 if ( this.tunnel.getAutostart() ) {
-                    iconLeft.setIcon( Imx.AUTO_DISABLED );
+                    iconLeft.setIcon( Imx.AUTO.color( Kholor.DISABLED ) );
                     this.setInfo( null );
                 }
                 break;

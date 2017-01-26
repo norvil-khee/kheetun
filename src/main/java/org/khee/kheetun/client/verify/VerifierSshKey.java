@@ -1,14 +1,24 @@
 package org.khee.kheetun.client.verify;
 
-public class VerifierSshKey extends Verifier {
+import java.io.File;
 
-    public boolean verify(Object value) {
+public class VerifierSshKey extends Verifier {
+    
+    protected static VerifierSshKey instance = new VerifierSshKey();
+    
+    public static VerifierSshKey getInstance() {
+        return instance;
+    }        
+
+    public String verify(Object value) {
         
-        String key = (String)value;
+        File keyFile = (File)value;
         
-        //FIXME: be a little windows friendly :]
-        //
-        return key.length() == 0 || key.matches( "^(/[^/\\s]+)+$" );
+        if ( keyFile == null || keyFile.getAbsolutePath().matches( "^(/[^/\\s]+)+$" ) ) {
+            return null;
+        }
+        
+        return "Invalid SSH key file";
     }
 
 }

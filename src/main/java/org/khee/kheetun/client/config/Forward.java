@@ -15,52 +15,47 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
 @XmlAccessorType(XmlAccessType.NONE)
 @XmlRootElement
 @XmlType( propOrder={"type","bindIp","bindPort","forwardedHost","forwardedPort","hostsEntry","comment"} )
-public class Forward implements Serializable {
+public class Forward extends Base implements Serializable {
     
-    public static final long serialVersionUID = 42;
+    public static final long serialVersionUID   = 42L;
 
-    public static final String REMOTE = "remote";
-    public static final String LOCAL  = "local";
-    
-    private String type   = LOCAL;
-    
-    private String bindIp = "127.0.0.1";
-    
-    private Integer bindPort = 0;
-    
-    private String forwardedHost = "";
-    
-    private Integer forwardedPort = 0;
-    
-    private Boolean hostsEntry = true;
+    public static final String  REMOTE          = "remote";
+    public static final String  LOCAL           = "local";
 
-    private String comment = "";
+    /**
+     * essential Forward data (used by equals)
+     */
+    private String              type            = LOCAL;
+    private String              bindIp          = "127.0.0.1";
+    private Integer             bindPort        = 0;
+    private String              forwardedHost   = "";
+    private Integer             forwardedPort   = 0;
     
-    private Boolean active;
+    /**
+     * meta Forward data (used by metaEquals)
+     */
+    private String              comment         = "";
+    private Boolean             hostsEntry      = true;
     
-    private Object delete;    
-    
-
     public Forward() {
     }
        
     public Forward( Forward source ) {
         
         this.type           = source.type;
-        setBindIp( source.bindIp );
-        this.bindPort       = new Integer( source.bindPort );
-        this.forwardedHost  = source.forwardedHost;
-        this.forwardedPort  = new Integer( source.forwardedPort );
-        this.comment        = source.comment;
+        this.bindIp         = source.bindIp         == null ? null : new String( source.bindIp );
+        this.bindPort       = source.bindPort       == null ? null : new Integer( source.bindPort );
+        this.forwardedHost  = source.forwardedHost  == null ? null : new String( source.forwardedHost );
+        this.forwardedPort  = source.forwardedPort  == null ? null : new Integer( source.forwardedPort );
+        this.comment        = source.comment        == null ? null : new String( source.comment );
+        this.hostsEntry     = new Boolean( source.hostsEntry );
     }
-    
     
     @XmlTransient
     public String getSignature() {
         
         return getType() + ":" + getBindIp() + ":" + getBindPort() + ":" + getForwardedHost() + ":" + getForwardedPort();
     }
-    
     
     @XmlAttribute
     public String getType() {
@@ -135,22 +130,25 @@ public class Forward implements Serializable {
     public void setComment(String comment) {
         this.comment = comment;
     }
-
-    @XmlTransient
-    public Boolean getActive() {
-        return active;
+    
+    public int hashCodeMeta() {
+        
+        return new HashCodeBuilder( 13, 39 )
+            .append( this.getComment() )
+            .append( this.getHostsEntry() )
+            .toHashCode();
     }
-    public void setActive(Boolean active) {
-        this.active = active;
-    }
-
-    @XmlTransient
-    public Object getDelete() {
-        return delete;
-    }
-    public void setDelete(Object delete) {
-        this.delete = delete;
-    }
+    
+    public boolean equalsMeta(Object obj) {
+        
+        if ( ! ( obj instanceof Forward ) ) {
+            return false;
+        }
+        
+        Forward compare = (Forward)obj;
+        
+        return this.hashCodeMeta() == compare.hashCodeMeta();
+    }    
     
     @Override
     public int hashCode() {

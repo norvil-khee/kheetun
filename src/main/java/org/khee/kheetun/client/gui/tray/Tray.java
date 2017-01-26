@@ -1,7 +1,8 @@
-package org.khee.kheetun.client.gui;
+package org.khee.kheetun.client.gui.tray;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.khee.kheetun.client.gui.Imx;
 
 public class Tray implements Runnable {
     

@@ -1,4 +1,4 @@
-package org.khee.kheetun.client.gui;
+package org.khee.kheetun.client.gui.tray;
 
 import java.awt.Point;
 import java.awt.image.BufferedImage;
@@ -12,6 +12,7 @@ import org.gnome.gtk.Menu;
 import org.gnome.gtk.StatusIcon;
 import org.gnome.gtk.StatusIcon.Activate;
 import org.gnome.gtk.StatusIcon.PopupMenu;
+import org.khee.kheetun.client.gui.Imx;
 
 public class GtkTray extends Tray {
     
@@ -19,7 +20,7 @@ public class GtkTray extends Tray {
     
     static {
         try {
-            NONE        = pixbufFromBufferedImage( Imx.NONE.bs32 );
+            NONE        = pixbufFromBufferedImage( Imx.imageToBufferedImage( Imx.NONE.getImage() ) );
             
         } catch ( IOException e ) {
             
@@ -101,7 +102,7 @@ public class GtkTray extends Tray {
         
         try {
             
-            current = GtkTray.pixbufFromBufferedImage( icon.bs32 );
+            current = GtkTray.pixbufFromBufferedImage( Imx.imageToBufferedImage( icon.getImage() ) );
             this.icon.setFromPixbuf( current );
             
         } catch ( IOException e ) {

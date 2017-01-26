@@ -6,7 +6,6 @@ import java.util.Arrays;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.khee.kheetun.client.TunnelClient;
 
 public class ConfigManager implements Runnable {
     
@@ -116,19 +115,17 @@ public class ConfigManager implements Runnable {
                 }
             }
             
-            if ( TunnelClient.isConnected() ) {
         
-                if ( this.configChanged() ) {
-                    
-                    Config oldConfig = this.config;
-                    
-                    logger.info( "Configuration directory changed" );
-                   
-                    this.config = Config.load();
-                    
-                    for ( ConfigManagerListener listener : this.listeners ) {
-                        listener.configManagerConfigChanged( oldConfig, this.config, this.config.getErrors().isEmpty() );
-                    }
+            if ( this.configChanged() ) {
+                
+                Config oldConfig = this.config;
+                
+                logger.info( "Configuration directory changed" );
+               
+                this.config = Config.load();
+                
+                for ( ConfigManagerListener listener : this.listeners ) {
+                    listener.configManagerConfigChanged( oldConfig, this.config, this.config.getErrors().isEmpty() );
                 }
             }
             
