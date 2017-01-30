@@ -259,8 +259,6 @@ public abstract class GUIElement extends JPanel implements MouseListener, KeyLis
         
         if ( e.getKeyCode() == KeyEvent.VK_ESCAPE ) {
             
-            System.out.println( "undo edit" );
-            
             this.endEdit( false );
         }
         

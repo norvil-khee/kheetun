@@ -404,7 +404,7 @@ public class Dialog extends JFrame implements ConfigManagerListener, KhbuttonLis
             return;
         }
         
-        this.config         = newConfig;
+        this.config         = new Config( newConfig );
         this.configOriginal = new Config( this.config );
         
         this.validateConfig();
