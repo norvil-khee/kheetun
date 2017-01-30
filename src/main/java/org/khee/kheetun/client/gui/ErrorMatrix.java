@@ -64,15 +64,6 @@ public class ErrorMatrix extends JPanel {
         this.labelNoErrors.setForeground( Kholor.DECENT_GREY );
     }
     
-    @Override
-    protected void paintComponent(Graphics g) {
-        
-        Graphics2D g2d = (Graphics2D)g;
-        
-        g2d.setPaint( new GradientPaint( 0.0f, this.getHeight() - this.getHeight() / 2, Color.WHITE, 0.0f, this.getHeight(), Color.LIGHT_GRAY ) );
-        g2d.fillRect( 0, 0, this.getWidth(), this.getHeight() );
-    }
-    
     public void showErrors( Config config ) {
         
         this.row = 0;

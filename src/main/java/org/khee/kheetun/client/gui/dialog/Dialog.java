@@ -90,13 +90,8 @@ public class Dialog extends JFrame implements ConfigManagerListener, KhbuttonLis
         
         JPanel title = new JPanel();
         title.setLayout( new GridBagLayout() );
-        
-        JLabel labelK       = new JLabel( "K", SwingConstants.LEFT );
-        labelK.setVerticalAlignment( SwingConstants.BOTTOM );
-        labelK.setFont( new Font( Font.DIALOG, Font.BOLD, 32 ) );
-        labelK.setForeground( new Color( 0x359eff ) );
 
-        JLabel labelHeetun  = new JLabel( " H E E T U N" );
+        JLabel labelHeetun  = new JLabel( Imx.KHEETUN );
         labelHeetun.setVerticalAlignment( SwingConstants.BOTTOM );
         labelHeetun.setFont( new Font( Font.DIALOG, Font.PLAIN, 32 ) );
         labelHeetun.setForeground( Color.WHITE );
@@ -149,7 +144,6 @@ public class Dialog extends JFrame implements ConfigManagerListener, KhbuttonLis
         c.weightx = 0.0f;
         c.anchor = GridBagConstraints.LINE_START;
         
-        title.add( labelK, c );
         title.add( labelHeetun, c );
         
         c.weightx = 1.0f;
@@ -187,7 +181,7 @@ public class Dialog extends JFrame implements ConfigManagerListener, KhbuttonLis
         this.scrollErrorMatrix.setMaximumSize( new Dimension( 622, 100 ) );
         this.scrollErrorMatrix.setVerticalScrollBarPolicy( ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS );
         
-        this.getContentPane().add( title,               new GridBagConstraints( 0, 0, 3, 1, 1.0, 0.0, GridBagConstraints.PAGE_START, GridBagConstraints.HORIZONTAL, new Insets( 32, 0, 0, 0 ), 0, 0 ) );
+        this.getContentPane().add( title,               new GridBagConstraints( 0, 0, 3, 1, 1.0, 0.0, GridBagConstraints.PAGE_START, GridBagConstraints.HORIZONTAL, new Insets( 8, 0, 0, 0 ), 0, 0 ) );
         this.getContentPane().add( scrollErrorMatrix,   new GridBagConstraints( 0, 1, 3, 1, 0.0, 0.0, GridBagConstraints.LINE_END, GridBagConstraints.NONE, new Insets( 0, 0, 32, 0 ), 0, 0 ) );
         this.getContentPane().add( this.profilesPanel,  new GridBagConstraints( 0, 2, 1, 1, 0.0, 1.0, GridBagConstraints.LAST_LINE_START, GridBagConstraints.VERTICAL, new Insets( 0, 0, 0, 0 ), 0, 0 ) );
         this.getContentPane().add( this.tunnelPanel,    new GridBagConstraints( 1, 2, 1, 1, 0.0, 1.0, GridBagConstraints.PAGE_END, GridBagConstraints.VERTICAL, new Insets( 0, 0, 0, 0 ), 0, 0 ) );

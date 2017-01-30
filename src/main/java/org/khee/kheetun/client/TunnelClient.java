@@ -302,4 +302,9 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
         instance.listeners.add( listener );
     }
 
+    public static void removeTunnelClientListener( TunnelClientListener listener ) {
+        
+        instance.listeners.remove( listener );
+    }
+
 }

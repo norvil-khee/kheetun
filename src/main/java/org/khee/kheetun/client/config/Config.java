@@ -3,6 +3,7 @@ package org.khee.kheetun.client.config;
 import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 
 import javax.xml.bind.JAXBContext;
@@ -161,10 +162,22 @@ public class Config implements Serializable {
     
     public void save() {
         
-        File configDirectory = new File( System.getProperty( "user.home") + "/.kheetun/kheetun.d" );
+        if ( ! Config.CONFIG_DIRECTORY.exists() ) {
+            Config.CONFIG_DIRECTORY.mkdir();
+        }
         
-        if ( ! configDirectory.exists() ) {
-            configDirectory.mkdir();
+        /*
+         * backup all previous config files
+         */
+        File[] files = Config.CONFIG_DIRECTORY.listFiles();
+        
+        for ( File file : files ) {
+            
+            if ( ! file.getAbsolutePath().matches( ".*\\.xml$" ) ) {
+                continue;
+            }
+            
+            file.renameTo( new File( file.getAbsolutePath() + ".bak" ) );
         }
         
         try {

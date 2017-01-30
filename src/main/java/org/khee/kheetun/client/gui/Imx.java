@@ -22,8 +22,10 @@ public class Imx extends ImageIcon {
 
     private static HashMap<String, Imx> database    = new HashMap<String, Imx>();
     
-    public static final Imx KHEETUN             = Imx.createImx( "kheetun_logo.png" );
-    public static final Imx TRAY                = Imx.createImx( "tray.png" );
+    public static final Imx KHEETUN             = Imx.createImx( "kheetun_logo.png", null, null, null );
+    public static final Imx TRAY                = Imx.createImx( "kheetun_tray_light_blue_gradient.png", null, null, null );
+    public static final Imx TRAY_NEUTRAL        = Imx.createImx( "tray_neutral.png", null, null, null );
+    public static final Imx TRAY_RED            = Imx.createImx( "kheetun_tray_light_red_gradient.png", null, null, null );
     public static final Imx CONFIGURATION       = Imx.createImx( "configuration.png" );
     public static final Imx SAVE                = Imx.createImx( "save.png" );
     public static final Imx EDIT                = Imx.createImx( "edit.png" );
@@ -32,7 +34,6 @@ public class Imx extends ImageIcon {
     public static final Imx START               = Imx.createImx( "play.png" );
     public static final Imx STOP                = Imx.createImx( "stop.png" );
     public static final Imx WARNING             = Imx.createImx( "warning.png" );
-    public static final Imx WARNING_DISABLED    = Imx.createImx( "warning_gray.png" );
     public static final Imx EXIT                = Imx.createImx( "exit.png" );
     public static final Imx PROFILE             = Imx.createImx( "profile.png" );
     public static final Imx PROFILE_SORT        = Imx.createImx( "profile_sort.png" );
@@ -52,12 +53,13 @@ public class Imx extends ImageIcon {
     public static final Imx NEW                 = Imx.createImx( "new.png" );
     
     private String  file;
-    private Integer scale;
+    private Integer scaleX;
+    private Integer scaleY;
     private Integer mask;
     
     public Imx disabled() {
         
-        return Imx.createImx( this.file, this.scale, 0 );
+        return Imx.createImx( this.file, this.scaleX, this.scaleY, 0 );
     }
     
     public Imx hover() {
@@ -67,61 +69,74 @@ public class Imx extends ImageIcon {
     
     public Imx lighten( Integer degree ) {
         
-        return Imx.createImx( this.file, this.scale, 
+        return Imx.createImx( this.file, this.scaleX, this.scaleY, 
                 this.mask & 0xFF000000 
               | Math.min( ( this.mask & 0xFF0000 ) + ( degree << 16 ), 0xFF0000 ) 
               | Math.min( ( this.mask & 0xFF00 )   + ( degree << 8  ), 0xFF00   ) 
               | Math.min( ( this.mask & 0xFF )     + ( degree ),       0xFF     ) ); 
     }
     
-    public Imx shadow( int mask ) {
-        
-        return Imx.createImx( this.file, this.scale, mask & 0xFFFFFF );
-    }
-    
-    public Imx red() {
-        
-        return Imx.createImx( this.file, this.scale, 0xFFFF0000 );
-    }
-    
     public Imx size( Integer size ) {
         
-        return Imx.createImx( this.file, size, this.mask );
+        return Imx.createImx( this.file, size, size, this.mask );
     }
     
+    public Imx size( Integer sizeX, Integer sizeY ) {
+        
+        return Imx.createImx( this.file, sizeX, sizeY, this.mask );
+    }
+
+    public Imx size( Float scale ) {
+        
+        return Imx.createImx( this.file, Math.round( this.scaleX * scale ), Math.round( this.scaleY * scale ), this.mask );
+    }
+
     public Imx color( Color color ) {
         
-        return Imx.createImx( this.file, this.scale, color.getRGB() );
+        return Imx.createImx( this.file, this.scaleX, this.scaleY, color.getRGB() );
     }
     
     
     public static Imx createImx( String file ) {
         
-        return Imx.createImx( file, 16, 0xFF359eff );
+        return Imx.createImx( file, 16, 16, 0xFF359eff );
     }
     
-    public static Imx createImx( String file, Integer scale, Integer mask ) {
+    public static Imx createImx( String file, Integer scaleX, Integer scaleY, Integer mask ) {
         
-        String id = file + ":" + scale.toString() + ":" + Integer.toHexString( mask );
+        String id = file + ":" + scaleX + ":" + scaleY + ":" + ( mask != null ? Integer.toHexString( mask ) : "null" );
         
         if ( Imx.database.containsKey( id ) ) {
 
             return Imx.database.get( id );
         }
-        
+
         try {
             
-            logger.trace( "Creating new image: " + file + ", " + scale + "x" + scale + "[" + Integer.toHexString( mask ) + "]" );
+            logger.trace( "Creating new image: " + id );
             
             BufferedImage tmp = ImageIO.read( KheetunClient.class.getResource( "/images/icons/" + file ) );
             
             BufferedImage rgba = new BufferedImage( tmp.getWidth(), tmp.getHeight(), BufferedImage.TYPE_INT_ARGB );
             rgba.createGraphics().drawImage( tmp, 0, 0, null );
             
-            BufferedImage scaled = new BufferedImage( scale, scale, BufferedImage.TYPE_INT_ARGB );
-            scaled.createGraphics().drawImage( Imx.recolor( rgba, mask ).getScaledInstance( scale, scale, Image.SCALE_SMOOTH ), 0, 0, null );
-
-            Imx imx = new Imx( file, scale, mask );
+            if ( scaleX == null ) {
+                scaleX = tmp.getWidth();
+            }
+            
+            if ( scaleY == null ) {
+                scaleY = tmp.getHeight();
+            }
+            
+            Imx imx = new Imx( file, scaleX, scaleY, mask );
+            
+            if ( mask != null ) {
+                
+                rgba = Imx.recolor( rgba, mask );
+            }
+            
+            BufferedImage scaled = new BufferedImage( scaleX, scaleY, BufferedImage.TYPE_INT_ARGB );
+            scaled.createGraphics().drawImage( rgba.getScaledInstance( scaleX, scaleY, Image.SCALE_SMOOTH ), 0, 0, null );
             imx.setImage( scaled );
             
             Imx.database.put( id, imx );
@@ -130,7 +145,7 @@ public class Imx extends ImageIcon {
                        
         } catch ( Exception e ) {
             
-            logger.error( "Could not load " + file + ": " + e.getMessage() );
+            logger.error( "Could not load " + file + ": ", e );
             logger.debug( "", e );
             System.exit( 1 );
         }        
@@ -138,10 +153,11 @@ public class Imx extends ImageIcon {
         return null;
     }
 
-    protected Imx( String file, Integer scale, Integer mask ) {
+    protected Imx( String file, Integer scaleX, Integer scaleY, Integer mask ) {
         
         this.file       = file;
-        this.scale      = scale;
+        this.scaleX     = scaleX;
+        this.scaleY     = scaleY;
         this.mask       = mask;
     }
     

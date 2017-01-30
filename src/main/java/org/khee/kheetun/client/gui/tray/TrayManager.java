@@ -4,7 +4,6 @@ import java.awt.Point;
 import java.util.HashMap;
 
 import org.khee.kheetun.client.gui.Imx;
-import org.khee.kheetun.client.gui.Kholor;
 import org.khee.kheetun.client.gui.dialog.Dialog;
 
 public class TrayManager {
@@ -14,7 +13,7 @@ public class TrayManager {
     private Tray                                        tray;
     private TrayMenu                                    menu;
     private Dialog                                      dialog;
-    private HashMap<String, HashMap<Integer, String>>   errors = new HashMap<String, HashMap<Integer, String>>();
+    private HashMap<Integer, String>                    errors = new HashMap<Integer, String>();
      
     
     protected TrayManager() {
@@ -58,42 +57,26 @@ public class TrayManager {
         instance.tray.unblink();
     }
     
-    public static void clearError( String scope, int id ) {
+    public static void clearError( int id ) {
         
-        if ( instance.errors.containsKey( scope ) ) {
+        if ( instance.errors.containsKey( id ) ) {
             
-            instance.errors.get( scope ).remove( id );
-            
-            if ( instance.errors.get( scope ).isEmpty() ) {
-                
-                TrayManager.clearErrors( scope );
-            }
-        }
-    }
-    
-    public static void clearErrors( String scope ) {
-        
-        if ( instance.errors.containsKey( scope ) ) {
-        
-            instance.errors.remove( scope );
+            instance.errors.remove( id );
             
             if ( instance.errors.isEmpty() ) {
                 
-                TrayManager.setIcon( Imx.TRAY );
+                instance.errors.clear();
+                TrayManager.setIcon( Imx.TRAY.size( 32 ) );
                 TrayManager.unblink();
             }
         }
     }
     
-    public static void setError( String scope, int id, String message ) {
+    public static void setError( int id, String message ) {
         
-        if ( ! instance.errors.containsKey( scope ) ) {
-            instance.errors.put( scope, new HashMap<Integer, String>() );
-        }
+        instance.errors.put( id, message );
         
-        instance.errors.get( scope ).put( id, message );
-        
-        TrayManager.setIcon( Imx.TRAY.color( Kholor.ERROR ) );
+        TrayManager.setIcon( Imx.TRAY_RED.size( 32 ) );
         TrayManager.blink();
     }
     

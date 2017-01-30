@@ -25,7 +25,7 @@ public class TextStyle {
         }
         {
             Font    fontActive    = new Font( Font.DIALOG, Font.BOLD, 13 );
-            Color   colorActive   = Color.BLUE;
+            Color   colorActive   = Kholor.BUTTON_ENABLED;
 
             Font    fontInactive    = new Font( Font.DIALOG, Font.BOLD, 13 );
             Color   colorInactive   = Color.LIGHT_GRAY;

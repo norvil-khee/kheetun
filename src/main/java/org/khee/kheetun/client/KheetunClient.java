@@ -28,8 +28,6 @@ public class KheetunClient {
 
         System.setProperty( "sun.java2d.xrender", "false" );
 
-        ConfigManager.start();
-
         Gtk.init( args );
         
         TrayManager.init();
@@ -58,7 +56,7 @@ public class KheetunClient {
         TrayManager.setTray( tray );
         TrayManager.setMenu( menu );
         TrayManager.setDialog( dialog );
-        TrayManager.setIcon( Imx.TRAY );
+        TrayManager.setIcon( Imx.TRAY.size( 32 ) );
 
         ConfigManager.start();
         
