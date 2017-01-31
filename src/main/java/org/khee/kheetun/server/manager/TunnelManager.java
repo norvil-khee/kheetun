@@ -14,6 +14,9 @@ import org.khee.kheetun.server.comm.Protocol;
 import org.khee.kheetun.server.daemon.AutostartDaemon;
 import org.khee.kheetun.server.daemon.PingChecker;
 
+import com.jcraft.jsch.Channel;
+import com.jcraft.jsch.ChannelExec;
+import com.jcraft.jsch.ChannelShell;
 import com.jcraft.jsch.IdentityRepository;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
@@ -409,6 +412,13 @@ public class TunnelManager {
             
             session.setTimeout( 10000 );
             session.connect();
+            
+            Channel channel = session.openChannel( "shell" );
+            ChannelShell channelShell = (ChannelShell)channel;
+            
+            channelShell.connect();
+            
+            tunnel.setShellChannel( channelShell );
             
             ArrayList<Forward> hostEntries = new ArrayList<Forward>();
             

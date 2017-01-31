@@ -18,6 +18,8 @@ import org.apache.logging.log4j.Logger;
 import org.khee.kheetun.server.daemon.AutostartDaemon;
 import org.khee.kheetun.server.daemon.PingChecker;
 
+import com.jcraft.jsch.ChannelExec;
+import com.jcraft.jsch.ChannelShell;
 import com.jcraft.jsch.Session;
 
 @XmlAccessorType(XmlAccessType.NONE)
@@ -70,9 +72,10 @@ public class Tunnel extends Base implements Serializable {
     private String              info                = null;
     private Integer             maxFailures         = 3;
     
-    private transient Session             session             = null;
-    private transient PingChecker         pingChecker         = null;
-    private transient AutostartDaemon     autostartDaemon     = null;
+    private transient Session               session             = null;
+    private transient PingChecker           pingChecker         = null;
+    private transient AutostartDaemon       autostartDaemon     = null;
+    private transient ChannelShell          shellChannel        = null;  
     private Semaphore           lock                = new Semaphore(1);
     
     public Tunnel() {
@@ -344,6 +347,14 @@ public class Tunnel extends Base implements Serializable {
         this.autostartDaemon = autostartDaemon;
     }
     
+    public ChannelShell getShellChannel() {
+        return shellChannel;
+    }
+
+    public void setShellChannel(ChannelShell shellChannel) {
+        this.shellChannel = shellChannel;
+    }
+
     public int hashCodeMeta() {
         
         HashCodeBuilder h = new HashCodeBuilder( 13, 33 )
