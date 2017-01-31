@@ -37,6 +37,7 @@ import org.khee.kheetun.client.gui.ErrorMatrix;
 import org.khee.kheetun.client.gui.Imx;
 import org.khee.kheetun.client.gui.Khbutton;
 import org.khee.kheetun.client.gui.KhbuttonListener;
+import org.khee.kheetun.client.gui.Khlabel;
 import org.khee.kheetun.client.gui.Kholor;
 import org.khee.kheetun.client.gui.TextStyle;
 
@@ -88,24 +89,6 @@ public class Dialog extends JFrame implements ConfigManagerListener, KhbuttonLis
         this.buttonErrors.addButtonListener( this );
         this.buttonNew.addButtonListener( this );
         
-        JPanel title = new JPanel();
-        title.setLayout( new GridBagLayout() );
-
-        JLabel labelHeetun  = new JLabel( Imx.KHEETUN );
-        labelHeetun.setVerticalAlignment( SwingConstants.BOTTOM );
-        labelHeetun.setFont( new Font( Font.DIALOG, Font.PLAIN, 32 ) );
-        labelHeetun.setForeground( Color.WHITE );
-        
-        JLabel labelConfiguratio = new JLabel( "C O N F I G U R A T I O " );
-        labelConfiguratio.setVerticalAlignment( SwingConstants.BOTTOM );
-        labelConfiguratio.setFont( new Font( Font.DIALOG, Font.PLAIN, 32 ) );
-        labelConfiguratio.setForeground( Color.WHITE );
-        
-        JLabel labelN       = new JLabel( "N", SwingConstants.LEFT );
-        labelN.setVerticalAlignment( SwingConstants.BOTTOM );
-        labelN.setFont( new Font( Font.DIALOG, Font.BOLD, 32 ) );
-        labelN.setForeground( new Color( 0x359eff ) );
-        
         JPanel panelButtons = new JPanel(){
             
             @Override
@@ -139,34 +122,6 @@ public class Dialog extends JFrame implements ConfigManagerListener, KhbuttonLis
         panelButtons.add( Box.createHorizontalGlue() );
         panelButtons.add( buttonErrors );
         
-        GridBagConstraints c = new GridBagConstraints();
-        
-        c.weightx = 0.0f;
-        c.anchor = GridBagConstraints.LINE_START;
-        
-        title.add( labelHeetun, c );
-        
-        c.weightx = 1.0f;
-        c.fill = GridBagConstraints.HORIZONTAL;
-        
-        title.add( Box.createHorizontalGlue(), c );
-        
-        c.fill = GridBagConstraints.NONE;
-        c.weightx = 0.0f;
-        
-        title.add( labelConfiguratio, c );
-        title.add( labelN, c );
-        
-        c.fill = GridBagConstraints.HORIZONTAL;
-        c.weightx = 1.0f;
-        c.weighty = 0.0f;
-        c.gridy = 1;
-        c.gridx = 0;
-        c.insets = new Insets( 8, 0, 0, 0 );
-        c.gridwidth = GridBagConstraints.REMAINDER;
-        
-        title.add( panelButtons, c );
-        
         profilesPanel.setMinimumSize( new Dimension( 280, 1 ) );
         profilesPanel.setPreferredSize( new Dimension( 280, 1 ) );
         profilesPanel.setMaximumSize( new Dimension( 280, Integer.MAX_VALUE ) );
@@ -181,11 +136,13 @@ public class Dialog extends JFrame implements ConfigManagerListener, KhbuttonLis
         this.scrollErrorMatrix.setMaximumSize( new Dimension( 622, 100 ) );
         this.scrollErrorMatrix.setVerticalScrollBarPolicy( ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS );
         
-        this.getContentPane().add( title,               new GridBagConstraints( 0, 0, 3, 1, 1.0, 0.0, GridBagConstraints.PAGE_START, GridBagConstraints.HORIZONTAL, new Insets( 8, 0, 0, 0 ), 0, 0 ) );
-        this.getContentPane().add( scrollErrorMatrix,   new GridBagConstraints( 0, 1, 3, 1, 0.0, 0.0, GridBagConstraints.LINE_END, GridBagConstraints.NONE, new Insets( 0, 0, 32, 0 ), 0, 0 ) );
-        this.getContentPane().add( this.profilesPanel,  new GridBagConstraints( 0, 2, 1, 1, 0.0, 1.0, GridBagConstraints.LAST_LINE_START, GridBagConstraints.VERTICAL, new Insets( 0, 0, 0, 0 ), 0, 0 ) );
-        this.getContentPane().add( this.tunnelPanel,    new GridBagConstraints( 1, 2, 1, 1, 0.0, 1.0, GridBagConstraints.PAGE_END, GridBagConstraints.VERTICAL, new Insets( 0, 0, 0, 0 ), 0, 0 ) );
-        this.getContentPane().add( this.forwardsPanel,  new GridBagConstraints( 2, 2, 1, 1, 1.0, 1.0, GridBagConstraints.LAST_LINE_END, GridBagConstraints.BOTH, new Insets( 0, 0, 0, 0 ), 0, 0 ) );
+        this.getContentPane().add( panelButtons,                       new GridBagConstraints( 0, 0, 3, 1, 1.0, 0.0, GridBagConstraints.PAGE_START, GridBagConstraints.HORIZONTAL, new Insets( 8, 0, 0, 0 ), 0, 0 ) );
+        this.getContentPane().add( new JLabel( Imx.KHEETUN ),   new GridBagConstraints( 0, 1, 3, 1, 0.0, 0.0, GridBagConstraints.LINE_START, GridBagConstraints.NONE, new Insets( 0, 0, 32, 0 ), 0, 0 ) );
+        this.getContentPane().add( new Khlabel( "C O N F I G U R A T I O N", TextStyle.DIALOG_CONFIGURATION ),   new GridBagConstraints( 1, 1, 3, 1, 0.0, 0.0, GridBagConstraints.LINE_START, GridBagConstraints.NONE, new Insets( 0, 0, 32, 0 ), 0, 0 ) );
+        this.getContentPane().add( scrollErrorMatrix,           new GridBagConstraints( 2, 1, 3, 1, 0.0, 0.0, GridBagConstraints.LINE_END, GridBagConstraints.NONE, new Insets( 0, 0, 32, 0 ), 0, 0 ) );
+        this.getContentPane().add( this.profilesPanel,          new GridBagConstraints( 0, 2, 1, 1, 0.0, 1.0, GridBagConstraints.LAST_LINE_START, GridBagConstraints.VERTICAL, new Insets( 0, 0, 0, 0 ), 0, 0 ) );
+        this.getContentPane().add( this.tunnelPanel,            new GridBagConstraints( 1, 2, 1, 1, 0.0, 1.0, GridBagConstraints.PAGE_END, GridBagConstraints.VERTICAL, new Insets( 0, 0, 0, 0 ), 0, 0 ) );
+        this.getContentPane().add( this.forwardsPanel,          new GridBagConstraints( 2, 2, 1, 1, 1.0, 1.0, GridBagConstraints.LAST_LINE_END, GridBagConstraints.BOTH, new Insets( 0, 0, 0, 0 ), 0, 0 ) );
         
         ConfigManager.addConfigManagerListener( this );
         Selection.getInstance().addSelectionListener( this );

@@ -54,7 +54,7 @@ public class PingChecker implements Runnable {
             ((ChannelExec)channel).setCommand( "echo" );
             
             long pingStart = System.currentTimeMillis();
-            channel.connect( 3000 );
+            channel.connect( this.tunnel.getPingTimeout() );
             long pingStop = System.currentTimeMillis();
             channel.disconnect();
             
@@ -65,7 +65,8 @@ public class PingChecker implements Runnable {
         } catch ( JSchException e ) {
             
             this.tunnel.increasePingFailures();
-            logger.debug( "PING FAIL (ERROR) ( " + tunnel.getPingFailures() + "/3 ): " + this.tunnel.getAlias() );
+            logger.info( this.tunnel.getSession().getTimeout() );
+            logger.info( "Ping fail: " + e.getMessage() + " ( > " + tunnel.getPingTimeout() + "ms, " + tunnel.getPingFailures() + "/" + tunnel.getMaxPingFailures() + " ): " + this.tunnel.getAlias() );
         }
         
         this.tunnelManager.updatePing( this.tunnel );
@@ -77,7 +78,7 @@ public class PingChecker implements Runnable {
         
         logger.info( "Started ping daemon[" + this + "] for tunnel " + this.id );
         
-        while( this.running && this.tunnel.getState() == Tunnel.STATE_RUNNING && this.tunnel.getSession() != null && this.tunnel.getPingFailures() < 3 ) {
+        while( this.running && this.tunnel.getState() == Tunnel.STATE_RUNNING && this.tunnel.getSession() != null && this.tunnel.getSession().isConnected() && this.tunnel.getPingFailures() < this.tunnel.getMaxPingFailures() ) {
             
             this.checkPing();
                 

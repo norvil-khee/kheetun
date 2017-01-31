@@ -12,6 +12,7 @@ public class TextStyle {
     public static final TextStyle       NO_PROFILES;
     
     public static final TextStyle       CONFIG_HEADER;
+    public static final TextStyle       DIALOG_CONFIGURATION;
     
     static {
         {
@@ -68,6 +69,13 @@ public class TextStyle {
             Color   colorInactive   = Color.DARK_GRAY;
             
             CONFIG_HEADER = new TextStyle( fontActive, colorActive, fontInactive, colorInactive );
+        }
+
+        {
+            Font    fontActive    = new Font( Font.DIALOG, Font.PLAIN, 26 );
+            Color   colorActive   = Color.WHITE;
+
+            DIALOG_CONFIGURATION = new TextStyle( fontActive, colorActive, null, null );
         }
         
     }

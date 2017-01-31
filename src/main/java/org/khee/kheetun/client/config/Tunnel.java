@@ -22,7 +22,7 @@ import com.jcraft.jsch.Session;
 
 @XmlAccessorType(XmlAccessType.NONE)
 @XmlRootElement
-@XmlType( propOrder={"alias","user","hostname","sshKeyString","autostart","forwards"} )
+@XmlType( propOrder={"alias","user","hostname","sshKeyString","autostart","pingTimeout", "maxPingFailures","forwards"} )
 public class Tunnel extends Base implements Serializable {
     
     public static final long serialVersionUID = 77L;
@@ -57,16 +57,18 @@ public class Tunnel extends Base implements Serializable {
     private String              passPhrase;
     private String              sshAgentSocket      = System.getenv( "SSH_AUTH_SOCK" );
     private Boolean             autostart           = false;
+    private Integer             pingTimeout         = 3000;
+    private Integer             maxPingFailures     = 3;
 
     private boolean             restart             = false;
     private int                 state               = Tunnel.STATE_STOPPED;
     private int                 autoState           = Tunnel.STATE_AUTO_OFF;
     private String              error               = null;
     private int                 failures            = 0;
-    private int                 maxFailures         = 3;
     private int                 ping                = 0;
     private int                 pingFailures        = 0;
     private String              info                = null;
+    private Integer             maxFailures         = 3;
     
     private transient Session             session             = null;
     private transient PingChecker         pingChecker         = null;
@@ -102,6 +104,8 @@ public class Tunnel extends Base implements Serializable {
         this.sshAgentSocket = source.sshAgentSocket == null ? null : new String( source.sshAgentSocket );
         this.passPhrase     = source.passPhrase     == null ? null : new String( source.passPhrase );
         this.autostart      = new Boolean( source.autostart );
+        this.pingTimeout    = source.pingTimeout    == null ? null : new Integer( source.pingTimeout );
+        this.maxPingFailures= source.maxPingFailures== null ? null : new Integer( source.maxPingFailures );
     }
     
     public void lock() {
@@ -232,14 +236,32 @@ public class Tunnel extends Base implements Serializable {
     }
     
     @XmlAttribute(required=false)
-    public int getMaxFailures() {
+    public Integer getMaxFailures() {
         return maxFailures;
     }
 
-    public void setMaxFailures(int maxFailures) {
+    public void setMaxFailures(Integer maxFailures) {
         this.maxFailures = maxFailures;
     }
     
+    @XmlAttribute(required=false)
+    public Integer getPingTimeout() {
+        return pingTimeout;
+    }
+
+    public void setPingTimeout(Integer pingTimeout) {
+        this.pingTimeout = pingTimeout;
+    }
+    
+    @XmlAttribute(required=false)
+    public Integer getMaxPingFailures() {
+        return maxPingFailures;
+    }
+
+    public void setMaxPingFailures(Integer maxPingFailures) {
+        this.maxPingFailures = maxPingFailures;
+    }
+
     public String getInfo() {
         return info;
     }
@@ -330,7 +352,9 @@ public class Tunnel extends Base implements Serializable {
             .append( this.getSshKeyString() )
             .append( this.getSshAgentSocket() )
             .append( this.getPassPhrase() )
-            .append( this.getAutostart() );
+            .append( this.getAutostart() )
+            .append( this.getPingTimeout() )
+            .append( this.getPingFailures() );
         
         for ( Forward forward : this.getForwards() ) {
            h.append( forward.hashCodeMeta() );

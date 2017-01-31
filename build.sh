@@ -10,7 +10,7 @@ mkdir _build/etc
 mkdir _build/log
 mkdir _build/bin
 
-version=`grep public.*VERSION src/main/java/org/khee/kheetun/Kheetun.java | perl -p -e 's/^.*(\d+.\d+.\d+).*$/$1/g'`
+version=`grep public.*VERSION src/main/java/org/khee/kheetun/Kheetun.java | perl -p -e 's/^.*(\d+.\d+.\d+(\-rc\d+)?).*$/$1/g'`
 
 echo "Building kheetun v$version" 
 

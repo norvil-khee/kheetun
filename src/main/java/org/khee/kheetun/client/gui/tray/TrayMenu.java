@@ -556,7 +556,7 @@ class TunnelMenuItem extends KhmenuItem implements TunnelClientListener {
                 this.setTextStyle( TextStyle.TUNNEL_RUNNING );
 
                 if ( tunnel.getPingFailures() > 0 ) {
-                    this.setStatus( "failing (" + tunnel.getPingFailures() + "/3)", Color.RED );
+                    this.setStatus( "Ping fail: " + tunnel.getPingFailures() + "/" + tunnel.getMaxPingFailures(), Color.RED );
                 } else {
                     this.setStatus( String.valueOf( tunnel.getPing() ) + " ms", Color.GRAY );
                 }

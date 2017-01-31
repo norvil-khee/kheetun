@@ -19,4 +19,6 @@ public class Kholor {
     public static final Color BUTTON_HOVER      = new Color( 0x3870A0 );
     public static final Color BUTTON_PRESSED    = new Color( 0x185080 );
     public static final Color BUTTON_DISABLED   = new Color( 0xA0A0A0 );
+    public static final Color DIALOG_HINT       = new Color( 180, 180, 180 );
+    public static final Color DIALOG_HINT_HOVER = new Color( 0x286090 );
 }

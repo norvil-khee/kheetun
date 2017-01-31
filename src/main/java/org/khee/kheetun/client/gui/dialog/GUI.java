@@ -133,8 +133,30 @@ public class GUI {
                 FIELD.put( Tunnel.class.getDeclaredField( "port" ), gui );
             }
             
+            // Tunnel:pingTimeout
+            {
+                GUI gui     = new GUI( GUIElementNumberField.class );
+                gui.hint    = "Ping Timeout (ms)";
+                gui.gridx   = 0;
+                gui.gridy   = 2;
+                gui.width   = 150;
+                gui.icon    = Imx.TIMEOUT;
+                
+                FIELD.put( Tunnel.class.getDeclaredField( "pingTimeout" ), gui );
+            }
 
-            
+            // Tunnel:maxPingFailures
+            {
+                GUI gui     = new GUI( GUIElementNumberField.class );
+                gui.hint    = "Max Ping Failures";
+                gui.gridx   = 1;
+                gui.gridy   = 2;
+                gui.width   = 190;
+                gui.icon    = Imx.PING_FAILURES;
+                
+                FIELD.put( Tunnel.class.getDeclaredField( "maxPingFailures" ), gui );
+            }
+
             // Forward:type
             {
                 GUI gui         = new GUI( GUIElementLocalRemote.class );

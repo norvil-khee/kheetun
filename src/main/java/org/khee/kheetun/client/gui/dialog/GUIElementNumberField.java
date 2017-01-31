@@ -53,6 +53,8 @@ public class GUIElementNumberField extends GUIElement {
         this.textField.setText( ((Integer)this.getValue()).toString() );
         this.textField.setVisible( true );
         this.textField.requestFocus();
+        this.textField.setSelectionStart( 0 );
+        this.textField.setSelectionEnd( this.textField.getText().length() );
     }
     
     @Override

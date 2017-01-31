@@ -98,7 +98,7 @@ public abstract class GUIElement extends JPanel implements MouseListener, KeyLis
         
         this.labelHint = new JLabel( this.hint );
         this.labelHint.setFont( new Font( Font.DIALOG, Font.PLAIN, 10 ) );
-        this.labelHint.setForeground( new Color( 200, 200, 200 ) );
+        this.labelHint.setForeground( Kholor.DIALOG_HINT );
         this.labelHint.setAlignmentX( JLabel.LEFT_ALIGNMENT );
         this.labelHint.setHorizontalTextPosition( JLabel.LEFT );
         
@@ -176,6 +176,8 @@ public abstract class GUIElement extends JPanel implements MouseListener, KeyLis
 
     public void hover() {
         
+        this.labelHint.setForeground( Kholor.DIALOG_HINT_HOVER );
+        
         if ( this.row.getObject().getError( this.field ) != null ) {
             
             Dialog.getInstance().showVerify( this.getLocationOnScreen(), Imx.WARNING.color( Kholor.ERROR ), row.getObject().getError( this.field ) );
@@ -184,6 +186,8 @@ public abstract class GUIElement extends JPanel implements MouseListener, KeyLis
     
     public void unhover() {
         
+        this.labelHint.setForeground( Kholor.DIALOG_HINT );
+
         Dialog.getInstance().hideVerify();
     }
     

@@ -52,6 +52,8 @@ public class GUIElementTextField extends GUIElement {
         this.textField.setText( (String)this.getValue() );
         this.textField.setVisible( true );
         this.textField.requestFocus();
+        this.textField.setSelectionStart( 0 );
+        this.textField.setSelectionEnd( this.textField.getText().length() );
     }
     
     @Override

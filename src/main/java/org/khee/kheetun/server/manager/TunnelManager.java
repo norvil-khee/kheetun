@@ -311,6 +311,26 @@ public class TunnelManager {
         Session session = tunnel.getSession();
         
         if ( session.isConnected() ) {
+            
+            try {
+            
+                for ( Forward forward : tunnel.getForwards() ) {
+                    
+                    logger.info( "Remove Port forwarding: " + forward.getSignature() );
+                    
+                    if ( forward.getType().equals( Forward.REMOTE ) ) {
+                        
+                        session.delPortForwardingR( forward.getBindIp(), forward.getBindPort() );
+                    } else {
+                        
+                        session.delPortForwardingL( forward.getBindIp(), forward.getBindPort() );
+                    }
+                }
+                
+            } catch ( JSchException eJsch ) {
+                
+                logger.error( "Failed to remove port forwarding while stopping tunnel " + tunnel.getAlias() + ": " + eJsch.getMessage() );
+            }
         
             session.disconnect();
         }
@@ -453,11 +473,12 @@ public class TunnelManager {
         
         tunnel.increaseFailures();
         tunnel.setError( error );
-        logger.error( "Tunnel " + tunnel.getAlias() + " failed: " + error );
+        logger.error( "Tunnel " + tunnel.getAlias() + " failed [" + tunnel.getFailures() + "/" + tunnel.getMaxFailures() +"]: " + error );
         this.server.send( new Protocol( Protocol.TUNNEL, tunnel ) );
         
         if ( tunnel.getFailures() >= tunnel.getMaxFailures() ) {
             
+            logger.error( "Stopping tunnel " + tunnel.getAlias() + ": max fail count reached" );
             if ( tunnel.getAutostart() || tunnel.getRestart() ) {
                 this.disableAutostart( tunnel );
             }
@@ -491,9 +512,14 @@ public class TunnelManager {
         
         if ( tunnel != null && tunnel.getState() == Tunnel.STATE_RUNNING ) {
         
-            if ( tunnel.getPingFailures() >= 3 ) {
+            if ( tunnel.getPingFailures() >= tunnel.getMaxPingFailures() ) {
                 
-                this.failTunnel( tunnel, "Ping failure" );
+                this.failTunnel( tunnel, "Ping failure (" + tunnel.getMaxPingFailures() + " times above " + tunnel.getPingTimeout() + "ms)" );
+                this.stopTunnel( tunnel, false );
+                
+            } else if ( ! tunnel.getSession().isConnected() ) {
+                
+                this.failTunnel( tunnel, "Ping failure (SSH session closed)" );
                 this.stopTunnel( tunnel, false );
                 
             } else {
