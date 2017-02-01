@@ -24,7 +24,7 @@ test -r /etc/default/kheetund && . /etc/default/kheetund
 
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 DAEMON=/usr/bin/java
-DAEMON_ARGS="-cp /opt/kheetun/bin/kheetun.jar:/opt/kheetun/lib/* org.khee.kheetun.server.KheetunServer -p $PORT"
+DAEMON_ARGS="-cp /opt/kheetun/bin/kheetun.jar:/opt/kheetun/etc:/opt/kheetun/lib/* org.khee.kheetun.server.KheetunServer -p $PORT"
 NAME=kheetund
 DESC="kheetund tunnel manager"
 

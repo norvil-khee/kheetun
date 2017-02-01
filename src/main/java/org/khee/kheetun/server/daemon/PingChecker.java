@@ -79,7 +79,6 @@ public class PingChecker implements Runnable {
         
         logger.debug( "Measuring ping of connected tunnel " + tunnel.getAlias() );
         
-        
         long pingStart = System.currentTimeMillis();
         
         this.shellOut.writeBytes( "echo ping\r\n" );

@@ -601,8 +601,9 @@ class TunnelMenuItem extends KhmenuItem implements TunnelClientListener {
 
                 if ( this.tunnel.getAutostart() ) {
                     iconLeft.setIcon( Imx.AUTO.color( Kholor.READ ) );
-                    this.setInfo( null );
                 }
+                this.setInfo( null );
+                this.setStatus( "inactive", Color.LIGHT_GRAY );
                 break;
             
             case Tunnel.STATE_AUTO_AVAIL:

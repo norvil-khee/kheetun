@@ -2,7 +2,6 @@ package org.khee.kheetun.client.gui.dialog;
 
 import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
@@ -21,7 +20,6 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JWindow;
 import javax.swing.ScrollPaneConstants;
-import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 
@@ -112,13 +110,13 @@ public class Dialog extends JFrame implements ConfigManagerListener, KhbuttonLis
         this.buttonErrors.setWidth( 120 );
         this.buttonErrors.setId( "ERRORS" );
         
+        panelButtons.add( buttonNew );
+        panelButtons.add( Box.createHorizontalStrut( 32 ) );
         panelButtons.add( buttonSave );
         panelButtons.add( Box.createHorizontalStrut( 32 ) );
         panelButtons.add( buttonRevert );
 //        panelButtons.add( Box.createHorizontalStrut( 32 ) );
 //        panelButtons.add( buttonUndo );
-        panelButtons.add( Box.createHorizontalStrut( 32 ) );
-        panelButtons.add( buttonNew );
         panelButtons.add( Box.createHorizontalGlue() );
         panelButtons.add( buttonErrors );
         

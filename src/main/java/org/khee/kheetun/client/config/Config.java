@@ -3,7 +3,6 @@ package org.khee.kheetun.client.config;
 import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 
 import javax.xml.bind.JAXBContext;

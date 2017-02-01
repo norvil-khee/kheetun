@@ -15,7 +15,6 @@ import org.khee.kheetun.server.daemon.AutostartDaemon;
 import org.khee.kheetun.server.daemon.PingChecker;
 
 import com.jcraft.jsch.Channel;
-import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.ChannelShell;
 import com.jcraft.jsch.IdentityRepository;
 import com.jcraft.jsch.JSch;
@@ -106,6 +105,7 @@ public class TunnelManager {
                     tunnel.setFailures( oldTunnel.getFailures() );
                     tunnel.setState( oldTunnel.getState() );
                     tunnel.setAutoState( oldTunnel.getAutoState() );
+                    tunnel.setShellChannel( oldTunnel.getShellChannel() );
                     
                     if ( oldTunnel.getPingChecker() != null ) {
                         oldTunnel.getPingChecker().stop();

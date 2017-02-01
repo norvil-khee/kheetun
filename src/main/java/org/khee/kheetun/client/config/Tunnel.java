@@ -18,7 +18,6 @@ import org.apache.logging.log4j.Logger;
 import org.khee.kheetun.server.daemon.AutostartDaemon;
 import org.khee.kheetun.server.daemon.PingChecker;
 
-import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.ChannelShell;
 import com.jcraft.jsch.Session;
 
@@ -365,7 +364,8 @@ public class Tunnel extends Base implements Serializable {
             .append( this.getPassPhrase() )
             .append( this.getAutostart() )
             .append( this.getPingTimeout() )
-            .append( this.getPingFailures() );
+            .append( this.getPingFailures() )
+            .append( this.getMaxPingFailures() );
         
         for ( Forward forward : this.getForwards() ) {
            h.append( forward.hashCodeMeta() );

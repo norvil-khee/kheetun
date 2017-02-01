@@ -22,7 +22,7 @@ public class Imx extends ImageIcon {
 
     private static HashMap<String, Imx> database    = new HashMap<String, Imx>();
     
-    public static final Imx KHEETUN             = Imx.createImx( "kheetun_logo2.png", null, null, null );
+    public static final Imx KHEETUN             = Imx.createImx( "kheetun_logo.png", null, null, null );
     public static final Imx TRAY                = Imx.createImx( "kheetun_tray_light_blue_gradient.png", null, null, null );
     public static final Imx TRAY_NEUTRAL        = Imx.createImx( "tray_neutral.png", null, null, null );
     public static final Imx TRAY_RED            = Imx.createImx( "kheetun_tray_light_red_gradient.png", null, null, null );
@@ -53,6 +53,7 @@ public class Imx extends ImageIcon {
     public static final Imx NEW                 = Imx.createImx( "new.png" );
     public static final Imx TIMEOUT             = Imx.createImx( "timeout.png" );
     public static final Imx PING_FAILURES       = Imx.createImx( "ping_failures.png" );
+    public static final Imx COMMENT             = Imx.createImx( "comment.png" );
     
     private String  file;
     private Integer scaleX;

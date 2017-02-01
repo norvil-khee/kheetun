@@ -123,6 +123,11 @@ public class HostsManager {
         
         String entry = forward.getBindIp() + "    " + forward.getForwardedHost();
         
+        if ( forward.getComment() != null && forward.getComment().length() > 0 ) {
+            
+            entry += "    " + forward.getComment();
+        }
+        
         if ( content.contains( entry ) ) {
             return;
         }

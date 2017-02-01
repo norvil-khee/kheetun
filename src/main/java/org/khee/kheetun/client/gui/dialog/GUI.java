@@ -213,6 +213,34 @@ public class GUI {
                 
                 FIELD.put( Forward.class.getDeclaredField( "forwardedPort" ), gui );
             }
+
+            // Forward: hostEntry
+            {
+                GUI gui         = new GUI( GUIElementBoolean.class );
+                gui.hint        = "Hosts Entry";
+                gui.param1      = "YES";
+                gui.param3      = "NO";
+                gui.gridx       = 0;
+                gui.gridy       = 2;
+                gui.width       = 100;
+                gui.icon        = Imx.HOST;
+
+                FIELD.put( Forward.class.getDeclaredField( "hostsEntry" ), gui );
+            }
+
+            // Forward: comment
+            {
+                GUI gui         = new GUI( GUIElementTextField.class );
+                gui.hint        = "Comment";
+                gui.gridwidth   = 2;
+                gui.gridx       = 1;
+                gui.gridy       = 2;
+                gui.width       = 350;
+                gui.icon        = Imx.COMMENT;
+                
+                FIELD.put( Forward.class.getDeclaredField( "comment" ), gui );
+            }
+            
             
         } catch ( NoSuchFieldException eNoSuchField ) {
             

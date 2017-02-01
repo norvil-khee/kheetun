@@ -10,7 +10,6 @@ import java.awt.Toolkit;
 import java.awt.Window.Type;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
-import java.awt.event.ComponentListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 
@@ -24,7 +23,6 @@ import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 
-import org.khee.kheetun.client.TunnelClientListener;
 import org.khee.kheetun.client.gui.tray.TrayManager;
 
 @SuppressWarnings("serial")

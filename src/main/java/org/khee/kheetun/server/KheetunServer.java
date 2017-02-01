@@ -19,7 +19,7 @@ import sun.misc.SignalHandler;
 public class KheetunServer {
     
     static {
-        System.setProperty( "log4j.configurationFile", "log4j2.server.xml" );
+        System.setProperty( "log4j.configurationFile", "log4j2.xml" );
     }
     private static Logger logger = LogManager.getLogger( KheetunServer.class );
 

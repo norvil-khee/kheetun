@@ -18,7 +18,7 @@ import org.khee.kheetun.client.gui.tray.TrayMenu;
 public class KheetunClient {
     
     static {
-        System.setProperty( "log4j.configurationFile", "log4j2.client.xml" );
+        System.setProperty( "log4j.configurationFile", "log4j2.xml" );
     }
     private static Logger logger = LogManager.getLogger( KheetunClient.class );
     

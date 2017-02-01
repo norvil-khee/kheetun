@@ -35,6 +35,7 @@ public class GUIElementFileSelector extends GUIElement implements ActionListener
         
         this.updateValue( (File)this.getValue() );
         
+        this.fileChooser.setFileHidingEnabled( false );
         this.fileChooser.addActionListener( this );
         
         Khbutton buttonDelete = new Khbutton( "", Imx.CROSS.size( 8 ) ) {

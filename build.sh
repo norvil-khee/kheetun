@@ -19,10 +19,10 @@ mvn package
 
 cp -r target/lib/* _build/lib
 
-cp src/main/resources/kheetund.rc _build/etc/kheetund.rc
-cp src/main/resources/kheetund.default _build/etc/kheetund.default
-cp src/main/resources/kheetun.desktop _build/etc/kheetun.desktop
-cp src/main/resources/kheetun.png _build/etc/kheetun.png
+cp src/main/package/kheetund.rc _build/etc/kheetund.rc
+cp src/main/package/kheetund.default _build/etc/kheetund.default
+cp src/main/package/kheetun.desktop _build/etc/kheetun.desktop
+cp src/main/package/kheetun.png _build/etc/kheetun.png
 cp LICENSE _build/etc
 cp CHANGELOG.md _build/etc
 
@@ -42,6 +42,56 @@ cat << EOF > kheetun.list
 %description 2 component ssh tunnel manager. SSH tunnels and hosts file managed by daemon running as privileged user. Config managed by user client.
 
 %postinstall << _EOF
+[ ! -f ${HOME}/.kheetun/log4j2.xml ] && echo "Generating log4j2.xml for client in ${HOME}/.kheetun/log4j2.xml" && touch ${HOME}/.kheetun/log4j2.xml && chown ${USER}: ${HOME}/.kheetun/log4j2.xml && cat <<'_LOG4J' > ${HOME}/.kheetun/log4j2.xml
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+  <Appenders>
+    <RollingFile name="FileLogger" fileName="\$\${sys:user.home}/.kheetun/kheetun.log" filePattern="\$\${sys:user.home}/.kheetun/kheetun.log.%i.gz">
+      <PatternLayout pattern="%d %t %-5p - %m%n"/>
+      <Policies>
+          <SizeBasedTriggeringPolicy size="10 MB"/>
+      </Policies>
+      <DefaultRolloverStrategy max="10"/>
+    </RollingFile>
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="%d %t %-5p - %m%n"/>
+    </Console>
+  </Appenders>
+  
+  <Loggers>
+    <Root level="info">
+      <AppenderRef ref="FileLogger"/>
+      <AppenderRef ref="Console"/>
+    </Root>
+  </Loggers>
+</Configuration>
+_LOG4J
+
+[ ! -f /opt/kheetun/etc/log4j2.xml ]  && echo "Generating log4j2.xml for server in /opt/kheetun/etc/log4j2.xml" && cat <<_LOG4J > /opt/kheetun/etc/log4j2.xml
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+  <Appenders>
+    <RollingFile name="FileLogger" fileName="/opt/kheetun/log/kheetund.log" filePattern="/opt/kheetun/log/kheetund.log.%i.gz">
+      <PatternLayout pattern="%d %t %-5p - %m%n"/>
+      <Policies>
+          <SizeBasedTriggeringPolicy size="10 MB"/>
+      </Policies>
+      <DefaultRolloverStrategy max="10"/>
+    </RollingFile>
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="%d %t %-5p - %m%n"/>
+    </Console>
+  </Appenders>
+  
+  <Loggers>
+    <Root level="info">
+      <AppenderRef ref="FileLogger"/>
+      <AppenderRef ref="Console"/>
+    </Root>
+  </Loggers>
+</Configuration>
+_LOG4J
+
 update-rc.d kheetund defaults
 service kheetund restart
 _EOF
@@ -78,7 +128,7 @@ find . -type f | sed 's/^\..//' | grep -v kheetun.list | grep -v kheetund.rc | g
 done
 
 
-cp ../src/main/resources/kheetun.sh bin/kheetun
+cp ../src/main/package/kheetun.sh bin/kheetun
 echo "f 755 root root /opt/kheetun/bin/kheetun ./bin/kheetun" >> kheetun.list
 
 sudo epm -f deb -nsm kheetun
