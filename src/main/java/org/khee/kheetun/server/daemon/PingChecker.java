@@ -81,12 +81,12 @@ public class PingChecker implements Runnable {
         
         long pingStart = System.currentTimeMillis();
         
-        this.shellOut.writeBytes( "echo ping\r\n" );
+        this.shellOut.writeBytes( "echo ping." + pingStart + "\r\n" );
         this.shellOut.flush();
         
         String output = this.shellIn.readLine();
         
-        while ( output != null && ! output.equals( "ping" ) ) {
+        while ( output != null && ! output.startsWith( "ping." + pingStart ) ) {
             
             output = this.shellIn.readLine();
         }
@@ -116,7 +116,7 @@ public class PingChecker implements Runnable {
             } catch ( TimeoutException eTimeout ) {
 
                 this.tunnel.increasePingFailures();
-                logger.error( "Ping failure " + this.tunnel.getPingFailures() + "/" + this.tunnel.getMaxPingFailures() + ": Timeout (> " + this.tunnel.getPingTimeout() + "ms)" );
+                logger.warn( "Ping failure " + this.tunnel.getPingFailures() + "/" + this.tunnel.getMaxPingFailures() + ": Timeout (> " + this.tunnel.getPingTimeout() + "ms)" );
                 
             } catch ( InterruptedException eInterrupted ) {
                 

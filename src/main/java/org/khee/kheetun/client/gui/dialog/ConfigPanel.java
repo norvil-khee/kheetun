@@ -79,6 +79,7 @@ class ConfigPanel<T extends Base> extends JPanel {
         
         JScrollPane scrollPane = new JScrollPane( this.body, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER );
         scrollPane.setAlignmentX( JComponent.LEFT_ALIGNMENT );
+        scrollPane.getVerticalScrollBar().setUnitIncrement( 16 );
         
         GridBagConstraints c = new GridBagConstraints();
         

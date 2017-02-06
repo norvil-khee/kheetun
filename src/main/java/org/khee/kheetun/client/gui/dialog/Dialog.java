@@ -344,8 +344,6 @@ public class Dialog extends JFrame implements ConfigManagerListener, KhbuttonLis
         
         } else if ( id.equals( "SAVE" ) ) {
             
-            System.out.println( "SAVING CONFIG" );
-            
             this.config.save();
             this.configOriginal = new Config( this.config );
             this.validateConfig();

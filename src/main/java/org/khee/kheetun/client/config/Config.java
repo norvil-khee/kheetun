@@ -268,6 +268,7 @@ public class Config implements Serializable {
             tunnel.addError( "alias",       VerifierAlias.getInstance().verify( tunnel.getAlias() ) );
             tunnel.addError( "user",        VerifierUser.getInstance().verify( tunnel.getUser() ) );
             tunnel.addError( "hostname",    VerifierHostname.getInstance().verify( tunnel.getHostname() ) );
+            tunnel.addError( "port",        VerifierPort.getInstance().verify( tunnel.getPort() ) );
             tunnel.addError( "sshKey",      VerifierSshKey.getInstance().verify( tunnel.getSshKey() ) );
             
             int f = 0;

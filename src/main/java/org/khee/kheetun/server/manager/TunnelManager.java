@@ -29,8 +29,6 @@ public class TunnelManager {
     
     private static Logger logger = LogManager.getLogger( "kheetund" );
     
-    public static final long serialVersionUID = 42;
-    
     private static HashMap<String, TunnelManager> instances = new HashMap<String, TunnelManager>();
     
     private TunnelServer                server              = new TunnelServer();
@@ -59,10 +57,16 @@ public class TunnelManager {
         return this.id;
     }
     
-    public void setConfig( Config config ) {
+    public synchronized void setConfig( Config config ) {
         
         if ( config == null ) {
             logger.debug( "Got null config - ignoring" );
+            return;
+        }
+        
+        if ( this.config.equals( config ) && this.config.equalsMeta( config ) ) {
+            
+            logger.info( "Config is unchanged for " + this.id );
             return;
         }
         

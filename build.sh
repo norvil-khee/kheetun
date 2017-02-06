@@ -22,7 +22,9 @@ cp -r target/lib/* _build/lib
 cp src/main/package/kheetund.rc _build/etc/kheetund.rc
 cp src/main/package/kheetund.default _build/etc/kheetund.default
 cp src/main/package/kheetun.desktop _build/etc/kheetun.desktop
-cp src/main/package/kheetun.png _build/etc/kheetun.png
+cp src/main/package/kheetun16x16.png _build/etc/kheetun16x16.png
+cp src/main/package/kheetun32x32.png _build/etc/kheetun32x32.png
+cp src/main/package/kheetun64x64.png _build/etc/kheetun64x64.png
 cp LICENSE _build/etc
 cp CHANGELOG.md _build/etc
 
@@ -113,7 +115,9 @@ f 644 root sys \$prefixInitd/default/kheetund ./etc/kheetund.default
 
 # common files
 #
-f 644 root sys /usr/share/icons/hicolor/32x32/apps/kheetun.png ./etc/kheetun.png
+f 644 root sys /usr/share/icons/hicolor/16x16/apps/kheetun.png ./etc/kheetun16x16.png
+f 644 root sys /usr/share/icons/hicolor/32x32/apps/kheetun.png ./etc/kheetun32x32.png
+f 644 root sys /usr/share/icons/hicolor/64x64/apps/kheetun.png ./etc/kheetun64x64.png
 f 644 root sys /usr/share/applications/kheetun.desktop ./etc/kheetun.desktop
 
 EOF

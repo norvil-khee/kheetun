@@ -172,7 +172,7 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
     }
     
     @Override
-    public void TunnelClientConnection( boolean connected, String error ) {
+    public void TunnelClientConnection( boolean connected, String error, int status ) {
         
         String connectionString = ConfigManager.getGlobalConfig().getHost() + ":" + ConfigManager.getGlobalConfig().getPort();
         
@@ -180,10 +180,23 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
             
             labelConnected.setStatus( connectionString, new Color( 0, 100, 0 ) );
             labelConnected.setError( null );
+            labelConnected.setInfo( null );
+            
         } else {
             
-            labelConnected.setStatus( "disconnected", Color.RED );
-            labelConnected.setError( connectionString + ": " + error);
+            if ( status == TunnelClient.CONNECT_ERROR_REFUSED ) {
+                
+                labelConnected.setStatus( "waiting", Kholor.YELLOW );
+                labelConnected.setInfo( connectionString + ": " + error );
+                labelConnected.setError( null );
+                
+            } else {
+                
+                labelConnected.setStatus( "disconnected", Kholor.ERROR );
+                labelConnected.setError( connectionString + ": " + error);
+                labelConnected.setInfo( null );
+            }
+            
         }
     }
     
@@ -508,7 +521,7 @@ class TunnelMenuItem extends KhmenuItem implements TunnelClientListener {
     }
     
     @Override
-    public void TunnelClientConnection( boolean connected, String error ) {
+    public void TunnelClientConnection( boolean connected, String error, int status ) {
         
         if ( connected ) {
 

@@ -94,12 +94,10 @@ public class GUIElementFileSelector extends GUIElement implements ActionListener
         if ( e.getSource() instanceof JFileChooser ) {
             
             if ( e.getActionCommand().equals( JFileChooser.APPROVE_SELECTION ) ) {
-                System.out.println( "Confirm file" );
                 
                 this.endEdit( true );
             } else {
 
-                System.out.println( "Undo file" );
                 this.endEdit( false );
             }
         }

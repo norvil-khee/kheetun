@@ -4,7 +4,9 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class Base {
+import org.apache.commons.lang.builder.HashCodeBuilder;
+
+public abstract class Base {
     
     private static int counter                              = 0;
     private transient HashMap<Field, String>    errors      = new HashMap<Field, String>();
@@ -51,6 +53,26 @@ public class Base {
         }
         
         return readable;
+    }
+    
+    public abstract int hashCodeMeta();
+    
+    public int hashCodeCombined() {
+        
+        return new HashCodeBuilder().append( this.hashCode() ).append( this.hashCodeMeta() ).hashCode();
+    }
+    
+    public abstract boolean equalsMeta( Object object );
+    
+    public boolean equalsCombined( Object obj ) {
+        
+        if ( ! ( obj instanceof Profile ) ) {
+            return false;
+        }
+        
+        Base compare = (Base)obj;
+        
+        return this.equals( compare ) && this.equalsMeta( compare );
     }
     
     public Integer getId() {

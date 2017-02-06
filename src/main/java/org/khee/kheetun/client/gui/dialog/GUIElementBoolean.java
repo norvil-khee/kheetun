@@ -6,6 +6,8 @@ import java.lang.reflect.Field;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 
+import org.khee.kheetun.client.gui.Kholor;
+
 @SuppressWarnings("serial")
 public class GUIElementBoolean extends GUIElement {
     
@@ -21,6 +23,7 @@ public class GUIElementBoolean extends GUIElement {
         this.labelTrue  = new JLabel( (String)(GUI.FIELD.get( field ).param1), (ImageIcon)(GUI.FIELD.get( field ).param2), JLabel.LEFT );
         this.labelTrue.setVisible( false );
         this.labelFalse = new JLabel( (String)(GUI.FIELD.get( field ).param3), (ImageIcon)(GUI.FIELD.get( field ).param4), JLabel.LEFT );
+        this.labelFalse.setForeground( Kholor.DIALOG_BOOLEAN_FALSE );
         this.labelFalse.setVisible( false );
         
         this.body.add( this.labelTrue );

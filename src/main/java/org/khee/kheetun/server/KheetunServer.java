@@ -29,6 +29,7 @@ public class KheetunServer {
         Options options = new Options();
         
         options.addOption( OptionBuilder.withLongOpt( "port" ).withDescription( "Port to listen on for kheetun clients" ).withArgName( "num" ).hasArg().isRequired().create( "p" ) );
+        options.addOption( OptionBuilder.withLongOpt( "host" ).withDescription( "Host to listen on for kheetun clients" ).withArgName( "host" ).hasArg().isRequired().create( "h" ) );
 
         CommandLineParser parser =  new GnuParser();
         
@@ -48,14 +49,14 @@ public class KheetunServer {
                 }
             } );
             
-            new TunnelServer( new Integer( cmd.getOptionValue( "port" ) ) );
+            new TunnelServer( cmd.getOptionValue( "host" ), new Integer( cmd.getOptionValue( "port" ) ) );
             
             HostsManager.clear();
             
         } catch ( ParseException e ) {
             System.err.println( e.getLocalizedMessage() );
             HelpFormatter formatter = new HelpFormatter();
-            formatter.printHelp( "kheetun-server.jar --port <num>", options );
+            formatter.printHelp( "kheetun-server.jar --host <host> --port <num>", options );
             System.exit( 1 );
         }            
             

@@ -121,12 +121,7 @@ public class HostsManager {
     
     private void addForward( Forward forward ) {
         
-        String entry = forward.getBindIp() + "    " + forward.getForwardedHost();
-        
-        if ( forward.getComment() != null && forward.getComment().length() > 0 ) {
-            
-            entry += "    " + forward.getComment();
-        }
+        String entry = this.getHostEntry( forward );
         
         if ( content.contains( entry ) ) {
             return;
@@ -144,7 +139,7 @@ public class HostsManager {
     
     private void removeForward( Forward forward ) {
         
-        String entry = forward.getBindIp() + "    " + forward.getForwardedHost();
+        String entry = this.getHostEntry( forward );
         
         if ( ! content.contains( entry ) ) {
             return;
@@ -156,6 +151,13 @@ public class HostsManager {
             content.remove( HostsManager.beginMarker );
             content.remove( HostsManager.endMarker );
         }
+    }
+    
+    private String getHostEntry( Forward forward ) {
+        
+        String comment = forward.getComment() != null && forward.getComment().length() > 0 ? "    # " + forward.getComment() : "";
+        
+        return String.format( "%-15s    %-40s%s", forward.getBindIp(), forward.getForwardedHost(), comment );
     }
     
     

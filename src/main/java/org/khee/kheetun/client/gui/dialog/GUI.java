@@ -9,6 +9,7 @@ import org.khee.kheetun.client.config.Forward;
 import org.khee.kheetun.client.config.Profile;
 import org.khee.kheetun.client.config.Tunnel;
 import org.khee.kheetun.client.gui.Imx;
+import org.khee.kheetun.client.gui.Kholor;
 
 public class GUI {
     
@@ -40,8 +41,9 @@ public class GUI {
             {
                 GUI gui         = new GUI( GUIElementTextField.class );
                 gui.hint        = "Name";
+                gui.param1      = Kholor.DIALOG_ITEM_NAME;
                 gui.icon        = Imx.EDIT;
-                gui.font        = new Font( Font.DIALOG, Font.BOLD, 12 );
+                gui.font        = new Font( Font.MONOSPACED, Font.BOLD, 16 );
                 gui.width       = 160;
                 
                 FIELD.put( Profile.class.getDeclaredField( "name" ), gui );
@@ -65,10 +67,11 @@ public class GUI {
             {
                 GUI gui         = new GUI( GUIElementTextField.class );
                 gui.hint        = "Name";
+                gui.param1      = Kholor.DIALOG_ITEM_NAME;
                 gui.width       = 340;
                 gui.icon        = Imx.EDIT;
                 gui.gridwidth   = 2;
-                gui.font        = new Font( Font.DIALOG, Font.BOLD, 12 );
+                gui.font        = new Font( Font.MONOSPACED, Font.BOLD, 16 );
                 
                 FIELD.put( Tunnel.class.getDeclaredField( "alias" ), gui );
             }
@@ -157,11 +160,13 @@ public class GUI {
                 FIELD.put( Tunnel.class.getDeclaredField( "maxPingFailures" ), gui );
             }
 
+
             // Forward:type
             {
                 GUI gui         = new GUI( GUIElementLocalRemote.class );
                 gui.hint        = "Type";
                 gui.gridheight  = 1;
+                gui.gridy       = 1;
                 gui.width       = 100;
                 gui.icon        = Imx.DIRECTION;
                 
@@ -173,6 +178,7 @@ public class GUI {
                 GUI gui     = new GUI( GUIElementTextField.class );
                 gui.hint    = "Bind IP";
                 gui.gridx   = 1;
+                gui.gridy   = 1;
                 gui.width   = 250;
                 gui.icon    = Imx.HOST;
                 
@@ -184,6 +190,7 @@ public class GUI {
                 GUI gui     = new GUI( GUIElementNumberField.class );
                 gui.hint    = "Bind Port";
                 gui.gridx   = 2;
+                gui.gridy   = 1;
                 gui.width   = 100;
                 gui.icon    = Imx.PORT;
                 
@@ -195,7 +202,7 @@ public class GUI {
                 GUI gui     = new GUI( GUIElementTextField.class );
                 gui.hint    = "Forwarded Host";
                 gui.gridx   = 1;
-                gui.gridy   = 1;
+                gui.gridy   = 2;
                 gui.width   = 250;
                 gui.icon    = Imx.HOST;
                 
@@ -207,11 +214,26 @@ public class GUI {
                 GUI gui     = new GUI( GUIElementNumberField.class );
                 gui.hint    = "Forwarded Port";
                 gui.gridx   = 2;
-                gui.gridy   = 1;
+                gui.gridy   = 2;
                 gui.width   = 100;
                 gui.icon    = Imx.PORT;
                 
                 FIELD.put( Forward.class.getDeclaredField( "forwardedPort" ), gui );
+            }
+            
+            // Forward: comment
+            {
+                GUI gui         = new GUI( GUIElementTextField.class );
+                gui.hint        = "Comment";
+                gui.param1      = Kholor.DIALOG_ITEM_NAME;
+                gui.gridwidth   = 3;
+                gui.gridx       = 0;
+                gui.gridy       = 0;
+                gui.width       = 350;
+                gui.font        = new Font( Font.MONOSPACED, Font.BOLD, 16 );
+                gui.icon        = Imx.COMMENT;
+                
+                FIELD.put( Forward.class.getDeclaredField( "comment" ), gui );
             }
 
             // Forward: hostEntry
@@ -220,27 +242,13 @@ public class GUI {
                 gui.hint        = "Hosts Entry";
                 gui.param1      = "YES";
                 gui.param3      = "NO";
-                gui.gridx       = 0;
-                gui.gridy       = 2;
+                gui.gridx       = 2;
+                gui.gridy       = 0;
                 gui.width       = 100;
                 gui.icon        = Imx.HOST;
 
                 FIELD.put( Forward.class.getDeclaredField( "hostsEntry" ), gui );
             }
-
-            // Forward: comment
-            {
-                GUI gui         = new GUI( GUIElementTextField.class );
-                gui.hint        = "Comment";
-                gui.gridwidth   = 2;
-                gui.gridx       = 1;
-                gui.gridy       = 2;
-                gui.width       = 350;
-                gui.icon        = Imx.COMMENT;
-                
-                FIELD.put( Forward.class.getDeclaredField( "comment" ), gui );
-            }
-            
             
         } catch ( NoSuchFieldException eNoSuchField ) {
             
