@@ -33,6 +33,30 @@ public class GUIElementBoolean extends GUIElement {
     }
     
     @Override
+    protected void processSelect() {
+        // TODO Auto-generated method stub
+        
+    }
+    
+    @Override
+    protected void processUnselect() {
+        // TODO Auto-generated method stub
+        
+    }
+    
+    @Override
+    protected void processHover() {
+        // TODO Auto-generated method stub
+        
+    }
+    
+    @Override
+    protected void processUnhover() {
+        // TODO Auto-generated method stub
+        
+    }
+    
+    @Override
     protected Object processUpdate( Object value ) {
 
         Boolean bool = (Boolean)value;

@@ -30,7 +30,7 @@ class ConfigPanel<T extends Base> extends JPanel {
     
     private JPanel                              body;
     private ArrayList<T>                        objects          = null;
-    private HashMap<Integer, ConfigPanelRow<T>> rows             = new HashMap<Integer, ConfigPanelRow<T>>();
+    private HashMap<Integer, ConfigPanelRow<T>> rowsCache        = new HashMap<Integer, ConfigPanelRow<T>>();
     private JLabel                              labelNoItems     = new JLabel();
     
     public ConfigPanel( Dialog dialog, String header, Imx icon, TextStyle textStyle ) {
@@ -42,16 +42,23 @@ class ConfigPanel<T extends Base> extends JPanel {
         labelHeader.setFont( textStyle.getFontActive() );
         
         Khbutton buttonAdd = new Khbutton( "ADD", Imx.PLUS );
-        buttonAdd.setWidth( 80 );
+        buttonAdd.setWidth( 60 );
         buttonAdd.addButtonListener( dialog );
-        buttonAdd.setId( header );
+        buttonAdd.setId( header + ":ADD" );
 
+        Khbutton buttonCopy = new Khbutton( "COPY", Imx.COPY );
+        buttonCopy.setWidth( 60 );
+        buttonCopy.addButtonListener( dialog );
+        buttonCopy.setId( header + ":COPY" );
+        
         JPanel panelButtons = new JPanel();
         panelButtons.setLayout( new BoxLayout( panelButtons, BoxLayout.X_AXIS ) );
         panelButtons.setAlignmentX( JComponent.LEFT_ALIGNMENT );
         
         panelButtons.add( labelHeader );
         panelButtons.add( Box.createHorizontalGlue() );
+        panelButtons.add( buttonCopy );
+        panelButtons.add( Box.createHorizontalStrut( 8 ) );
         panelButtons.add( buttonAdd );
         
         this.labelNoItems.setText( "<html><body>No " + header + " here.<br>Click ADD to add one.</body></html>" );
@@ -98,14 +105,26 @@ class ConfigPanel<T extends Base> extends JPanel {
     public void setObjects( ArrayList<T> objects ) {
         
         this.objects = objects;
-        this.rows.clear();
         
         this.refreshBody();
     }
     
     public ConfigPanelRow<? extends Base> getRowByObject( Base object ) {
         
-        return this.rows.get( object.getId() );
+        return this.rowsCache.get( object.getId() );
+    }
+    
+    public HashMap<Integer, ConfigPanelRow<T>> getRowsCache() {
+        
+        return this.rowsCache;
+    }
+    
+    public void cacheRowsByObjects( ArrayList<T> objects ) {
+        
+        for ( T object : objects ) {
+            
+            this.rowsCache.put( object.getId(), new ConfigPanelRow<T>( this, object ) );
+        }
     }
     
     public void refreshBody() {
@@ -127,12 +146,12 @@ class ConfigPanel<T extends Base> extends JPanel {
             
             for ( T object : this.objects ) {
                 
-                if ( ! this.rows.containsKey( object.getId() ) ) {
+                if ( ! this.rowsCache.containsKey( object.getId() ) ) {
                     
-                    this.rows.put( object.getId(), new ConfigPanelRow<T>( this, object ) );
+                    this.rowsCache.put( object.getId(), new ConfigPanelRow<T>( this, object ) );
                 }
                 
-                ConfigPanelRow<T> row = this.rows.get( object.getId() );
+                ConfigPanelRow<T> row = this.rowsCache.get( object.getId() );
                 
                 this.body.add( row, c );
                 

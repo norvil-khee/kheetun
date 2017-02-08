@@ -1,12 +1,6 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## 0.13.1 - 2016-02-06
-
-### Fixes
-
-- Rampant autostart daemons removed
-
 ## 0.13.0 - 2016-02-05
 
 ### Added
@@ -23,6 +17,7 @@ All notable changes to this project will be documented in this file.
 ### Fixes
 
 - Ping daemon changed to not open new SSH channels each time ping is measured.
+- Rampant autostart daemons removed
 
 ## 0.12.3 - 2016-11-18
 

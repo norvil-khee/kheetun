@@ -10,7 +10,7 @@ public abstract class Base {
     
     private static int counter                              = 0;
     private transient HashMap<Field, String>    errors      = new HashMap<Field, String>();
-    private transient Integer                   id          = Base.counter++;
+    protected transient Integer                 id          = Base.counter++;
     
     public void clearErrors() {
         

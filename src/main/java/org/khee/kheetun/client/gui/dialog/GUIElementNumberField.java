@@ -31,10 +31,36 @@ public class GUIElementNumberField extends GUIElement {
         this.textLabel.setMaximumSize( this.textField.getMaximumSize() );
         this.textLabel.setFont( new Font( Font.DIALOG, Font.PLAIN, 12 ) );
         
+        this.textLabel.setForeground( GUI.FIELD.get( this.field ).colorUnselected );
+        
         this.updateValue( (Integer)this.getValue() );
 
         this.body.add( this.textField );
         this.body.add( this.textLabel );
+    }
+    
+    @Override
+    public void processSelect() {
+        
+        this.textLabel.setForeground( GUI.FIELD.get( this.field ).colorSelected );
+    }
+    
+    @Override
+    public void processUnselect() {
+        
+        this.textLabel.setForeground( GUI.FIELD.get( this.field ).colorUnselected );
+    }
+    
+    @Override
+    protected void processHover() {
+        // TODO Auto-generated method stub
+        
+    }
+    
+    @Override
+    protected void processUnhover() {
+        // TODO Auto-generated method stub
+        
     }
     
     @Override

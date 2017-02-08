@@ -23,6 +23,8 @@ import javax.swing.ScrollPaneConstants;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.khee.kheetun.client.config.Base;
 import org.khee.kheetun.client.config.Config;
 import org.khee.kheetun.client.config.ConfigManager;
@@ -42,6 +44,8 @@ import org.khee.kheetun.client.gui.TextStyle;
 @SuppressWarnings("serial")
 public class Dialog extends JFrame implements ConfigManagerListener, KhbuttonListener, GUIElementListener, SelectionListener {
     
+    protected static Logger logger = LogManager.getLogger( "kheetun" );
+
     public static final Dialog      instance            = new Dialog();
     
     private Config                  config;
@@ -61,8 +65,8 @@ public class Dialog extends JFrame implements ConfigManagerListener, KhbuttonLis
     
     private ErrorMatrix             errorMatrix         = new ErrorMatrix();
     private JScrollPane             scrollErrorMatrix;
-    private JWindow                 windowVerify        = new JWindow();
-    private JLabel                  labelVerify         = new JLabel();
+    private JWindow                 windowTooltip       = new JWindow();
+    private JLabel                  labelTooltip        = new JLabel();
 
     public Dialog() {
         
@@ -74,13 +78,13 @@ public class Dialog extends JFrame implements ConfigManagerListener, KhbuttonLis
         
         this.getContentPane().setLayout( new GridBagLayout() );
         
-        this.setMinimumSize( new Dimension( 1400, 800 ) );
-        this.setMaximumSize( new Dimension( 1400, Integer.MAX_VALUE ) );
+        this.setMinimumSize( new Dimension( 1350, 800 ) );
+        this.setMaximumSize( new Dimension( 1350, Integer.MAX_VALUE ) );
         
-        this.labelVerify.setBorder( BorderFactory.createCompoundBorder( new LineBorder(Color.DARK_GRAY ), new EmptyBorder( 4, 4, 4, 4 ) ) );
-        this.windowVerify.setType( Type.POPUP );
-        this.windowVerify.getContentPane().setLayout( new BoxLayout( this.windowVerify.getContentPane(), BoxLayout.X_AXIS ) );
-        this.windowVerify.add( this.labelVerify );
+        this.labelTooltip.setBorder( BorderFactory.createCompoundBorder( new LineBorder(Color.DARK_GRAY ), new EmptyBorder( 4, 4, 4, 4 ) ) );
+        this.windowTooltip.setType( Type.POPUP );
+        this.windowTooltip.getContentPane().setLayout( new BoxLayout( this.windowTooltip.getContentPane(), BoxLayout.X_AXIS ) );
+        this.windowTooltip.add( this.labelTooltip );
         
         this.buttonSave.addButtonListener( this );
         this.buttonRevert.addButtonListener( this );
@@ -124,9 +128,9 @@ public class Dialog extends JFrame implements ConfigManagerListener, KhbuttonLis
         profilesPanel.setPreferredSize( new Dimension( 280, 1 ) );
         profilesPanel.setMaximumSize( new Dimension( 280, Integer.MAX_VALUE ) );
         
-        tunnelPanel.setMinimumSize( new Dimension( 600, 1 ) );
-        tunnelPanel.setPreferredSize( new Dimension( 600, 1 ) );
-        tunnelPanel.setMaximumSize( new Dimension( 600, Integer.MAX_VALUE ) );
+        tunnelPanel.setMinimumSize( new Dimension( 550, 1 ) );
+        tunnelPanel.setPreferredSize( new Dimension( 550, 1 ) );
+        tunnelPanel.setMaximumSize( new Dimension( 550, Integer.MAX_VALUE ) );
 
         this.scrollErrorMatrix = new JScrollPane( this.errorMatrix );
         this.scrollErrorMatrix.setMinimumSize( new Dimension( 622, 100 ) );
@@ -156,18 +160,18 @@ public class Dialog extends JFrame implements ConfigManagerListener, KhbuttonLis
         return this.config;
     }
     
-    public void showVerify( Point p, Icon icon, String hint ) {
+    public void showTooltip( Point p, Icon icon, String hint ) {
         
-        this.labelVerify.setIcon( icon );
-        this.labelVerify.setText( hint );
-        this.windowVerify.setLocation( p.x, p.y - this.windowVerify.getHeight() - 4 );
-        this.windowVerify.pack();
-        this.windowVerify.setVisible( true );
+        this.labelTooltip.setIcon( icon );
+        this.labelTooltip.setText( hint );
+        this.windowTooltip.setLocation( p.x, p.y - this.windowTooltip.getHeight() - 4 );
+        this.windowTooltip.pack();
+        this.windowTooltip.setVisible( true );
     }
     
-    public void hideVerify() {
+    public void hideTooltip() {
         
-        this.windowVerify.setVisible( false );
+        this.windowTooltip.setVisible( false );
     }
     
     
@@ -267,13 +271,18 @@ public class Dialog extends JFrame implements ConfigManagerListener, KhbuttonLis
             
             this.config = new Config( this.configOriginal );
             
+            this.cacheConfigurationRows();
+            
             this.profilesPanel.setObjects( this.config.getProfiles() );
-            this.tunnelPanel.setObjects( null );
-            this.forwardsPanel.setObjects( null );
+            
+            if ( this.config.getProfiles().size() > 0 ) {
+                
+                Selection.getInstance().setSelected( Profile.class, this.profilesPanel.getRowByObject( this.config.getProfiles().get( 0 ) ) );
+            }
             
             this.validateConfig();
             
-        } else if ( id.equals( "PROFILES" ) ) {
+        } else if ( id.equals( "PROFILES:ADD" ) ) {
             
             Profile profile = new Profile();
             
@@ -284,8 +293,7 @@ public class Dialog extends JFrame implements ConfigManagerListener, KhbuttonLis
             Selection.getInstance().setSelected( Profile.class, this.profilesPanel.getRowByObject( profile ) );
 
             this.validateConfig();
-        
-        } else if ( id.equals( "TUNNEL" ) && Selection.getInstance().getSelectedProfile() != null ) {
+        } else if ( id.equals( "TUNNEL:ADD" ) && Selection.getInstance().getSelectedProfile() != null ) {
             
             Tunnel tunnel = new Tunnel();
             
@@ -299,7 +307,7 @@ public class Dialog extends JFrame implements ConfigManagerListener, KhbuttonLis
 
             this.validateConfig();
 
-        } else if ( id.equals( "FORWARDS" ) && Selection.getInstance().getSelectedTunnel() != null ) {
+        } else if ( id.equals( "FORWARDS:ADD" ) && Selection.getInstance().getSelectedTunnel() != null ) {
             
             Forward forward = new Forward();
             
@@ -309,21 +317,51 @@ public class Dialog extends JFrame implements ConfigManagerListener, KhbuttonLis
             
             this.validateConfig();
 
+        } else if ( id.equals( "PROFILES:COPY" ) && Selection.getInstance().getSelectedProfile() != null ) {
+            
+            Profile profile = new Profile( Selection.getInstance().getSelectedProfile() );
+            
+            this.config.addProfile( profile );
+            this.profilesPanel.refreshBody();
+            Selection.getInstance().setSelected( Profile.class, this.profilesPanel.getRowByObject( profile ) );
+            
+            this.validateConfig();
+            
+        } else if ( id.equals( "TUNNEL:COPY" ) && Selection.getInstance().getSelectedTunnel() != null ) {
+
+            Tunnel tunnel = new Tunnel( Selection.getInstance().getSelectedTunnel() );
+            
+            Selection.getInstance().getSelectedProfile().addTunnel( tunnel );
+            this.tunnelPanel.refreshBody();
+            Selection.getInstance().setSelected( Tunnel.class, this.tunnelPanel.getRowByObject( tunnel ) );
+            
+            this.validateConfig();
+            
+        } else if ( id.equals( "FORWARDS:COPY" ) && Selection.getInstance().getSelectedForward() != null ) {
+            
+            Forward forward = new Forward( Selection.getInstance().getSelectedForward() );
+            
+            Selection.getInstance().getSelectedTunnel().addForward( forward );
+            this.forwardsPanel.refreshBody();
+            Selection.getInstance().setSelected( Forward.class, this.forwardsPanel.getRowByObject( forward ) );
+            
+            this.validateConfig();
+            
         } else if ( id.equals( "DELETE") ) {
             
             if ( object instanceof Profile ) {
                 
-                this.config.getProfiles().remove( object );
+                this.config.removeProfileById( ((Profile)object).getId() );
                 Selection.getInstance().setSelected( Profile.class, null );
                 
             } else if ( object instanceof Tunnel ) {
                 
-                Selection.getInstance().getSelectedProfile().getTunnels().remove( object );
+                Selection.getInstance().getSelectedProfile().removeTunnelById( ((Tunnel)object).getId() );
                 Selection.getInstance().setSelected(  Tunnel.class, null );
                 
             } else if ( object instanceof Forward ) {
                 
-                Selection.getInstance().getSelectedTunnel().getForwards().remove( object );
+                Selection.getInstance().getSelectedTunnel().removeForwardById( ((Forward)object).getId() );
                 Selection.getInstance().setSelected( Forward.class, null );
             }
             
@@ -350,6 +388,20 @@ public class Dialog extends JFrame implements ConfigManagerListener, KhbuttonLis
         }
     }
     
+    private void cacheConfigurationRows() {
+        
+        logger.debug( "Caching rows in dialog" );
+        this.profilesPanel.getRowsCache().clear();
+        this.profilesPanel.cacheRowsByObjects( this.config.getAllProfiles() );
+        
+        this.tunnelPanel.getRowsCache().clear();
+        this.tunnelPanel.cacheRowsByObjects( this.config.getAllTunnels() );
+        
+        this.forwardsPanel.getRowsCache().clear();
+        this.forwardsPanel.cacheRowsByObjects( this.config.getAllForwards() );
+        logger.debug( "Finished caching rows in dialog" );
+    }
+    
     @Override
     public void configManagerConfigChanged( Config oldConfig, Config newConfig, boolean valid ) {
         
@@ -360,6 +412,8 @@ public class Dialog extends JFrame implements ConfigManagerListener, KhbuttonLis
         this.config         = new Config( newConfig );
         this.configOriginal = new Config( this.config );
         
+        this.cacheConfigurationRows();
+        
         this.validateConfig();
         
         this.profilesPanel.setObjects( this.config.getProfiles() );
@@ -367,16 +421,6 @@ public class Dialog extends JFrame implements ConfigManagerListener, KhbuttonLis
         if ( this.config.getProfiles().size() > 0 ) {
             
             Selection.getInstance().setSelected( Profile.class, this.profilesPanel.getRowByObject( this.config.getProfiles().get( 0 ) ) );
-            
-            if ( this.config.getProfiles().get( 0 ).getTunnels().size() > 0 ) {
-                
-                Selection.getInstance().setSelected( Tunnel.class, this.tunnelPanel.getRowByObject( this.config.getProfiles().get( 0 ).getTunnels().get( 0 ) ) );
-                
-                if ( this.config.getProfiles().get( 0 ).getTunnels().get( 0 ).getForwards().size() > 0 ) {
-                    
-                    Selection.getInstance().setSelected( Forward.class, this.forwardsPanel.getRowByObject( this.config.getProfiles().get( 0 ).getTunnels().get( 0 ).getForwards().get( 0 ) ) );
-                }
-            }
         }
     }
     

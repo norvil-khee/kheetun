@@ -56,6 +56,36 @@ public class GUIElementFileSelector extends GUIElement implements ActionListener
     }
     
     @Override
+    protected void processSelect() {
+        // TODO Auto-generated method stub
+        
+    }
+    
+    @Override
+    protected void processUnselect() {
+        // TODO Auto-generated method stub
+        
+    }
+    
+    @Override
+    protected void processHover() {
+        
+        if ( this.row.getObject().getError( this.field ) == null && this.getValue() != null ) {
+            
+            File file = (File)this.getValue();
+            
+            Dialog.getInstance().showTooltip( this.getLocationOnScreen(), Imx.KEY, file.getAbsolutePath() );
+        }
+    }
+    
+    @Override
+    protected void processUnhover() {
+        // TODO Auto-generated method stub
+        
+        Dialog.getInstance().hideTooltip();
+    }
+    
+    @Override
     protected Object processUpdate( Object value ) {
 
         File file = (File)value;

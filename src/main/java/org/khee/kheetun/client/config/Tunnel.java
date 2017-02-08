@@ -209,6 +209,21 @@ public class Tunnel extends Base implements Serializable {
         forwards.add( forward );
     }
     
+    public void removeForwardById( Integer id ) {
+        
+        int index = 0;
+        
+        while( index < this.forwards.size() && this.forwards.get( index ).getId() != id ) {
+            
+            index++;
+        }
+        
+        if ( index < this.forwards.size() ) {
+            
+            this.forwards.remove( index );
+        }
+    }
+    
     @XmlAttribute
     public Boolean getAutostart() {
         return this.autostart == null ? false : this.autostart;

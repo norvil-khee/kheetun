@@ -54,6 +54,7 @@ public class Imx extends ImageIcon {
     public static final Imx TIMEOUT             = Imx.createImx( "timeout.png" );
     public static final Imx PING_FAILURES       = Imx.createImx( "ping_failures.png" );
     public static final Imx COMMENT             = Imx.createImx( "comment.png" );
+    public static final Imx COPY                = Imx.createImx( "copy.png" );
     
     private String  file;
     private Integer scaleX;

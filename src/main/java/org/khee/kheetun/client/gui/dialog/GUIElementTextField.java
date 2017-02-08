@@ -1,6 +1,5 @@
 package org.khee.kheetun.client.gui.dialog;
 
-import java.awt.Color;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.lang.reflect.Field;
@@ -31,15 +30,36 @@ public class GUIElementTextField extends GUIElement {
         this.textLabel.setMaximumSize( this.textField.getMaximumSize() );
         this.textLabel.setFont( GUI.FIELD.get( field ).font );
 
-        if ( GUI.FIELD.get( field ).param1 instanceof Color ) {
-            
-            this.textLabel.setForeground( (Color)GUI.FIELD.get( field ).param1 );
-        }
+        this.textLabel.setForeground( GUI.FIELD.get( this.field ).colorUnselected );
         
         this.updateValue( (String)this.getValue() );
         
         this.body.add( this.textField );
         this.body.add( this.textLabel );
+    }
+    
+    @Override
+    public void processSelect() {
+        
+        this.textLabel.setForeground( GUI.FIELD.get( this.field ).colorSelected );
+    }
+    
+    @Override
+    public void processUnselect() {
+        
+        this.textLabel.setForeground( GUI.FIELD.get( this.field ).colorUnselected );
+    }
+    
+    @Override
+    protected void processHover() {
+        // TODO Auto-generated method stub
+        
+    }
+    
+    @Override
+    protected void processUnhover() {
+        // TODO Auto-generated method stub
+        
     }
     
     @Override

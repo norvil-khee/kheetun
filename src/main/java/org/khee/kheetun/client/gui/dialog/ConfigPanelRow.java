@@ -30,22 +30,23 @@ import org.khee.kheetun.client.gui.Kholor;
 @SuppressWarnings("serial")
 class ConfigPanelRow<C extends Base> extends JPanel implements MouseListener, MouseMotionListener, ComponentListener {
     
-    public static int counter               = 0;
+    public static int                       counter         = 0;
 
-    private C               object;
-    private ConfigPanel<C>  panel;
-    private int             id              = ConfigPanelRow.counter++;
-    private boolean         selected        = false;
-    private boolean         hovered         = false;
+    private C                               object;
+    private ConfigPanel<C>                  panel;
+    private int                             id              = ConfigPanelRow.counter++;
+    private boolean                         selected        = false;
+    private boolean                         hovered         = false;
 
-    private GUIElement      hoveredElement  = null;
+    private GUIElement                      hoveredElement  = null;
+    private ArrayList<GUIElement>           elements        = new ArrayList<GUIElement>();
 
-    private ArrayList<SelectionListener> listeners = new ArrayList<SelectionListener>();
+    private ArrayList<SelectionListener>    listeners = new ArrayList<SelectionListener>();
     
-    private BufferedImage   imageBasic;
-    private BufferedImage   imageHovered;
-    private BufferedImage   imageSelected;
-    private BufferedImage   imageBackground;
+    private BufferedImage                   imageBasic;
+    private BufferedImage                   imageHovered;
+    private BufferedImage                   imageSelected;
+    private BufferedImage                   imageBackground;
     
     public ConfigPanelRow( ConfigPanel<C> panel, C object ) {
         
@@ -86,11 +87,14 @@ class ConfigPanelRow<C extends Base> extends JPanel implements MouseListener, Mo
                     guiElement.setPreferredSize( new Dimension( width, 36 ) );
                     guiElement.setMinimumSize( new Dimension( width, 36 ) );
                     guiElement.setMaximumSize( new Dimension( width, 36 ) );
+                    guiElement.setVisible( ! gui.hidden );
                     
                     Insets i = new Insets( 0, 0, 0, 0 );
                     
-                    GridBagConstraints c = new GridBagConstraints( gridx, gridy, gridwidth, gridheight, -1.0, -1.0, anchor, fill, i, 0, 0 );
+                    GridBagConstraints c = new GridBagConstraints( gridx, gridy, gridwidth, gridheight, 0.0, 1.0, anchor, fill, i, 0, 0 );
                     this.add( guiElement, c );
+                    
+                    this.elements.add( guiElement );
                     
                 } catch ( Exception e ) {
                     
@@ -190,6 +194,7 @@ class ConfigPanelRow<C extends Base> extends JPanel implements MouseListener, Mo
 
         this.selected = true;
         this.imageBackground = this.imageSelected;
+        this.setGuiElementsVisible( true );
         this.repaint();
     }
     
@@ -197,7 +202,20 @@ class ConfigPanelRow<C extends Base> extends JPanel implements MouseListener, Mo
         
         this.selected = false;
         this.imageBackground = this.imageBasic;
+        this.setGuiElementsVisible( false );
         this.repaint();
+    }
+    
+    private void setGuiElementsVisible( boolean visible ) {
+        
+        for ( GUIElement element : this.elements ) {
+            
+            if ( visible ) {
+                element.select();
+            } else {
+                element.unselect();
+            }
+        }
     }
     
     @Override

@@ -24,10 +24,10 @@ import org.khee.kheetun.client.gui.Kholor;
 @SuppressWarnings("serial")
 public abstract class GUIElement extends JPanel implements MouseListener, KeyListener {
     
-    private ConfigPanelRow<?>       row;
+    protected ConfigPanelRow<?>     row;
     protected Object                value;
     protected Class<?>              valueclass;
-    private Field                   field;
+    protected Field                 field;
     private Method                  getter;
     private Method                  setter;
     protected boolean               editing         = false;
@@ -80,10 +80,10 @@ public abstract class GUIElement extends JPanel implements MouseListener, KeyLis
         this.setLayout( new GridBagLayout() );
         this.setAlignmentX( JComponent.LEFT_ALIGNMENT );
         
-        this.icon = GUI.FIELD.get( field ).icon;
+        this.icon = GUI.FIELD.get( field ).icon.color( Kholor.DECENT_GREY );
         
         if ( row.getId() % 2 == 0 ) {
-            icon = icon.lighten( 32 );
+            icon = icon.lighten( 16 );
         }
         
         this.labelIcon = new JLabel( this.icon );
@@ -129,6 +129,11 @@ public abstract class GUIElement extends JPanel implements MouseListener, KeyLis
         this.addGuiElementListener( Dialog.getInstance() );
     }
     
+    public Field getField() {
+        
+        return this.field;
+    }
+    
     public Object getValue() {
         
         try {
@@ -163,10 +168,10 @@ public abstract class GUIElement extends JPanel implements MouseListener, KeyLis
 
         if ( row.getObject().getError( this.field ) != null ) {
             
-            this.labelIcon.setIcon( this.icon.color( Kholor.ERROR ) );
+            this.labelHint.setForeground( Kholor.ERROR );
         } else {
             
-            this.labelIcon.setIcon( this.icon );
+            this.labelHint.setForeground( Kholor.DIALOG_HINT );
         }
         
     }
@@ -174,22 +179,57 @@ public abstract class GUIElement extends JPanel implements MouseListener, KeyLis
     protected abstract Object processUpdate( Object value );
     
 
-    public void hover() {
+    public void select() {
         
-        this.labelHint.setForeground( Kholor.DIALOG_HINT_HOVER );
+        this.labelIcon.setIcon( this.icon.color( Kholor.LIGHT_BLUE ) );
+        this.processSelect();
+    }
+    
+    protected abstract void processSelect();
+    
+    public void unselect() {
+        
+        this.labelIcon.setIcon( this.icon );
+        this.processUnselect();
+    }
+    
+    protected abstract void processUnselect();
+    
+    
+    public void hover() {
         
         if ( this.row.getObject().getError( this.field ) != null ) {
             
-            Dialog.getInstance().showVerify( this.getLocationOnScreen(), Imx.WARNING.color( Kholor.ERROR ), row.getObject().getError( this.field ) );
-        }     
+            this.labelHint.setForeground( Kholor.ERROR );
+            Dialog.getInstance().showTooltip( this.getLocationOnScreen(), Imx.WARNING.color( Kholor.ERROR ), row.getObject().getError( this.field ) );
+            
+        } else {
+            
+            this.labelHint.setForeground( Kholor.DIALOG_HINT_HOVER );
+        }
+        
+        this.processHover();
     }
+    
+    protected abstract void processHover();
     
     public void unhover() {
         
-        this.labelHint.setForeground( Kholor.DIALOG_HINT );
 
-        Dialog.getInstance().hideVerify();
+        if ( this.row.getObject().getError( this.field ) != null ) {
+            
+            this.labelHint.setForeground( Kholor.ERROR );
+            Dialog.getInstance().hideTooltip();
+            
+        } else {
+            
+            this.labelHint.setForeground( Kholor.DIALOG_HINT );
+        }
+        
+        this.processUnhover();
     }
+    
+    protected abstract void processUnhover();
     
     public void beginEdit() {
         

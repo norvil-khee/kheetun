@@ -81,6 +81,21 @@ public class Profile extends Base implements Serializable {
         tunnels.add( tunnel );
     }
     
+    public void removeTunnelById( Integer id ) {
+        
+        int index = 0;
+        
+        while( index < this.tunnels.size() && this.tunnels.get( index ).getId() != id ) {
+            
+            index++;
+        }
+        
+        if ( index < this.tunnels.size() ) {
+            
+            this.tunnels.remove( index );
+        }
+    }
+    
     public File getConfigFile() {
         return configFile;
     }

@@ -1,5 +1,6 @@
 package org.khee.kheetun.client.gui.dialog;
 
+import java.awt.Color;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.lang.reflect.Field;
@@ -28,6 +29,10 @@ public class GUI {
     public int                          gridheight      = 1;
     public int                          anchor          = GridBagConstraints.LINE_START;
     public int                          fill            = GridBagConstraints.VERTICAL;
+    public boolean                      hidden          = false;
+    public Color                        colorSelected   = Kholor.DIALOG_TEXT_SELECTED;
+    public Color                        colorUnselected = Kholor.DIALOG_TEXT_UNSELECTED;
+    
     
     public static final HashMap<Field, GUI> FIELD;
     
@@ -39,12 +44,13 @@ public class GUI {
         
             // Profile:name
             {
-                GUI gui         = new GUI( GUIElementTextField.class );
-                gui.hint        = "Name";
-                gui.param1      = Kholor.DIALOG_ITEM_NAME;
-                gui.icon        = Imx.EDIT;
-                gui.font        = new Font( Font.MONOSPACED, Font.BOLD, 16 );
-                gui.width       = 160;
+                GUI gui             = new GUI( GUIElementTextField.class );
+                gui.hint            = "Name";
+                gui.colorSelected   = Kholor.DIALOG_ITEM_NAME;
+                gui.colorUnselected = Kholor.DIALOG_ITEM_NAME_UNSELECTED;
+                gui.icon            = Imx.EDIT;
+                gui.font            = new Font( Font.DIALOG, Font.BOLD, 15 );
+                gui.width           = 160;
                 
                 FIELD.put( Profile.class.getDeclaredField( "name" ), gui );
             }
@@ -62,31 +68,33 @@ public class GUI {
                 FIELD.put( Profile.class.getDeclaredField( "active" ), gui );
             }
             
+            // ALIAS      USER                  AUTO
+            // KEY        HOST                  PORT
             
             // Tunnel:alias
             {
-                GUI gui         = new GUI( GUIElementTextField.class );
-                gui.hint        = "Name";
-                gui.param1      = Kholor.DIALOG_ITEM_NAME;
-                gui.width       = 340;
-                gui.icon        = Imx.EDIT;
-                gui.gridwidth   = 2;
-                gui.font        = new Font( Font.MONOSPACED, Font.BOLD, 16 );
+                GUI gui             = new GUI( GUIElementTextField.class );
+                gui.hint            = "Name";
+                gui.font            = new Font( Font.DIALOG, Font.BOLD, 15 );
+                gui.colorSelected   = Kholor.DIALOG_ITEM_NAME;
+                gui.colorUnselected = Kholor.DIALOG_ITEM_NAME_UNSELECTED;
+                gui.width           = 160;
+                gui.icon            = Imx.EDIT;
                 
                 FIELD.put( Tunnel.class.getDeclaredField( "alias" ), gui );
             }
             
-            // Tunnel:sshkey
+            // Tunnel:user
             {
-                GUI gui     = new GUI( GUIElementFileSelector.class );
-                gui.hint    = "SSH Key";
-                gui.width   = 140;
-                gui.gridx   = 2;
-                gui.icon    = Imx.KEY;
+                GUI gui     = new GUI( GUIElementTextField.class );
+                gui.hint    = "User";
+                gui.gridx   = 1;
+                gui.width   = 280;
+                gui.icon    = Imx.USER;
                 
-                FIELD.put( Tunnel.class.getDeclaredField( "sshKey" ), gui );
+                FIELD.put( Tunnel.class.getDeclaredField( "user" ), gui );
             }
-            
+
             // Tunnel:autostart
             {
                 GUI gui         = new GUI( GUIElementBoolean.class );
@@ -94,32 +102,32 @@ public class GUI {
                 gui.param1      = "ON";
                 gui.param3      = "OFF";
                 gui.icon        = Imx.AUTO;
-                gui.gridheight  = 1;
-                gui.gridx       = 3;
+                gui.gridx       = 2;
                 gui.width       = 60;
                 
                 FIELD.put( Tunnel.class.getDeclaredField( "autostart" ), gui );
             }
             
-            // Tunnel:user
+            // Tunnel:sshkey
             {
-                GUI gui     = new GUI( GUIElementTextField.class );
-                gui.hint    = "User";
+                GUI gui     = new GUI( GUIElementFileSelector.class );
+                gui.hint    = "SSH Key";
+                gui.width   = 160;
                 gui.gridy   = 1;
-                gui.width   = 150;
-                gui.icon    = Imx.USER;
+                gui.gridx   = 0;
+                gui.icon    = Imx.KEY;
                 
-                FIELD.put( Tunnel.class.getDeclaredField( "user" ), gui );
+                FIELD.put( Tunnel.class.getDeclaredField( "sshKey" ), gui );
             }
 
             // Tunnel:host
             {
-                GUI gui     = new GUI( GUIElementTextField.class );
-                gui.hint    = "Host";
-                gui.gridx   = 1;
-                gui.gridy   = 1;
-                gui.width   = 190;
-                gui.icon    = Imx.HOST;
+                GUI gui         = new GUI( GUIElementTextField.class );
+                gui.hint        = "Host";
+                gui.gridx       = 1;
+                gui.gridy       = 1;
+                gui.width       = 280;
+                gui.icon        = Imx.HOST;
                 
                 FIELD.put( Tunnel.class.getDeclaredField( "hostname" ), gui );
             }
@@ -130,8 +138,9 @@ public class GUI {
                 gui.hint    = "Port";
                 gui.gridx   = 2;
                 gui.gridy   = 1;
-                gui.width   = 140;
+                gui.width   = 60;
                 gui.icon    = Imx.PORT;
+                gui.hidden  = true;
                 
                 FIELD.put( Tunnel.class.getDeclaredField( "port" ), gui );
             }
@@ -142,7 +151,7 @@ public class GUI {
                 gui.hint    = "Ping Timeout (ms)";
                 gui.gridx   = 0;
                 gui.gridy   = 2;
-                gui.width   = 150;
+                gui.width   = 160;
                 gui.icon    = Imx.TIMEOUT;
                 
                 FIELD.put( Tunnel.class.getDeclaredField( "pingTimeout" ), gui );
@@ -154,7 +163,7 @@ public class GUI {
                 gui.hint    = "Max Ping Failures";
                 gui.gridx   = 1;
                 gui.gridy   = 2;
-                gui.width   = 190;
+                gui.width   = 280;
                 gui.icon    = Imx.PING_FAILURES;
                 
                 FIELD.put( Tunnel.class.getDeclaredField( "maxPingFailures" ), gui );
@@ -223,15 +232,16 @@ public class GUI {
             
             // Forward: comment
             {
-                GUI gui         = new GUI( GUIElementTextField.class );
-                gui.hint        = "Comment";
-                gui.param1      = Kholor.DIALOG_ITEM_NAME;
-                gui.gridwidth   = 3;
-                gui.gridx       = 0;
-                gui.gridy       = 0;
-                gui.width       = 350;
-                gui.font        = new Font( Font.MONOSPACED, Font.BOLD, 16 );
-                gui.icon        = Imx.COMMENT;
+                GUI gui             = new GUI( GUIElementTextField.class );
+                gui.hint            = "Comment";
+                gui.gridwidth       = 3;
+                gui.gridx           = 0;
+                gui.gridy           = 0;
+                gui.width           = 350;
+                gui.font            = new Font( Font.DIALOG, Font.BOLD, 15 );
+                gui.colorSelected   = Kholor.DIALOG_ITEM_NAME;
+                gui.colorUnselected = Kholor.DIALOG_ITEM_NAME_UNSELECTED;
+                gui.icon            = Imx.COMMENT;
                 
                 FIELD.put( Forward.class.getDeclaredField( "comment" ), gui );
             }

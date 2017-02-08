@@ -20,10 +20,35 @@ public class GUIElementLocalRemote extends GUIElement {
         this.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
         
         this.labelText.setFont( new Font( Font.DIALOG, Font.BOLD, 12 ) );
+        this.labelText.setForeground( GUI.FIELD.get( this.field ).colorUnselected );
         
         this.updateValue( (String)this.getValue() );
         
         this.body.add( this.labelText );
+    }
+    
+    @Override
+    public void processSelect() {
+
+        this.labelText.setForeground( GUI.FIELD.get( this.field ).colorSelected );
+    }
+    
+    @Override
+    public void processUnselect() {
+
+        this.labelText.setForeground( GUI.FIELD.get( this.field ).colorUnselected );
+    }
+    
+    @Override
+    protected void processHover() {
+        // TODO Auto-generated method stub
+        
+    }
+    
+    @Override
+    protected void processUnhover() {
+        // TODO Auto-generated method stub
+        
     }
     
     @Override

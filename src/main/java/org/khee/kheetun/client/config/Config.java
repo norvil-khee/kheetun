@@ -53,9 +53,25 @@ public class Config implements Serializable {
     public void setProfiles(ArrayList<Profile> profiles) {
         this.profiles = profiles;
     }
+    
     public void addProfile( Profile profile ) {
         profiles.add( profile );
     }
+    
+    public void removeProfileById( Integer id ) {
+        
+        int index = 0;
+        
+        while( index < this.profiles.size() && this.profiles.get( index ).getId() != id ) {
+            
+            index++;
+        }
+        
+        if ( index < this.profiles.size() ) {
+            
+            this.profiles.remove( index );
+        }
+    }    
     
     public ArrayList<String> getErrors() {
         return errors;
@@ -351,6 +367,35 @@ public class Config implements Serializable {
         }
         
         return "Tunnel" + number;
+    }
+    
+    public ArrayList<Profile> getAllProfiles() {
+        
+        return this.profiles;
+    }
+    
+    public ArrayList<Tunnel> getAllTunnels() {
+        
+        ArrayList<Tunnel> tunnels = new ArrayList<Tunnel>();
+        
+        for( Profile profile : this.profiles ) {
+            
+            tunnels.addAll( profile.getTunnels() );
+        }
+        
+        return tunnels;
+    }
+    
+    public ArrayList<Forward> getAllForwards() {
+        
+        ArrayList<Forward> forwards = new ArrayList<Forward>();
+        
+        for ( Tunnel tunnel : this.getAllTunnels() ) {
+            
+            forwards.addAll( tunnel.getForwards() );
+        }
+        
+        return forwards;
     }
     
     public void loopTunnels( boolean activeOnly, TunnelLoop loop ) {
