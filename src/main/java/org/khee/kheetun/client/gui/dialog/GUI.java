@@ -89,7 +89,7 @@ public class GUI {
                 GUI gui     = new GUI( GUIElementTextField.class );
                 gui.hint    = "User";
                 gui.gridx   = 1;
-                gui.width   = 280;
+                gui.width   = 240;
                 gui.icon    = Imx.USER;
                 
                 FIELD.put( Tunnel.class.getDeclaredField( "user" ), gui );
@@ -103,7 +103,7 @@ public class GUI {
                 gui.param3      = "OFF";
                 gui.icon        = Imx.AUTO;
                 gui.gridx       = 2;
-                gui.width       = 60;
+                gui.width       = 100;
                 
                 FIELD.put( Tunnel.class.getDeclaredField( "autostart" ), gui );
             }
@@ -126,7 +126,7 @@ public class GUI {
                 gui.hint        = "Host";
                 gui.gridx       = 1;
                 gui.gridy       = 1;
-                gui.width       = 280;
+                gui.width       = 240;
                 gui.icon        = Imx.HOST;
                 
                 FIELD.put( Tunnel.class.getDeclaredField( "hostname" ), gui );
@@ -138,9 +138,8 @@ public class GUI {
                 gui.hint    = "Port";
                 gui.gridx   = 2;
                 gui.gridy   = 1;
-                gui.width   = 60;
+                gui.width   = 100;
                 gui.icon    = Imx.PORT;
-                gui.hidden  = true;
                 
                 FIELD.put( Tunnel.class.getDeclaredField( "port" ), gui );
             }
@@ -163,7 +162,7 @@ public class GUI {
                 gui.hint    = "Max Ping Failures";
                 gui.gridx   = 1;
                 gui.gridy   = 2;
-                gui.width   = 280;
+                gui.width   = 240;
                 gui.icon    = Imx.PING_FAILURES;
                 
                 FIELD.put( Tunnel.class.getDeclaredField( "maxPingFailures" ), gui );

@@ -33,6 +33,7 @@ public class KheetunClient {
         TrayManager.init();
         ConfigManager.init();
         TunnelClient.init();
+        Dialog.init();
         
         // disable DNS caching
         //

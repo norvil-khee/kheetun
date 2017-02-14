@@ -21,8 +21,8 @@ import javax.swing.UIManager;
 
 import org.khee.kheetun.client.config.Base;
 import org.khee.kheetun.client.gui.Imx;
-import org.khee.kheetun.client.gui.Khbutton;
 import org.khee.kheetun.client.gui.Kholor;
+import org.khee.kheetun.client.gui.KhoolButton;
 import org.khee.kheetun.client.gui.TextStyle;
 
 @SuppressWarnings("serial")
@@ -41,13 +41,11 @@ class ConfigPanel<T extends Base> extends JPanel {
         labelHeader.setForeground( textStyle.getColorActive() );
         labelHeader.setFont( textStyle.getFontActive() );
         
-        Khbutton buttonAdd = new Khbutton( "ADD", Imx.PLUS );
-        buttonAdd.setWidth( 60 );
+        KhoolButton buttonAdd = new KhoolButton( "Add", Imx.PLUS );
         buttonAdd.addButtonListener( dialog );
         buttonAdd.setId( header + ":ADD" );
 
-        Khbutton buttonCopy = new Khbutton( "COPY", Imx.COPY );
-        buttonCopy.setWidth( 60 );
+        KhoolButton buttonCopy = new KhoolButton( "Copy selected", Imx.COPY );
         buttonCopy.addButtonListener( dialog );
         buttonCopy.setId( header + ":COPY" );
         

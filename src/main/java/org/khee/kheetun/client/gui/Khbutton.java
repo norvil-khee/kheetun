@@ -43,6 +43,7 @@ public class Khbutton extends JPanel implements MouseListener {
         this.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
         
         this.label = new JLabel( this.text, this.icon.lighten( 32 ), JLabel.LEFT );
+        
         this.label.setForeground( Color.WHITE );
         this.label.setIconTextGap( 8 );
 
