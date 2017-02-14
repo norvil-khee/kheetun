@@ -14,6 +14,8 @@ import org.khee.kheetun.server.comm.Protocol;
 import org.khee.kheetun.server.daemon.AutostartDaemon;
 import org.khee.kheetun.server.daemon.PingChecker;
 
+import com.jcraft.jsch.Channel;
+import com.jcraft.jsch.ChannelShell;
 import com.jcraft.jsch.IdentityRepository;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
@@ -26,8 +28,6 @@ import com.jcraft.jsch.agentproxy.usocket.JNAUSocketFactory;
 public class TunnelManager {
     
     private static Logger logger = LogManager.getLogger( "kheetund" );
-    
-    public static final long serialVersionUID = 42;
     
     private static HashMap<String, TunnelManager> instances = new HashMap<String, TunnelManager>();
     
@@ -57,10 +57,16 @@ public class TunnelManager {
         return this.id;
     }
     
-    public void setConfig( Config config ) {
+    public synchronized void setConfig( Config config ) {
         
         if ( config == null ) {
             logger.debug( "Got null config - ignoring" );
+            return;
+        }
+        
+        if ( this.config.equals( config ) && this.config.equalsMeta( config ) ) {
+            
+            logger.info( "Config is unchanged for " + this.id );
             return;
         }
         
@@ -103,6 +109,7 @@ public class TunnelManager {
                     tunnel.setFailures( oldTunnel.getFailures() );
                     tunnel.setState( oldTunnel.getState() );
                     tunnel.setAutoState( oldTunnel.getAutoState() );
+                    tunnel.setShellChannel( oldTunnel.getShellChannel() );
                     
                     if ( oldTunnel.getPingChecker() != null ) {
                         oldTunnel.getPingChecker().stop();
@@ -195,7 +202,7 @@ public class TunnelManager {
         return this.server;
     }
     
-    private JSch setupPublickeyAuth( Tunnel tunnel ) {
+    private synchronized JSch setupPublickeyAuth( Tunnel tunnel ) {
         
         JSch jsch;
         
@@ -219,7 +226,7 @@ public class TunnelManager {
         return jsch;
     }
 
-    private JSch setupSshAgentAuth( Tunnel tunnel ) {
+    private synchronized JSch setupSshAgentAuth( Tunnel tunnel ) {
         
         JSch jsch;
         
@@ -287,10 +294,13 @@ public class TunnelManager {
         }
     }
     
-    public synchronized void stopTunnel( Tunnel tunnel, boolean manually ) {
+    public void stopTunnel( Tunnel tunnel, boolean manually ) {
+        
+        tunnel.lock();
         
         if ( tunnel.getState() != Tunnel.STATE_RUNNING ) {
             logger.info( "Tunnel " + tunnel.getAlias() + " is not started (state=" + tunnel.getState() + "), will not stop" );
+            tunnel.unlock();
             return;
         }
         
@@ -308,6 +318,26 @@ public class TunnelManager {
         Session session = tunnel.getSession();
         
         if ( session.isConnected() ) {
+            
+            try {
+            
+                for ( Forward forward : tunnel.getForwards() ) {
+                    
+                    logger.info( "Remove Port forwarding: " + forward.getSignature() );
+                    
+                    if ( forward.getType().equals( Forward.REMOTE ) ) {
+                        
+                        session.delPortForwardingR( forward.getBindIp(), forward.getBindPort() );
+                    } else {
+                        
+                        session.delPortForwardingL( forward.getBindIp(), forward.getBindPort() );
+                    }
+                }
+                
+            } catch ( JSchException eJsch ) {
+                
+                logger.error( "Failed to remove port forwarding while stopping tunnel " + tunnel.getAlias() + ": " + eJsch.getMessage() );
+            }
         
             session.disconnect();
         }
@@ -338,12 +368,17 @@ public class TunnelManager {
         logger.info( "Stopped tunnel: " + tunnel.getAlias() );
         
         server.send( new Protocol( Protocol.TUNNEL, tunnel ) );
+        
+        tunnel.unlock();
     }
     
-    public synchronized void startTunnel( Tunnel tunnel, boolean manually ) {
+    public void startTunnel( Tunnel tunnel, boolean manually ) {
+        
+        tunnel.lock();
 
         if ( tunnel.getState() != Tunnel.STATE_STOPPED ) {
             logger.info( "Tunnel " + tunnel.getAlias() + " is not stopped (state=" + tunnel.getState() + "), will not start" );
+            tunnel.unlock();
             return;
         }
         
@@ -371,6 +406,7 @@ public class TunnelManager {
                 
                 tunnel.setState( Tunnel.STATE_STOPPED );
                 server.send( new Protocol( Protocol.TUNNEL, tunnel ) );
+                tunnel.unlock();
                 return;
             }
             
@@ -380,6 +416,13 @@ public class TunnelManager {
             
             session.setTimeout( 10000 );
             session.connect();
+            
+            Channel channel = session.openChannel( "shell" );
+            ChannelShell channelShell = (ChannelShell)channel;
+            
+            channelShell.connect();
+            
+            tunnel.setShellChannel( channelShell );
             
             ArrayList<Forward> hostEntries = new ArrayList<Forward>();
             
@@ -409,7 +452,8 @@ public class TunnelManager {
                 
                 session.disconnect();
             }
-            
+
+            tunnel.unlock();
             this.failTunnel( tunnel, "SSH Session connection failed: " + eJSch.getMessage() );
 
             tunnel.setState( Tunnel.STATE_STOPPED );
@@ -435,17 +479,20 @@ public class TunnelManager {
         
         tunnel.setError( null );
         this.server.send( new Protocol( Protocol.TUNNEL, tunnel ) );
+        
+        tunnel.unlock();
     }
     
     public void failTunnel( Tunnel tunnel, String error ) {
         
         tunnel.increaseFailures();
         tunnel.setError( error );
-        logger.error( "Tunnel " + tunnel.getAlias() + " failed: " + error );
+        logger.error( "Tunnel " + tunnel.getAlias() + " failed [" + tunnel.getFailures() + "/" + tunnel.getMaxFailures() +"]: " + error );
         this.server.send( new Protocol( Protocol.TUNNEL, tunnel ) );
         
         if ( tunnel.getFailures() >= tunnel.getMaxFailures() ) {
             
+            logger.error( "Stopping tunnel " + tunnel.getAlias() + ": max fail count reached" );
             if ( tunnel.getAutostart() || tunnel.getRestart() ) {
                 this.disableAutostart( tunnel );
             }
@@ -479,9 +526,14 @@ public class TunnelManager {
         
         if ( tunnel != null && tunnel.getState() == Tunnel.STATE_RUNNING ) {
         
-            if ( tunnel.getPingFailures() >= 3 ) {
+            if ( tunnel.getPingFailures() >= tunnel.getMaxPingFailures() ) {
                 
-                this.failTunnel( tunnel, "Ping failure" );
+                this.failTunnel( tunnel, "Ping failure (" + tunnel.getMaxPingFailures() + " times above " + tunnel.getPingTimeout() + "ms)" );
+                this.stopTunnel( tunnel, false );
+                
+            } else if ( ! tunnel.getSession().isConnected() ) {
+                
+                this.failTunnel( tunnel, "Ping failure (SSH session closed)" );
                 this.stopTunnel( tunnel, false );
                 
             } else {

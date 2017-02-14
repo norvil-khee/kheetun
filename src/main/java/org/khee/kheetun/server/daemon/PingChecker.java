@@ -1,22 +1,34 @@
 package org.khee.kheetun.server.daemon;
 
+import java.io.BufferedReader;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.khee.kheetun.client.config.Tunnel;
 import org.khee.kheetun.server.manager.TunnelManager;
 
-import com.jcraft.jsch.Channel;
-import com.jcraft.jsch.ChannelExec;
-import com.jcraft.jsch.JSchException;
-
 public class PingChecker implements Runnable {
     
-    private static Logger   logger = LogManager.getLogger( "kheetund" );
+    private static Logger       logger = LogManager.getLogger( "kheetund" );
     
-    private Tunnel          tunnel;
-    private TunnelManager   tunnelManager;
-    private String          id;
-    private boolean         running         = true;
+    private Tunnel              tunnel;
+    private TunnelManager       tunnelManager;
+    private String              id;
+    private boolean             running         = true;
+    private BufferedReader      shellIn;
+    private DataOutputStream    shellOut;
+    private ExecutorService     executorService = Executors.newCachedThreadPool();
+    private Callable<Integer>   callableGetPing;
     
     public PingChecker( TunnelManager tunnelManager, Tunnel tunnel ) {
         
@@ -31,6 +43,25 @@ public class PingChecker implements Runnable {
         
         this.tunnel.setPingChecker( this );
         this.tunnel.setPingFailures( 0 );
+        
+        try {
+            
+            this.shellOut = new DataOutputStream( this.tunnel.getShellChannel().getOutputStream() );
+            this.shellIn  = new BufferedReader( new InputStreamReader( this.tunnel.getShellChannel().getInputStream() ) );
+            
+        } catch ( IOException eIO ) {
+            
+            logger.error( "Could not aquire IN/OUT from shell for pinging purposes for tunnel " + tunnel.getAlias() + ": " + eIO.getMessage() );
+        }
+        
+        this.callableGetPing = new Callable<Integer>() {
+            
+            @Override
+            public Integer call() throws Exception {
+                
+                return PingChecker.this.getPing();
+            }
+        };
     }
     
     public void stop() {
@@ -44,31 +75,25 @@ public class PingChecker implements Runnable {
         daemon.start();
     }
     
-    private void checkPing() {
+    private Integer getPing() throws IOException {
         
         logger.debug( "Measuring ping of connected tunnel " + tunnel.getAlias() );
         
-        try {
+        long pingStart = System.currentTimeMillis();
+        
+        this.shellOut.writeBytes( "echo ping." + pingStart + "\r\n" );
+        this.shellOut.flush();
+        
+        String output = this.shellIn.readLine();
+        
+        while ( output != null && ! output.startsWith( "ping." + pingStart ) ) {
             
-            Channel channel = this.tunnel.getSession().openChannel( "exec" );
-            ((ChannelExec)channel).setCommand( "echo" );
-            
-            long pingStart = System.currentTimeMillis();
-            channel.connect( 3000 );
-            long pingStop = System.currentTimeMillis();
-            channel.disconnect();
-            
-            this.tunnel.setPingFailures( 0 );
-            this.tunnel.setPing( (int)(pingStop - pingStart) );
-            logger.debug( "Ping of tunnel " + tunnel.getAlias() + " = " + this.tunnel.getPing() );
-           
-        } catch ( JSchException e ) {
-            
-            this.tunnel.increasePingFailures();
-            logger.debug( "PING FAIL (ERROR) ( " + tunnel.getPingFailures() + "/3 ): " + this.tunnel.getAlias() );
+            output = this.shellIn.readLine();
         }
         
-        this.tunnelManager.updatePing( this.tunnel );
+        long pingStop = System.currentTimeMillis();
+        
+        return (int)(pingStop - pingStart);
     }
     
     
@@ -77,10 +102,39 @@ public class PingChecker implements Runnable {
         
         logger.info( "Started ping daemon[" + this + "] for tunnel " + this.id );
         
-        while( this.running && this.tunnel.getState() == Tunnel.STATE_RUNNING && this.tunnel.getSession() != null && this.tunnel.getPingFailures() < 3 ) {
+        while( this.running && this.tunnel.getState() == Tunnel.STATE_RUNNING && this.tunnel.getSession() != null && this.tunnel.getSession().isConnected() && this.tunnel.getPingFailures() < this.tunnel.getMaxPingFailures() ) {
             
-            this.checkPing();
+            Future<Integer> futureGetPing = this.executorService.submit( this.callableGetPing );
+            
+            try {
                 
+                Integer ping = futureGetPing.get( this.tunnel.getPingTimeout(), TimeUnit.MILLISECONDS );
+                
+                this.tunnel.setPingFailures( 0 );
+                this.tunnel.setPing( ping );
+                
+            } catch ( TimeoutException eTimeout ) {
+
+                this.tunnel.increasePingFailures();
+                logger.warn( "Ping failure " + this.tunnel.getPingFailures() + "/" + this.tunnel.getMaxPingFailures() + ": Timeout (> " + this.tunnel.getPingTimeout() + "ms)" );
+                
+            } catch ( InterruptedException eInterrupted ) {
+                
+                this.tunnel.increasePingFailures();
+                logger.error( "Ping failure " + this.tunnel.getPingFailures() + "/" + this.tunnel.getMaxPingFailures() + ": Interrupted" );
+                
+            } catch ( ExecutionException eExecution ) {
+                
+                this.tunnel.increasePingFailures();
+                logger.error( "Ping failure " + this.tunnel.getPingFailures() + "/" + this.tunnel.getMaxPingFailures() + ": " + eExecution.getMessage() );
+                
+            } finally {
+                
+               futureGetPing.cancel( true );
+            }
+                
+            this.tunnelManager.updatePing( this.tunnel );
+            
             logger.trace( "PingDaemon sleeping for 2 seconds" );
             
             try {
@@ -89,6 +143,8 @@ public class PingChecker implements Runnable {
                 logger.warn( "Sleep interrupted" );
             }
         }
+        
+        this.tunnelManager.updatePing( this.tunnel );
         
         if ( this.tunnel.getPingChecker() != null && this.tunnel.getPingChecker() == this ) {
             this.tunnel.setPingChecker( null );

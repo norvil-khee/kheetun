@@ -6,7 +6,7 @@ import java.io.InvalidClassException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.BindException;
-import java.net.InetAddress;
+import java.net.Inet4Address;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
@@ -25,10 +25,10 @@ public class TunnelServer implements Runnable {
     private ObjectInputStream               commIn;
     private ObjectOutputStream              commOut;
     
-    public TunnelServer( int port ) {
+    public TunnelServer( String host, int port ) {
             
         try {
-            serverSocket = new ServerSocket( port, 99, InetAddress.getLocalHost() );
+            serverSocket = new ServerSocket( port, 99, Inet4Address.getByName( host ) );
             logger.info( "Listening on 127.0.0.1:" + port );
             
             while( true ) {

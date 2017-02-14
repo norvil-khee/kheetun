@@ -1,4 +1,4 @@
-package org.khee.kheetun.client.gui;
+package org.khee.kheetun.client.gui.tray;
 
 import java.awt.Point;
 import java.awt.image.BufferedImage;
@@ -12,33 +12,17 @@ import org.gnome.gtk.Menu;
 import org.gnome.gtk.StatusIcon;
 import org.gnome.gtk.StatusIcon.Activate;
 import org.gnome.gtk.StatusIcon.PopupMenu;
+import org.khee.kheetun.client.gui.Imx;
 
 public class GtkTray extends Tray {
     
-    public static Pixbuf NONE;
-    
-    static {
-        try {
-            NONE        = pixbufFromBufferedImage( Imx.NONE.bs32 );
-            
-        } catch ( IOException e ) {
-            
-            System.err.println( "Failed to load tray icons: " + e.getMessage() );
-            System.exit( 1 );
-        }
-    };
-    
-    private StatusIcon  icon        = new StatusIcon(); 
-    private Menu        hack        = new Menu();
+    private StatusIcon  statusIcon      = new StatusIcon(); 
+    private Menu        hack            = new Menu();
     private Pixbuf      current;
     
     public GtkTray() {
         
-        Thread blinkThread = new Thread( this );
-        blinkThread.setName( "kheetun-tray-blink-thread" );
-        blinkThread.start();
-
-        icon.connect( new Activate() {
+        statusIcon.connect( new Activate() {
             
             public void onActivate(StatusIcon tray) {
                 
@@ -55,7 +39,7 @@ public class GtkTray extends Tray {
             }
         });
         
-        icon.connect( new PopupMenu() {
+        statusIcon.connect( new PopupMenu() {
             
             @Override
             public void onPopupMenu(StatusIcon tray, int arg1, int arg2) {
@@ -76,33 +60,12 @@ public class GtkTray extends Tray {
     }
     
     @Override
-    public void run() {
-        
-        try {
-        
-            while( true ) {
-                
-                if ( blinking ) { 
-                    icon.setFromPixbuf( NONE );
-                    Thread.sleep( 500 );
-                    icon.setFromPixbuf( current );
-                    Thread.sleep( 500 );
-                } else {
-                    Thread.sleep( 1000 );
-                }
-            }
-        } catch ( InterruptedException e ) {
-            e.printStackTrace();
-        }
-    }
-    
-    @Override
-    protected void setIcon(Imx icon) {
+    protected void processSetIcon( Imx icon ) {
         
         try {
             
-            current = GtkTray.pixbufFromBufferedImage( icon.bs32 );
-            this.icon.setFromPixbuf( current );
+            current = GtkTray.pixbufFromBufferedImage( Imx.imageToBufferedImage( icon.getImage() ) );
+            this.statusIcon.setFromPixbuf( current );
             
         } catch ( IOException e ) {
             

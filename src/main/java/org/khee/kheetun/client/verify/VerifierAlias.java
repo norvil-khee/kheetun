@@ -1,11 +1,26 @@
 package org.khee.kheetun.client.verify;
 
 public class VerifierAlias extends Verifier {
-
-    public boolean verify(Object value) {
+    
+    protected static VerifierAlias instance = new VerifierAlias();
+    
+    public static VerifierAlias getInstance() {
+        return instance;
+    }
+    
+    @Override
+    public String verify(Object value) {
+        
+        if ( value == null ) {
+            return "Value must not be null";
+        }
         
         String alias = (String)value;
-        return alias.length() > 0;
+        
+        if ( alias.length() > 0 ) {
+            return null;
+        }
+        
+        return "Value must not be empty";
     }
-
 }

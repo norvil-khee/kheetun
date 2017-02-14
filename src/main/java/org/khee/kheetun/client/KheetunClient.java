@@ -8,26 +8,32 @@ import org.apache.logging.log4j.Logger;
 import org.gnome.gtk.Gtk;
 import org.khee.kheetun.Kheetun;
 import org.khee.kheetun.client.config.ConfigManager;
-import org.khee.kheetun.client.gui.GtkTray;
 import org.khee.kheetun.client.gui.Imx;
-import org.khee.kheetun.client.gui.Tray;
-import org.khee.kheetun.client.gui.TrayManager;
-import org.khee.kheetun.client.gui.TrayMenu;
+import org.khee.kheetun.client.gui.dialog.Dialog;
+import org.khee.kheetun.client.gui.tray.GtkTray;
+import org.khee.kheetun.client.gui.tray.Tray;
+import org.khee.kheetun.client.gui.tray.TrayManager;
+import org.khee.kheetun.client.gui.tray.TrayMenu;
 
 public class KheetunClient {
     
     static {
-        System.setProperty( "log4j.configurationFile", "log4j2.client.xml" );
+        System.setProperty( "log4j.configurationFile", "log4j2.xml" );
     }
     private static Logger logger = LogManager.getLogger( KheetunClient.class );
     
     public static void main(String[] args) {
         
+        ConfigManager.init();
+
+        System.setProperty( "sun.java2d.xrender", "false" );
+
         Gtk.init( args );
         
         TrayManager.init();
         ConfigManager.init();
         TunnelClient.init();
+        Dialog.init();
         
         // disable DNS caching
         //
@@ -46,10 +52,12 @@ public class KheetunClient {
         
         Tray        tray            = new GtkTray();
         TrayMenu    menu            = new TrayMenu();
+        Dialog      dialog          = Dialog.getInstance();
         
         TrayManager.setTray( tray );
         TrayManager.setMenu( menu );
-        TrayManager.setIcon( Imx.TRAY_OK );
+        TrayManager.setDialog( dialog );
+        TrayManager.setIcon( Imx.TRAY.size( 32 ) );
 
         ConfigManager.start();
         

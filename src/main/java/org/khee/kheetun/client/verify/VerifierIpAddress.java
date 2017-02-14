@@ -1,10 +1,22 @@
 package org.khee.kheetun.client.verify;
 
 public class VerifierIpAddress extends Verifier {
-
-    public boolean verify( Object value ) {
+    
+    protected static VerifierIpAddress instance = new VerifierIpAddress();
+    
+    public static VerifierIpAddress getInstance() {
+        return instance;
+    }    
+        
+    @Override
+    public String verify( Object value ) {
         
         String ipAddress = (String)value;
-        return ipAddress.matches( "\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}" );
+        
+        if ( ipAddress.matches( "\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}" ) ) {
+            return null;
+        }
+        
+        return "Invalid IP address";
     }
 }

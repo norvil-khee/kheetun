@@ -4,11 +4,9 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ConnectException;
-import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Semaphore;
 
 import javax.swing.JOptionPane;
 import javax.swing.JPasswordField;
@@ -31,15 +29,20 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
     
     private static Logger logger = LogManager.getLogger( "kheetun" );
     
-    private Socket                          clientSocket;
-    private Protocol                        receive;
-    private ObjectInputStream               commIn;
-    private ObjectOutputStream              commOut;
-    private static TunnelClient             instance;
-    private Thread                          client;
-    private boolean                         clientRunning;
-    private CopyOnWriteArrayList<TunnelClientListener> listeners       = new CopyOnWriteArrayList<TunnelClientListener>();
-    private Integer                         port            = -1;
+    public static final int                             CONNECT_OK                  = 0;
+    public static final int                             CONNECT_ERROR_REFUSED       = 100;
+    public static final int                             CONNECT_ERROR_OTHER         = 900;
+    
+    private Socket                                      clientSocket;
+    private Protocol                                    receive;
+    private ObjectInputStream                           commIn;
+    private ObjectOutputStream                          commOut;
+    private static TunnelClient                         instance;
+    private Thread                                      client;
+    private boolean                                     clientRunning;
+    private CopyOnWriteArrayList<TunnelClientListener>  listeners       = new CopyOnWriteArrayList<TunnelClientListener>();
+    private Integer                                     port            = -1;
+    private String                                      host            = null;
     
     protected TunnelClient() {
 
@@ -59,11 +62,12 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
     @Override
     public void configManagerGlobalConfigChanged( GlobalConfig oldConfig, GlobalConfig newConfig, boolean valid ) {
         
-        if ( valid && ! this.port.equals( newConfig.getPort() ) ) {
+        if ( valid && newConfig.getHost() != null && ( ! newConfig.getHost().equals( this.host ) || ! this.port.equals( newConfig.getPort() ) ) ) {
 
-            logger.info( "Connecting to port " + newConfig.getPort() + " after config change" );
+            logger.info( "Connecting to " + newConfig.getHost() + ":" + newConfig.getPort() );
             
             this.port = newConfig.getPort();
+            this.host = newConfig.getHost();
             
             this.send( new Protocol( Protocol.DISCONNECT ) );
             
@@ -82,18 +86,29 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
     
     public void run() {
         
+        logger.info( "Trying to connect to kheetun server at " + this.host + ":" + this.port );
+        
         clientRunning   = true;
+        
+        String connectionError          = null;
+        String connectionErrorBefore    = null;
+        int connectionStatus            = TunnelClient.CONNECT_OK;
+        int connectionStatusBefore      = TunnelClient.CONNECT_OK;
         
         while ( clientRunning ) {
         
-            logger.info( "Trying to connect to kheetun server at port " + port );
+            if ( connectionStatus != connectionStatusBefore || ( connectionError != null && ! connectionError.equals( connectionErrorBefore ) ) ) {
+                
+                logger.info( "Last connection attempt unsuccessful: " + connectionError + ", retrying connection to " + this.host + ":" + this.port );
+            }
             
-            String connectionError = null;
+            connectionStatusBefore  = connectionStatus;
+            connectionErrorBefore   = connectionError;
             
             try {
                 
-                clientSocket = new Socket( InetAddress.getLocalHost(), port );
-                commOut     = new ObjectOutputStream( clientSocket.getOutputStream() );
+                clientSocket = new Socket( this.host, this.port );
+                commOut      = new ObjectOutputStream( clientSocket.getOutputStream() );
                 commOut.flush();
     
                 send( new Protocol( Protocol.CONNECT ) );
@@ -113,21 +128,21 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
                 
             } catch ( ConnectException eConnect ) {
                 
-                logger.error( "Could not connect to kheetun server: " + eConnect.getMessage() );
-                connectionError = eConnect.getLocalizedMessage();
+                connectionError = eConnect.getMessage();
+                connectionStatus = TunnelClient.CONNECT_ERROR_REFUSED;
                 
             } catch ( SocketException eSocket ) {
                 
-                logger.error( "Socket error: " + eSocket.getMessage() + ", disconnected" );
-                connectionError = eSocket.getLocalizedMessage();
+                connectionError = eSocket.getMessage();
+                connectionStatus = TunnelClient.CONNECT_ERROR_OTHER;
             } catch ( IOException eIO ) {
                 
-                logger.error( "Socket IO error: " + eIO.getMessage() + ", disconnected" );
-                connectionError = eIO.getLocalizedMessage();
+                connectionError = eIO.getMessage();
+                connectionStatus = TunnelClient.CONNECT_ERROR_OTHER;
             } catch ( Exception e ) {
                 
-                logger.warn( "", e );
-                connectionError = e.getLocalizedMessage();
+                connectionError = e.getMessage();
+                connectionStatus = TunnelClient.CONNECT_ERROR_OTHER;
             }
             
             try {
@@ -146,9 +161,12 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
                 
                 logger.warn( e.getMessage() );
             }
+            
+            if ( connectionStatus != connectionStatusBefore || ( connectionError != null && ! connectionError.equals( connectionErrorBefore ) ) ) {
 
-            for( TunnelClientListener listener : this.listeners ) {
-                listener.TunnelClientConnection( false, connectionError );
+                for( TunnelClientListener listener : this.listeners ) {
+                    listener.TunnelClientConnection( false, connectionError, connectionStatus );
+                }
             }
             
             logger.debug( "Disconnected from kheetun server, retrying in 2 seconds" );
@@ -178,7 +196,7 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
             logger.info( "Connected to kheetun server" );
             
             for( TunnelClientListener listener : this.listeners ) {
-                listener.TunnelClientConnection( true, null );
+                listener.TunnelClientConnection( true, null, TunnelClient.CONNECT_OK );
             }
             
             TunnelClient.sendConfig( ConfigManager.getConfig() );
@@ -301,6 +319,11 @@ public class TunnelClient implements Runnable, ConfigManagerListener {
     public static void addTunnelClientListener( TunnelClientListener listener ) {
         
         instance.listeners.add( listener );
+    }
+
+    public static void removeTunnelClientListener( TunnelClientListener listener ) {
+        
+        instance.listeners.remove( listener );
     }
 
 }

@@ -17,20 +17,40 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
 @XmlAccessorType(XmlAccessType.NONE)
 @XmlType( propOrder={"name","baseBindIp","tunnels"} )
 @XmlRootElement
-public class Profile implements Serializable {
+public class Profile extends Base implements Serializable {
     
     public static final long serialVersionUID = 42;
     
-    private String                  name;
+    /**
+     * essential Profile data (used by equals)
+     */
     private ArrayList<Tunnel>       tunnels;
+    
+    /**
+     * meta Profile data (used by metaEquals)
+     */
+    private String                  name;
     private String                  baseBindIp;
-    private ArrayList<String>       errors       = new ArrayList<String>();
     private File                    configFile;
-    private Long                    modified;
     private Boolean                 active       = true;
     
     public Profile() {
+        this.name = "";
         tunnels = new ArrayList<Tunnel>();
+    }
+    
+    public Profile( Profile source ) {
+        
+        tunnels = new ArrayList<Tunnel>();
+        for ( Tunnel tunnel : source.tunnels ) {
+            
+            this.tunnels.add( new Tunnel( tunnel ) );
+        }
+        
+        this.name       = source.name       == null ? null : new String( source.name );
+        this.baseBindIp = source.baseBindIp == null ? null : new String( source.baseBindIp );
+        this.configFile = source.configFile == null ? null : new File( source.configFile.getAbsolutePath() );
+        this.active     = new Boolean( source.active );
     }
     
     @XmlAttribute
@@ -61,14 +81,21 @@ public class Profile implements Serializable {
         tunnels.add( tunnel );
     }
     
-    public ArrayList<String> getErrors() {
-        return errors;
+    public void removeTunnelById( Integer id ) {
+        
+        int index = 0;
+        
+        while( index < this.tunnels.size() && this.tunnels.get( index ).getId() != id ) {
+            
+            index++;
+        }
+        
+        if ( index < this.tunnels.size() ) {
+            
+            this.tunnels.remove( index );
+        }
     }
-
-    public void addError( String error ) {
-        this.errors.add( error );
-    }
-
+    
     public File getConfigFile() {
         return configFile;
     }
@@ -85,15 +112,33 @@ public class Profile implements Serializable {
     public void setActive(Boolean active) {
         this.active = active;
     }
+
+    public int hashCodeMeta() {
+        
+        HashCodeBuilder h = new HashCodeBuilder( 13, 39 )
+            .append( this.getName() )
+            .append( this.getBaseBindIp() )
+            .append( this.getConfigFile() )
+            .append( this.isActive() );
+        
+        for ( Tunnel tunnel : this.getTunnels() ) {
+            h.append( tunnel.hashCodeMeta() );
+        }
+        
+        return h.toHashCode();
+    }
     
-    public Long getModified() {
-        return modified;
-    }
-
-    public void setModified( Long modified ) {
-        this.modified = modified;
-    }
-
+    public boolean equalsMeta(Object obj) {
+        
+        if ( ! ( obj instanceof Profile ) ) {
+            return false;
+        }
+        
+        Profile compare = (Profile)obj;
+        
+        return this.hashCodeMeta() == compare.hashCodeMeta();
+    }  
+    
     public int hashCode() {
         
         return new HashCodeBuilder( 13, 37 )

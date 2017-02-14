@@ -13,19 +13,24 @@ import javax.xml.bind.Unmarshaller;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.khee.kheetun.client.verify.VerifierFactory;
+import org.khee.kheetun.client.verify.VerifierAlias;
+import org.khee.kheetun.client.verify.VerifierHostname;
+import org.khee.kheetun.client.verify.VerifierIpAddress;
+import org.khee.kheetun.client.verify.VerifierPort;
+import org.khee.kheetun.client.verify.VerifierSshKey;
+import org.khee.kheetun.client.verify.VerifierUser;
 
 public class Config implements Serializable {
     
     public static final long serialVersionUID = 77L;
     
-    private static  Logger              logger      = LogManager.getLogger( "kheetun" );
+    private static  Logger                      logger              = LogManager.getLogger( "kheetun" );
     
-    private         ArrayList<Profile>      profiles        = new ArrayList<Profile>();
-    private         ArrayList<String>       errors          = new ArrayList<String>();
-    private         HashMap<String, String> localBinds      = new HashMap<String, String>(); 
-    private         HashMap<String, String> remoteBinds     = new HashMap<String, String>();
-
+    public static final File                    CONFIG_DIRECTORY    = new File( System.getProperty( "user.home" ) + "/.kheetun/kheetun.d" );
+    
+    private         ArrayList<Profile>          profiles            = new ArrayList<Profile>();
+    private         ArrayList<String>           errors              = new ArrayList<String>();
+    
     public class TunnelLoop {
         
         public void execute( Tunnel tunnel ) { };
@@ -34,15 +39,39 @@ public class Config implements Serializable {
     public Config() { 
     }
     
+    public Config( Config source ) {
+        
+        for ( Profile profile : source.profiles ) {
+            
+            this.profiles.add( new Profile( profile ) );
+        }
+    }
+    
     public ArrayList<Profile> getProfiles() {
         return profiles;
     }
     public void setProfiles(ArrayList<Profile> profiles) {
         this.profiles = profiles;
     }
+    
     public void addProfile( Profile profile ) {
         profiles.add( profile );
     }
+    
+    public void removeProfileById( Integer id ) {
+        
+        int index = 0;
+        
+        while( index < this.profiles.size() && this.profiles.get( index ).getId() != id ) {
+            
+            index++;
+        }
+        
+        if ( index < this.profiles.size() ) {
+            
+            this.profiles.remove( index );
+        }
+    }    
     
     public ArrayList<String> getErrors() {
         return errors;
@@ -51,6 +80,28 @@ public class Config implements Serializable {
     public void addError( String error ) {
         this.errors.add( error );
     }
+    
+    public int hashCodeMeta() {
+        
+        HashCodeBuilder h = new HashCodeBuilder( 13, 33 );
+        
+        for ( Profile profile : this.getProfiles() ) {
+           h.append( profile.hashCodeMeta() );
+        }
+        
+        return h.toHashCode();
+    }
+    
+    public boolean equalsMeta(Object obj) {
+        
+        if ( ! ( obj instanceof Config ) ) {
+            return false;
+        }
+        
+        Config compare = (Config)obj;
+        
+        return this.hashCodeMeta() == compare.hashCodeMeta();
+    } 
     
     public int hashCode() {
         
@@ -69,7 +120,7 @@ public class Config implements Serializable {
         Config compare = (Config)obj;
         
         return this.hashCode() == compare.hashCode();
-    }     
+    }
 
     public static Config load() {
         
@@ -103,11 +154,10 @@ public class Config implements Serializable {
                         logger.error( "Error in profile while loading " + profileFile.getName() + ": " + error ) ;
                         
                         profile = new Profile();
-                        profile.addError( error );
+                        profile.addError( "configFile", error );
                     }
                     
                     profile.setConfigFile( profileFile );
-                    profile.setModified( profileFile.lastModified() );
                     config.validateProfile( profile );
                     config.profiles.add( profile );
                 }
@@ -127,10 +177,22 @@ public class Config implements Serializable {
     
     public void save() {
         
-        File configDirectory = new File( System.getProperty( "user.home") + "/.kheetun/kheetun.d" );
+        if ( ! Config.CONFIG_DIRECTORY.exists() ) {
+            Config.CONFIG_DIRECTORY.mkdir();
+        }
         
-        if ( ! configDirectory.exists() ) {
-            configDirectory.mkdir();
+        /*
+         * backup all previous config files
+         */
+        File[] files = Config.CONFIG_DIRECTORY.listFiles();
+        
+        for ( File file : files ) {
+            
+            if ( ! file.getAbsolutePath().matches( ".*\\.xml$" ) ) {
+                continue;
+            }
+            
+            file.renameTo( new File( file.getAbsolutePath() + ".bak" ) );
         }
         
         try {
@@ -154,35 +216,76 @@ public class Config implements Serializable {
         } catch ( JAXBException e ) {
 
             logger.error( e.getMessage() );
-            
         } 
+    }
+    
+    public void validate() {
+        
+        for ( Profile profile : this.profiles ) {
+            
+            this.validateProfile( profile );
+        }
+    }
+    
+    public ArrayList<String> getAllErrors() {
+        
+        ArrayList<String> errors = new ArrayList<String>();
+        
+        for ( Profile profile : this.profiles ) {
+            
+            String profileName = ( profile.getName() == null || profile.getName().length() == 0 ? "[no name]" : profile.getName() );
+            
+            for ( String error : profile.getReadableErrorList() ) {
+                
+                errors.add( "Profile " +  profileName + ": " + error );
+            }
+            
+            for ( Tunnel tunnel : profile.getTunnels() ) {
+                
+                String tunnelName = ( tunnel.getAlias() == null || tunnel.getAlias().length() == 0 ? "[no alias]" : tunnel.getAlias() );
+                
+                for ( String error : tunnel.getReadableErrorList() ) {
+                    
+                    errors.add( "Profile " + profileName + ", Tunnel " + tunnelName + ": " + error );
+                }
+                
+                int f = 0;
+                
+                for ( Forward forward : tunnel.getForwards() ) {
+                    
+                    f++;
+                    
+                    for ( String error : forward.getReadableErrorList() ) {
+                        
+                        errors.add( "Profile " + profileName + ", Tunnel " + tunnelName + ", Forward " + f + ": " + error );
+                    }
+                }
+            }
+            
+        }
+        
+        return errors;
     }
     
     public void validateProfile( Profile profile ) {
         
+        HashMap<String, String> localBinds      = new HashMap<String, String>(); 
+        HashMap<String, String> remoteBinds     = new HashMap<String, String>();
+        
+        profile.clearErrors();
+        
+        profile.addError( "name", VerifierAlias.getInstance().verify( profile.getName() ));
+//        profile.addError( "configFile", VerifierConfigFile.getInstance().verify( profile.getConfigFile() ) );
+        
         for ( Tunnel tunnel : profile.getTunnels() ) {
             
-            if ( ! VerifierFactory.getAliasVerifier().verify( tunnel.getAlias() ) ) {
-                
-                profile.addError( "Tunnel '" + tunnel.getAlias() +"': invalid alias '" + tunnel.getAlias() + "'" );
-            }
+            tunnel.clearErrors();
             
-            if ( ! VerifierFactory.getHostnameVerifier().verify( tunnel.getHostname() ) ) {
-                
-                profile.addError( "Tunnel '" + tunnel.getAlias() +"': invalid hostname '" + tunnel.getHostname() + "'" );
-            }
-            
-            if ( tunnel.getSshKey() != null ) {
-                if ( ! VerifierFactory.getSshKeyVerifier().verify( tunnel.getSshKey().getAbsolutePath() ) ) {
-                    
-                    profile.addError( "Tunnel '" + tunnel.getAlias() +"': invalid SSH key '" + tunnel.getSshKey().getAbsolutePath() + "'" );
-                }
-            }
-            
-            if ( ! VerifierFactory.getUserVerifier().verify( tunnel.getUser() ) ) {
-                
-                profile.addError( "Tunnel '" + tunnel.getAlias() +"': invalid user '" + tunnel.getUser() + "'" );
-            }
+            tunnel.addError( "alias",       VerifierAlias.getInstance().verify( tunnel.getAlias() ) );
+            tunnel.addError( "user",        VerifierUser.getInstance().verify( tunnel.getUser() ) );
+            tunnel.addError( "hostname",    VerifierHostname.getInstance().verify( tunnel.getHostname() ) );
+            tunnel.addError( "port",        VerifierPort.getInstance().verify( tunnel.getPort() ) );
+            tunnel.addError( "sshKey",      VerifierSshKey.getInstance().verify( tunnel.getSshKey() ) );
             
             int f = 0;
             
@@ -190,19 +293,15 @@ public class Config implements Serializable {
                 
                 f++;
                 
-                if ( ! VerifierFactory.getPortVerifier().verify( forward.getBindPort() ) ) {
-                    profile.addError( "Tunnel '" + tunnel.getAlias() +"', Forward " + f + ": invalid bind port '" + forward.getBindPort() + "'" );
-                }
+                forward.clearErrors();
 
-                if ( ! VerifierFactory.getPortVerifier().verify( forward.getForwardedPort() ) ) {
-                    profile.addError( "Tunnel '" + tunnel.getAlias() +"', Forward " + f + ": invalid forwarded port '" + forward.getBindPort() + "'" );
-                }
+                forward.addError( "bindIp",         VerifierIpAddress.getInstance().verify( forward.getBindIp() ) );
+                forward.addError( "bindPort",       VerifierPort.getInstance().verify( forward.getBindPort() ) );
+
+                forward.addError( "forwardedHost",  VerifierHostname.getInstance().verify( forward.getForwardedHost() ) );
+                forward.addError( "forwardedPort",  VerifierPort.getInstance().verify( forward.getForwardedPort() ) );
                 
-                if ( ! VerifierFactory.getHostnameVerifier().verify( forward.getForwardedHost() ) ) {
-                    profile.addError( "Tunnel '" + tunnel.getAlias() +"', Forward " + f + ": invalid forwarded host '" + forward.getForwardedHost() + "'" );
-                }
-                
-                String forwardId = profile.getConfigFile().getName() + ": " + tunnel.getAlias() + ", Forward " + f;
+                String forwardId = profile.getName() + ": " + tunnel.getAlias() + ", Forward " + f;
                         
                 if ( forward.getType().equals( Forward.LOCAL ) ) {
                     
@@ -210,7 +309,8 @@ public class Config implements Serializable {
                     
                     if ( localBinds.containsKey( localBind ) ) {
                         
-                        profile.addError( forwardId + ": duplicate bind: " + localBind + ", already used in " + localBinds.get( localBind )  );
+                        forward.addError( "bindIp", forwardId + ": duplicate bind: " + localBind + ", already used in " + localBinds.get( localBind )  );
+                        forward.addError( "bindPort", forwardId + ": duplicate bind: " + localBind + ", already used in " + localBinds.get( localBind )  );
                         
                     } else {
     
@@ -223,21 +323,79 @@ public class Config implements Serializable {
                     
                     if ( remoteBinds.containsKey( remoteBind ) ) {
                         
-                        profile.addError( forwardId + ": duplicate bind: '" + remoteBind + ", already used in " + remoteBinds.get( remoteBind ) );
+                        forward.addError( "bindIp", forwardId + ": duplicate bind: '" + remoteBind + ", already used in " + remoteBinds.get( remoteBind ) );
+                        forward.addError( "bindPort", forwardId + ": duplicate bind: '" + remoteBind + ", already used in " + remoteBinds.get( remoteBind ) );
                         
                     } else {
     
                         remoteBinds.put( remoteBind, forwardId );
                     }
                 }
-                
-                if ( ! VerifierFactory.getIpAddressVerifier().verify( forward.getBindIp() ) ) {
-                    
-                    profile.addError( "Tunnel '" + tunnel.getAlias() +"', Forward " + f + ": invalid bind IP '" + forward.getBindIp() + "'" );
-                }
             }
         }
+    }
+    
+    public String getUniqueProfileName() {
         
+        ArrayList<String> profileNames = new ArrayList<String>();
+        
+        for ( Profile profile : this.profiles ) {
+            profileNames.add( profile.getName() );
+        }
+        
+        int number = 1;
+        
+        while ( profileNames.contains( "Profile" + number ) ) {
+            number++;
+        }
+        
+        return "Profile" + number;
+    }
+    
+    public String getUniqueTunnelName( Profile profile ) {
+        
+        ArrayList<String> tunnelNames = new ArrayList<String>();
+        
+        for ( Tunnel tunnel : profile.getTunnels() ) {
+            tunnelNames.add( tunnel.getAlias() );
+        }
+        
+        int number = 1;
+        
+        while ( tunnelNames.contains( "Tunnel" + number ) ) {
+            number++;
+        }
+        
+        return "Tunnel" + number;
+    }
+    
+    public ArrayList<Profile> getAllProfiles() {
+        
+        return this.profiles;
+    }
+    
+    public ArrayList<Tunnel> getAllTunnels() {
+        
+        ArrayList<Tunnel> tunnels = new ArrayList<Tunnel>();
+        
+        for( Profile profile : this.profiles ) {
+            
+            tunnels.addAll( profile.getTunnels() );
+        }
+        
+        return tunnels;
+    }
+    
+    public ArrayList<Forward> getAllForwards() {
+        
+        ArrayList<Forward> forwards = new ArrayList<Forward>();
+        
+        for ( Tunnel tunnel : this.getAllTunnels() ) {
+            
+            forwards.addAll( tunnel.getForwards() );
+        }
+        
+        return forwards;
     }
     
     public void loopTunnels( boolean activeOnly, TunnelLoop loop ) {

@@ -1,7 +1,25 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## 0.12.3 - 2016-11-20
+## 0.13.0 - 2016-02-05
+
+### Added
+
+- The configuration GUI is back
+
+### Changed
+
+- Using Jsch version 0.1.54
+- improved load a little bit by removing unnecessary threads
+- LOG4J configuration now in /opt/kheetun/etc/log4j2.xml for server
+- LOG4J configuration now in $HOME/.kheetun/log4j2.xml for client
+
+### Fixes
+
+- Ping daemon changed to not open new SSH channels each time ping is measured.
+- Rampant autostart daemons removed
+
+## 0.12.3 - 2016-11-18
 
 ### Added
 

@@ -11,6 +11,9 @@ public class TextStyle {
     public static final TextStyle       TUNNEL_RUNNING;
     public static final TextStyle       NO_PROFILES;
     
+    public static final TextStyle       CONFIG_HEADER;
+    public static final TextStyle       DIALOG_CONFIGURATION;
+    
     static {
         {
             Font    fontActive    = new Font( Font.DIALOG, Font.PLAIN, 13 );
@@ -23,7 +26,7 @@ public class TextStyle {
         }
         {
             Font    fontActive    = new Font( Font.DIALOG, Font.BOLD, 13 );
-            Color   colorActive   = Color.BLUE;
+            Color   colorActive   = Kholor.BUTTON_ENABLED;
 
             Font    fontInactive    = new Font( Font.DIALOG, Font.BOLD, 13 );
             Color   colorInactive   = Color.LIGHT_GRAY;
@@ -57,6 +60,24 @@ public class TextStyle {
             
             NO_PROFILES = new TextStyle( fontActive, colorActive, fontInactive, colorInactive );
         }
+        
+        {
+            Font    fontActive    = new Font( Font.MONOSPACED, Font.BOLD, 18 );
+            Color   colorActive   = Color.DARK_GRAY;
+
+            Font    fontInactive    = new Font( Font.MONOSPACED, Font.BOLD, 18 );
+            Color   colorInactive   = Color.DARK_GRAY;
+            
+            CONFIG_HEADER = new TextStyle( fontActive, colorActive, fontInactive, colorInactive );
+        }
+
+        {
+            Font    fontActive    = new Font( Font.DIALOG, Font.PLAIN, 26 );
+            Color   colorActive   = Color.WHITE;
+
+            DIALOG_CONFIGURATION = new TextStyle( fontActive, colorActive, null, null );
+        }
+        
     }
     
     private Font    fontActive;
