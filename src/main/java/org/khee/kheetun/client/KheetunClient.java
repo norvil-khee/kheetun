@@ -24,8 +24,6 @@ public class KheetunClient {
     
     public static void main(String[] args) {
         
-        ConfigManager.init();
-
         System.setProperty( "sun.java2d.xrender", "false" );
 
         Gtk.init( args );

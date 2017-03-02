@@ -44,7 +44,7 @@ cat << EOF > kheetun.list
 %description 2 component ssh tunnel manager. SSH tunnels and hosts file managed by daemon running as privileged user. Config managed by user client.
 
 %postinstall << _EOF
-[ ! -f ${HOME}/.kheetun/log4j2.xml ] && echo "Generating log4j2.xml for client in ${HOME}/.kheetun/log4j2.xml" && touch ${HOME}/.kheetun/log4j2.xml && chown ${USER}: ${HOME}/.kheetun/log4j2.xml && cat <<'_LOG4J' > ${HOME}/.kheetun/log4j2.xml
+[ ! -f \$\${HOME}/.kheetun/log4j2.xml ] && echo "Generating log4j2.xml for client in \$\${HOME}/.kheetun/log4j2.xml" && touch \$\${HOME}/.kheetun/log4j2.xml && chown \$\${USER}: \$\${HOME}/.kheetun/log4j2.xml && cat <<'_LOG4J' > \$\${HOME}/.kheetun/log4j2.xml
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration>
   <Appenders>

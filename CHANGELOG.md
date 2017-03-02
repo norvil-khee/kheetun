@@ -1,7 +1,13 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## 0.13.0 - 2016-02-05
+## 0.13.1 - 2017-03-01
+
+### Fixes
+
+- Fixed postinstall log4j2.xml file creation
+
+## 0.13.0 - 2017-02-05
 
 ### Added
 

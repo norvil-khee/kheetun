@@ -10,7 +10,6 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.Point;
-import java.awt.Rectangle;
 import java.awt.Shape;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Area;
@@ -119,6 +118,7 @@ public class Dialog extends JFrame implements ConfigManagerListener, KhbuttonLis
                 super.paintComponent(g);
             }
         };
+        
         panelButtons.setOpaque( false );
         panelButtons.setLayout( new BoxLayout( panelButtons, BoxLayout.X_AXIS ) );
 
@@ -263,8 +263,6 @@ public class Dialog extends JFrame implements ConfigManagerListener, KhbuttonLis
         panelButtons.add( buttonErrors );
         panelButtons.add( Box.createHorizontalStrut( scrollBarSize ) );
         
-        
-        
         profilesPanel.setMinimumSize( new Dimension( 280, 1 ) );
         profilesPanel.setPreferredSize( new Dimension( 280, 1 ) );
         profilesPanel.setMaximumSize( new Dimension( 280, Integer.MAX_VALUE ) );
@@ -288,40 +286,6 @@ public class Dialog extends JFrame implements ConfigManagerListener, KhbuttonLis
         
         ConfigManager.addConfigManagerListener( this );
         Selection.getInstance().addSelectionListener( this );
-        
-        JComponent glass = new JComponent() {
-            
-            @Override
-            public void paint(Graphics g) {
-                Shape upper = new Rectangle2D.Double( 0, 0, 400, 34 );
-                Shape lower = new Rectangle2D.Double( 0, 66, 400, 64 );
-                
-                Area  clip  = new Area();
-                clip.add( new Area( upper ) );
-                clip.add( new Area( lower ) );
-                
-                g.setClip( clip );
-                
-                super.paint( g );
-                
-                Graphics2D g2d = (Graphics2D)g;
-                
-                Color background = UIManager.getColor( "Panel.background" );
-                
-                Color start = new Color( background.getRed(), background.getGreen(), background.getBlue(), 160 );
-                Color end = new Color( background.getRed(), background.getGreen(), background.getBlue(), 255 );
-                
-                g2d.setPaint( new GradientPaint( 0.0f, 0.0f, start, 100.0f, 0.0f, end ) );
-                g2d.fillRect( 0, 0, 300, 200 );
-            }
-
-        };
-        
-        glass.setLayout( new GridBagLayout() );
-        glass.add( new JLabel( Imx.TRAY_NEUTRAL.size( 100 ) ), new GridBagConstraints( 0, 0, 1, 1, 1.0, 1.0, GridBagConstraints.FIRST_LINE_START, GridBagConstraints.NONE, new Insets( 0, 0, 0, 0 ), 0, 0 ) );
-        
-        this.getRootPane().setGlassPane( glass );
-        this.getRootPane().getGlassPane().setVisible( true );
     }
     
     public static void init() {
