@@ -420,6 +420,7 @@ public class TunnelManager {
             Channel channel = session.openChannel( "shell" );
             ChannelShell channelShell = (ChannelShell)channel;
             
+            channelShell.setPty( false );
             channelShell.connect();
             
             tunnel.setShellChannel( channelShell );

@@ -14,6 +14,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.khee.kheetun.Kheetun;
 import org.khee.kheetun.client.config.Tunnel;
 import org.khee.kheetun.server.manager.TunnelManager;
 
@@ -81,12 +82,12 @@ public class PingChecker implements Runnable {
         
         long pingStart = System.currentTimeMillis();
         
-        this.shellOut.writeBytes( "echo ping." + pingStart + "\r\n" );
+        this.shellOut.writeBytes( "echo kheetun." + Kheetun.VERSION + ".ping." + pingStart + "\r\n" );
         this.shellOut.flush();
         
         String output = this.shellIn.readLine();
         
-        while ( output != null && ! output.startsWith( "ping." + pingStart ) ) {
+        while ( output != null && ! output.startsWith( "kheetun." + Kheetun.VERSION + ".ping." + pingStart ) ) {
             
             output = this.shellIn.readLine();
         }
