@@ -34,22 +34,26 @@ import org.khee.kheetun.client.config.Profile;
 import org.khee.kheetun.client.config.Tunnel;
 import org.khee.kheetun.client.gui.AnImx;
 import org.khee.kheetun.client.gui.Imx;
+import org.khee.kheetun.client.gui.Khdialog;
 import org.khee.kheetun.client.gui.KhmenuItem;
 import org.khee.kheetun.client.gui.Kholor;
 import org.khee.kheetun.client.gui.TextStyle;
+import org.khee.kheetun.server.manager.TunnelManager;
 
 public class TrayMenu extends JWindow implements MouseListener, ConfigManagerListener, TunnelClientListener {
     
     public static final long serialVersionUID = 42;
     
-    private KhmenuItem      labelKheetun;
-    private KhmenuItem      labelConnected;
-    private KhmenuItem      itemExit;
-    private KhmenuItem      itemStopAll;
-    private KhmenuItem      itemAutostartAll;
-    private KhmenuItem      itemConfiguration;
-    private KTProfilesPanel panelProfiles       = new KTProfilesPanel();
-    private JPanel          panelMain;
+    private KhmenuItem          labelKheetun;
+    private KhmenuItem          labelConnected;
+    private KhmenuItem          itemExit;
+    private KhmenuItem          itemStopAll;
+    private KhmenuItem          itemAutostartAll;
+    private KhmenuItem          itemConfiguration;
+    private KTProfilesPanel     panelProfiles       = new KTProfilesPanel();
+    private JPanel              panelMain;
+    
+    private ArrayList<Tunnel>   listRunningTunnels  = new ArrayList<Tunnel>();
     
     @SuppressWarnings("serial")
     public TrayMenu() {
@@ -76,10 +80,35 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
             @Override
             public void leftClick(MouseEvent e) {
                 
+                if ( ! TrayMenu.this.listRunningTunnels.isEmpty() ) {
+                
+                    if ( ! ConfigManager.getGlobalConfig().getStopOnExit().matches( "(yes|no)" ) ) {
+                        
+                        Khdialog dialogStopAll = new Khdialog( Imx.QUESTION, "Question", "Stop running tunnels?", Khdialog.TYPE_QUESTION | Khdialog.TYPE_REMEMBER );
+                        dialogStopAll.setLocationRelativeTo( null );
+                        dialogStopAll.setVisible( true );
+                        
+                        if ( dialogStopAll.getAnswer() == Khdialog.ANSWER_YES ) {
+                            
+                            TunnelClient.sendStopAll();
+                        }
+                        
+                        if ( dialogStopAll.getRemember() ) {
+                            
+                            ConfigManager.getGlobalConfig().setStopOnExit( dialogStopAll.getAnswer() == Khdialog.ANSWER_YES ? "yes" : "no" );
+                            ConfigManager.getGlobalConfig().save();
+                        }
+                        
+                    } else if ( ConfigManager.getGlobalConfig().getStopOnExit().equals( "yes" ) ) {
+                        
+                        TunnelClient.sendStopAll();
+                    }
+                }
+                
                 System.exit( 0 );
             }
         };
-        
+                
         itemConfiguration = new KhmenuItem( Imx.CONFIGURATION, "Configuration" ) {
             
             @Override
@@ -202,6 +231,15 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
     
     @Override
     public void TunnelClientTunnelStatus( Tunnel tunnel ) {
+        
+        if ( tunnel.getState() == Tunnel.STATE_RUNNING && ! this.listRunningTunnels.contains( tunnel ) ) {
+
+            this.listRunningTunnels.add( tunnel );
+            
+        } else if ( tunnel.getState() == Tunnel.STATE_STOPPED && this.listRunningTunnels.contains( tunnel ) ) {
+            
+            this.listRunningTunnels.remove( tunnel );
+        }
     }
     
     @Override

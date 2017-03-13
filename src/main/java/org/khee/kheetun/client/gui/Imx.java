@@ -42,6 +42,7 @@ public class Imx extends ImageIcon {
     public static final Imx INFO                = Imx.createImx( "info.png" );
     public static final Imx KEY                 = Imx.createImx( "key.png" );
     public static final Imx POWER               = Imx.createImx( "power.png" );
+    public static final Imx POWER_STOP          = Imx.createImx( "power_stop.png" );
     public static final Imx USER                = Imx.createImx( "user.png" );
     public static final Imx HOST                = Imx.createImx( "host.png" );
     public static final Imx PORT                = Imx.createImx( "port.png" );
@@ -55,6 +56,9 @@ public class Imx extends ImageIcon {
     public static final Imx PING_FAILURES       = Imx.createImx( "ping_failures.png" );
     public static final Imx COMMENT             = Imx.createImx( "comment.png" );
     public static final Imx COPY                = Imx.createImx( "copy.png" );
+    public static final Imx QUESTION            = Imx.createImx( "question.png" );
+    public static final Imx YES                 = Imx.createImx( "yes.png" );
+    public static final Imx NO                  = Imx.createImx( "no.png" );
     
     private String  file;
     private Integer scaleX;

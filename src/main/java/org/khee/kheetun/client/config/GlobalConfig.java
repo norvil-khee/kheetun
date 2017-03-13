@@ -26,6 +26,7 @@ public class GlobalConfig {
     public static final String          DEFAULT_HOST            = "127.0.0.1";
     public static final Integer         DEFAULT_PORT            = 7779;
     public static final String          DEFAULT_SORTORDER       = SORT_ALPHABETICAL_ASC;
+    public static final String          DEFAULT_STOPONEXIT      = "ask";
 
     private         ArrayList<String>   errors      = new ArrayList<String>();
 
@@ -34,7 +35,8 @@ public class GlobalConfig {
         
         properties.setProperty( "host",         GlobalConfig.DEFAULT_HOST );  
         properties.setProperty( "port",         GlobalConfig.DEFAULT_PORT.toString() );
-        properties.setProperty( "sortorder",    GlobalConfig.DEFAULT_SORTORDER );    
+        properties.setProperty( "sortorder",    GlobalConfig.DEFAULT_SORTORDER );
+        properties.setProperty( "stopOnExit",   GlobalConfig.DEFAULT_STOPONEXIT );
     }
     
     public static GlobalConfig load() {
@@ -121,5 +123,15 @@ public class GlobalConfig {
         this.properties.setProperty( "host", host );
     }
     
+
+    public String getStopOnExit() {
+        
+        return ( this.properties.getProperty( "stopOnExit" ) != null ? this.properties.getProperty( "stopOnExit" ) : GlobalConfig.DEFAULT_STOPONEXIT );
+    }
+    
+    public void setStopOnExit( String stopOnExit ) {
+        
+        this.properties.setProperty( "stopOnExit", stopOnExit );
+    }
 
 }
