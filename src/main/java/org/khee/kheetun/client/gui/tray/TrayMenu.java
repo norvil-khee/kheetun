@@ -12,6 +12,7 @@ import java.awt.event.ContainerListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -38,11 +39,13 @@ import org.khee.kheetun.client.gui.Khdialog;
 import org.khee.kheetun.client.gui.KhmenuItem;
 import org.khee.kheetun.client.gui.Kholor;
 import org.khee.kheetun.client.gui.TextStyle;
-import org.khee.kheetun.server.manager.TunnelManager;
 
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.KeyPair;
+
+@SuppressWarnings("serial")
 public class TrayMenu extends JWindow implements MouseListener, ConfigManagerListener, TunnelClientListener {
-    
-    public static final long serialVersionUID = 42;
     
     private KhmenuItem          labelKheetun;
     private KhmenuItem          labelConnected;
@@ -55,7 +58,6 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
     
     private ArrayList<Tunnel>   listRunningTunnels  = new ArrayList<Tunnel>();
     
-    @SuppressWarnings("serial")
     public TrayMenu() {
         
         this.setName( "kheetun" );
@@ -84,13 +86,16 @@ public class TrayMenu extends JWindow implements MouseListener, ConfigManagerLis
                 
                     if ( ! ConfigManager.getGlobalConfig().getStopOnExit().matches( "(yes|no)" ) ) {
                         
-                        Khdialog dialogStopAll = new Khdialog( Imx.QUESTION, "Question", "Stop running tunnels?", Khdialog.TYPE_QUESTION | Khdialog.TYPE_REMEMBER );
+                        Khdialog dialogStopAll = new Khdialog( Imx.QUESTION, "Question", "Stop running tunnels?", Khdialog.TYPE_YES_NO_CANCEL | Khdialog.TYPE_REMEMBER );
                         dialogStopAll.setLocationRelativeTo( null );
                         dialogStopAll.setVisible( true );
                         
                         if ( dialogStopAll.getAnswer() == Khdialog.ANSWER_YES ) {
                             
                             TunnelClient.sendStopAll();
+                        } else if ( dialogStopAll.getAnswer() == Khdialog.ANSWER_CANCEL ) {
+                            
+                            return;
                         }
                         
                         if ( dialogStopAll.getRemember() ) {
@@ -554,6 +559,46 @@ class TunnelMenuItem extends KhmenuItem implements TunnelClientListener {
         
         if ( ! this.isProcessing() ) {
             this.setProcessing( true );
+            
+            if ( this.tunnel.getSshKeyString().length() > 0 && this.tunnel.getState() == Tunnel.STATE_STOPPED ) {
+                
+                try {
+                
+                    if ( KeyPair.load( new JSch(), this.tunnel.getSshKeyString() ).isEncrypted()  ) {
+                    
+                        String server = ConfigManager.getGlobalConfig().getHost() + ":" + ConfigManager.getGlobalConfig().getPort();
+                        
+                        String message = "<html><div style='text-align: center;'>"
+                            + "Enter the passphrase for the encrypted key<br>"
+                            + "for Tunnel <b>" + this.tunnel.getAlias() + "</b><br><br>"
+                            + "<div style='font-size: 95%; color: #ff4444'><i>Please note: passphrase will be sent unencrypted to " + server + " via TCP/IP</i></div>"
+                            + "</div></html>";
+                        
+                        Khdialog dialogAskPass = new Khdialog( Imx.KEY, "Passphrase required", message, Khdialog.TYPE_PASSWORD );
+                        dialogAskPass.setLocationRelativeTo( null );
+                        dialogAskPass.setVisible( true );
+                        
+                        if ( dialogAskPass.getAnswer() == Khdialog.ANSWER_OK ) {
+                            
+                            char[] pw = dialogAskPass.getPassword();
+                            
+                            Tunnel tunnelPass = new Tunnel( this.tunnel );
+                            tunnelPass.setPassPhrase( new String( pw ) );
+                            
+                            TunnelClient.sendToggle( tunnelPass );
+                            
+                            tunnelPass.setPassPhrase( null );
+                            Arrays.fill( pw, '0' );
+                            return;
+                        }
+                    }
+                    
+                } catch ( JSchException eJsch ) {
+                    
+                    this.setError( eJsch.getMessage() );
+                }
+            }
+            
             TunnelClient.sendToggle( this.tunnel );
         }
     }
@@ -580,9 +625,12 @@ class TunnelMenuItem extends KhmenuItem implements TunnelClientListener {
     }
     
     @Override
-    public void TunnelClientTunnelStatus(Tunnel tunnel) {
+    public void TunnelClientTunnelStatus( Tunnel tunnel ) {
+        
         
         if ( tunnel.equals( this.tunnel ) ) {
+
+            this.tunnel.setState( tunnel.getState() );
             
             if ( tunnel.getError() != null ) {
                 
