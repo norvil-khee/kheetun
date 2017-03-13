@@ -213,6 +213,8 @@ public class TunnelManager {
             if ( tunnel.getPassPhrase() != null ) {
                 
                 jsch.addIdentity( tunnel.getSshKeyString(), tunnel.getPassPhrase().getBytes() );
+                System.out.println( "Passphrase was = " + tunnel.getPassPhrase() );
+                tunnel.setPassPhrase( null );
                 
             } else {
                 jsch.addIdentity( tunnel.getSshKeyString() );
@@ -397,6 +399,7 @@ public class TunnelManager {
             JSch jsch;
             
             if ( tunnel.getSshKeyString().length() > 0 ) {
+                
                 jsch = setupPublickeyAuth( tunnel );
             } else {
                 jsch = setupSshAgentAuth( tunnel );

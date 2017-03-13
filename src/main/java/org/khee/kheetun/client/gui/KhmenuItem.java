@@ -334,6 +334,8 @@ public class KhmenuItem extends JPanel implements MouseListener {
         
         if ( e.getButton() == MouseEvent.BUTTON1 ) {
             
+            this.windowMessage.setVisible( false );
+            this.windowInfo.setVisible( false );
             this.leftClick( e );
         }
         

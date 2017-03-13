@@ -13,6 +13,7 @@ import java.net.SocketException;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.khee.kheetun.client.config.Tunnel;
 import org.khee.kheetun.server.comm.Protocol;
 import org.khee.kheetun.server.manager.TunnelManager;
 
@@ -136,7 +137,13 @@ public class TunnelServer implements Runnable {
             
             int indexTunnel = TunnelManager.get( receive.getUser() ).getKnownTunnels().indexOf( receive.getTunnel() );
             if ( indexTunnel != -1 ) {
-                receive.setTunnel( TunnelManager.get( receive.getUser() ).getKnownTunnels().get( indexTunnel ) );
+                
+                Tunnel serverTunnel = TunnelManager.get( receive.getUser() ).getKnownTunnels().get( indexTunnel );
+                if ( receive.getTunnel().getPassPhrase() != null ) {
+                    serverTunnel.setPassPhrase( receive.getTunnel().getPassPhrase() );
+                    receive.getTunnel().setPassPhrase( null );
+                }
+                receive.setTunnel( serverTunnel );
             } else {
                 logger.warn( "Got unknown tunnel from Protocol: " + receive.getTunnel().getAlias() + " (" + receive.getTunnel().toDebugString() + ")" );
             }
