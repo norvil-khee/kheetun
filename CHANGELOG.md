@@ -1,6 +1,17 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## 0.13.2 - 2017-03-13
+
+### Fixed
+
+- Pings should not appear in shell history on tunneling server
+
+### Added
+
+- Dialog asking if all running tunnels should be stopped before exit
+- Passphrase dialog for encrypted SSH keys
+
 ## 0.13.1 - 2017-03-01
 
 ### Fixes
