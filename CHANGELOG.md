@@ -1,6 +1,13 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## 0.13.3 - 2018-10-01
+
+### Added
+
+- Support for Java 10+ (including jaxb dependencies)
+
+
 ## 0.13.2 - 2017-03-13
 
 ### Fixed
